@@ -205,6 +205,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .note-field-label{font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px;letter-spacing:.3px;}
 .note-input,.note-select{width:100%;padding:10px 12px;background:var(--bg);border:1.5px solid var(--g-border);border-radius:var(--radius-sm);font-size:14px;}
 .note-textarea{width:100%;padding:12px;background:var(--white);border:1.5px solid var(--g-border);border-radius:var(--radius-md);font-size:14px;font-family:inherit;resize:vertical;min-height:200px;line-height:1.7;}
+.diary-style-textarea{width:100%;border:none;background:transparent;resize:none;font-family:inherit;font-size:14px;color:var(--nb-ink);outline:none;line-height:32px;padding:0;min-height:224px;overflow:hidden;}
+.note-basic-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--g-light);border:1px solid var(--g-border);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:14px;}
+.note-basic-summary-text{font-size:13px;color:var(--ink2);line-height:1.5;}
+.note-basic-summary-text b{color:var(--ink);}
+.note-basic-edit-btn{background:var(--white);border:1px solid var(--g-border);border-radius:16px;padding:5px 12px;font-size:12px;color:var(--g-dark);cursor:pointer;flex-shrink:0;}
 .attachment-area{background:var(--card);border-radius:var(--radius-md);padding:12px;margin-top:12px;border:1px dashed rgba(61,139,94,.2);}
 .attachment-buttons{display:flex;gap:10px;margin-bottom:10px;}
 .attach-btn{background:var(--g-light);border:none;padding:7px 16px;border-radius:24px;font-size:12px;cursor:pointer;color:var(--g);font-weight:500;display:inline-block;}
@@ -313,11 +318,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .nb-item{padding:0;border:none;display:flex;align-items:flex-start;gap:8px;}
 .nb-check{width:18px;height:18px;border:1.5px solid var(--nb-ring);border-radius:4px;flex-shrink:0;margin-top:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--nb-ink2);background:var(--white);}
 .nb-check.done{background:var(--nb-ring);border-color:var(--nb-ring);color:#fff;}
-.nb-content{flex:1;}
+.nb-content{flex:1;min-width:0;}
 .nb-item-title{font-size:14px;color:var(--nb-ink);line-height:32px;min-height:32px;}
 .nb-item-title.done{text-decoration:line-through;color:var(--nb-ink3);}
 .nb-item-note{font-size:12px;color:var(--nb-ink3);line-height:32px;white-space:pre-wrap;margin:0;padding:0;}
-.nb-item-meta{font-size:10px;color:var(--nb-ink3);line-height:32px;height:32px;}
+.nb-item-meta{font-size:10px;color:var(--nb-ink3);line-height:32px;height:32px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .nb-add-btn{display:block;width:100%;height:32px;line-height:32px;background:transparent;border:none;color:var(--nb-ink3);font-size:13px;cursor:pointer;font-family:inherit;text-align:left;padding:0;margin:0;}
 .nb-add-btn:active{color:var(--nb-ink2);}
 .nb-empty{text-align:center;padding:96px 0 0;color:var(--nb-ink3);font-size:13px;line-height:32px;}
@@ -527,10 +532,13 @@ function load(){
 function save(){localStorage.setItem('myu_final_v10',JSON.stringify(S));}
 function uid(){return Date.now()+'-'+Math.random().toString(36).substr(2,6);}
 function formatDate(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function fmtDateShort(s){if(!s)return s;const cur=String(new Date().getFullYear());return s.startsWith(cur+'-')?s.slice(5):s;}
 function td(){return formatDate(new Date());}
 function nowStr(){let d=new Date();return`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
 function toast(m){let t=document.getElementById('toast');t.innerText=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1800);}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function autoGrow(el){if(!el)return;el.style.height='auto';el.style.height=el.scrollHeight+'px';}
+function bindAutoGrow(el){if(!el)return;autoGrow(el);el.oninput=()=>autoGrow(el);}
 function escHtml(s){return esc(s).replace(/\n/g,'<br>');}
 
 // ==================== 安装引导（Android Chrome） ====================
@@ -792,7 +800,7 @@ document.querySelectorAll('.ni').forEach(nav=>{nav.onclick=()=>switchPage(nav.da
 
 // ==================== 今日页面 ====================
 let quoteRotateInterval=null;
-function getDisplayQuotes(){return[...S.defaultQuotes,...S.userQuotes];}
+function getDisplayQuotes(){return[...S.userQuotes,...S.defaultQuotes];}
 function getQuoteInterval(){
   // 单位：毫秒，默认30分钟
   return (S.quoteIntervalMinutes||30)*60*1000;
@@ -970,8 +978,8 @@ function openQuoteModal(){
       <div style="max-height:220px;overflow:auto" id="quoteListInner"></div>`;
     const listInner=container.querySelector('#quoteListInner');
     let html='';
-    S.userQuotes.forEach((q,i)=>{html+=`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(61,139,94,.1);"><span style="font-size:13px">${esc(q)}</span><button class="delbtn" data-qi="${i}">🗑️</button></div>`;});
-    if(S.defaultQuotes.length){html+=`<div style="padding:8px 0 4px;font-size:11px;color:var(--ink3);font-weight:600;">📌 默认语录</div>`;S.defaultQuotes.forEach(q=>{html+=`<div style="padding:6px 0;font-size:13px;color:var(--ink3);">${esc(q)}</div>`;});}
+    S.userQuotes.forEach((q,i)=>{html+=`<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--g-border);"><span style="font-size:13px"><b style="color:var(--ink3);margin-right:4px;">${i+1}.</b>${esc(q)}</span><button class="delbtn" data-qi="${i}">🗑️</button></div>`;});
+    if(S.defaultQuotes.length){const base=S.userQuotes.length;html+=`<div style="padding:8px 0 4px;font-size:11px;color:var(--ink3);font-weight:600;">📌 默认语录</div>`;S.defaultQuotes.forEach((q,j)=>{html+=`<div style="padding:6px 0;font-size:13px;color:var(--ink3);"><b style="margin-right:4px;">${base+j+1}.</b>${esc(q)}</div>`;});}
     listInner.innerHTML=html;
     listInner.querySelectorAll('[data-qi]').forEach(btn=>{btn.onclick=()=>{const i=parseInt(btn.dataset.qi);confirmDel(()=>{S.userQuotes.splice(i,1);save();if(getDisplayQuotes().length<2)clearInterval(quoteRotateInterval);openQuoteModal();});};});
     container.querySelector('#addQuoteBtn').onclick=()=>{const txt=container.querySelector('#newQuoteInput').value.trim();if(txt){S.userQuotes.push(txt);save();toast('已添加');if(getDisplayQuotes().length>=2)startQuoteRotate();openQuoteModal();}};
@@ -1429,7 +1437,8 @@ function renderDiaryNbPage(){
     date.textContent=`${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
 
     // 写入区——本子里只有纯粹的内容
-    body.innerHTML=`<textarea id="diaryInput" placeholder="今天的故事…" style="width:100%;border:none;background:transparent;resize:none;font-family:inherit;font-size:14px;color:#3a2808;outline:none;line-height:32px;padding:0;min-height:224px;" rows="7"></textarea>`;
+    body.innerHTML=`<textarea id="diaryInput" class="diary-style-textarea" placeholder="今天的故事…" rows="7"></textarea>`;
+    bindAutoGrow(document.getElementById('diaryInput'));
     if(actionArea)actionArea.innerHTML=`<button class="nb-add-outer-btn" onclick="saveDiaryNb()">保存日记</button>`;
   } else {
     // 查看历史日记
@@ -1445,11 +1454,11 @@ function renderDiaryNbPage(){
     title.textContent=`📔 ${d.tag||'日记'}`;
     date.textContent=d.date;
 
-    body.innerHTML=`<div style="line-height:32px;font-size:14px;color:#3a2808;white-space:pre-wrap;word-break:break-all;">${esc(d.t)}</div>`;
+    body.innerHTML=`<div style="line-height:32px;font-size:14px;color:var(--nb-ink);white-space:pre-wrap;word-break:break-all;">${esc(d.t)}</div>`;
     if(actionArea)actionArea.innerHTML=`
       <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;">
         <button class="nb-add-outer-btn" style="padding:8px 20px;" onclick="editDiaryNb('${d.id}')">✏️ 编辑</button>
-        <button class="nb-add-outer-btn" style="padding:8px 20px;border-color:#d96b55;color:#d96b55;" onclick="delDiaryConfirm('${d.id}')">🗑️ 删除</button>
+        <button class="nb-add-outer-btn" style="padding:8px 20px;background:var(--red);" onclick="delDiaryConfirm('${d.id}')">🗑️ 删除</button>
       </div>`;
   }
 }
@@ -1639,8 +1648,8 @@ function renderNbItem(item,idx){
     <div class="nb-content">
       <div class="nb-item-title${item.done?' done':''}">${esc(item.title||item.text||'')}</div>
       ${hasNote?`<div class="nb-item-note">${esc(item.note)}</div>`:''}
-      ${hasDue?`<div class="nb-item-meta">⏰ 截止 ${item.due}</div>`:''}
-      ${hasDate?`<div class="nb-item-meta">📅 计划于 ${item.planDate}</div>`:''}
+      ${hasDue?`<div class="nb-item-meta">⏰ 截止 ${fmtDateShort(item.due)}</div>`:''}
+      ${hasDate?`<div class="nb-item-meta">📅 计划于 ${fmtDateShort(item.planDate)}</div>`:''}
     </div>
     <div class="nb-item-btns">
       <button onclick="moveNbToTask(${idx})" title="移到今日任务" style="color:var(--g);">→任务</button>
@@ -1749,7 +1758,7 @@ function renderPlanArchive(){
       <div class="nb-content">
         <div class="nb-item-title">${esc((a.content||''))}</div>
         ${a.note?`<div class="nb-item-note">${esc(a.note)}</div>`:''}
-        <div class="nb-item-meta">${a.date} · ${{day:'今日',week:'本周',month:'本月',year:'今年'}[a.type]||a.type}</div>
+        <div class="nb-item-meta">${fmtDateShort(a.date)} · ${{day:'今日',week:'本周',month:'本月',year:'今年'}[a.type]||a.type}</div>
         <div class="nb-item-actions">
           <button class="sbtn" style="font-size:10px;padding:2px 8px;background:rgba(200,80,80,.1);color:#c04040;" onclick="delPlanArchive(${i})">删除</button>
         </div>
@@ -2204,104 +2213,106 @@ function renderEditorAttachments() {
 function removeEditorImg(idx) { currentEditorImages.splice(idx, 1); renderEditorAttachments(); }
 function removeEditorFile(idx) { currentEditorFiles.splice(idx, 1); renderEditorAttachments(); }
 
+let _noteDraft=null; // 暂存"基本信息"步骤填的内容：{title,type,fields,tags}
+function getFieldsForType(typeName){
+  if(typeName.includes('收藏'))return['来源链接','原文摘要'];
+  if(typeName.includes('书影')||typeName.includes('影'))return['名称','作者/导演'];
+  if(typeName.includes('素材'))return['素材内容'];
+  return[];
+}
+function renderBasicInfoFields(typeName,draft){
+  const metaFields=getFieldsForType(typeName);
+  const metaHtml=metaFields.map(f=>`<div class="note-field-group"><div class="note-field-label">${f}</div><input type="text" id="basic_meta_${f.replace(/\s/g,'_').replace(/\//g,'_')}" class="note-input" value="${esc(draft?.fields?.[f]||'')}"></div>`).join('');
+  const tagsHtml=typeName.includes('素材')?`<div class="note-field-group"><div class="note-field-label">自定义标签（逗号分隔）</div><input type="text" id="basic_note_tags" class="note-input" value="${esc((draft?.tags||[]).join(', '))}"></div>`:'';
+  return metaHtml+tagsHtml;
+}
+function openNoteBasicInfoModal(initType,onDone,confirmText){
+  const draft=_noteDraft||{title:'',type:initType,fields:{},tags:[]};
+  const body=`
+    <div class="note-field-group"><div class="note-field-label">标题 <span style="color:var(--red)">*</span></div><input type="text" id="basic_note_title" class="note-input" placeholder="给这篇笔记起个名字" value="${esc(draft.title||'')}"></div>
+    <div class="note-field-group"><div class="note-field-label">类型</div><select id="basic_note_type" class="note-select">${S.noteTypes.map(t=>`<option value="${esc(t)}" ${initType===t?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
+    <div id="basicDynamicFields">${renderBasicInfoFields(initType,draft)}</div>
+    <div style="font-size:11px;color:var(--ink3);margin-top:8px;">📝 填好基本信息后，下一步专心写正文</div>`;
+  showModal('📋 基本信息',body,()=>{
+    const title=document.getElementById('basic_note_title').value.trim();if(!title){toast('请输入标题');return;}
+    const newType=document.getElementById('basic_note_type').value;
+    const fields={};getFieldsForType(newType).forEach(f=>{const el=document.getElementById(`basic_meta_${f.replace(/\s/g,'_').replace(/\//g,'_')}`);if(el)fields[f]=el.value;});
+    let tags=[];if(newType.includes('素材')){const tagsStr=document.getElementById('basic_note_tags')?.value||'';tags=tagsStr.split(/[,，]/).map(t=>t.trim()).filter(t=>t);}
+    _noteDraft={title,type:newType,fields,tags};
+    closeModal();onDone();
+  },null,{confirmText:confirmText||'下一步'});
+  setTimeout(()=>{
+    const typeSel=document.getElementById('basic_note_type');
+    if(typeSel)typeSel.onchange=()=>{document.getElementById('basicDynamicFields').innerHTML=renderBasicInfoFields(typeSel.value,draft);};
+    document.getElementById('basic_note_title')?.focus();
+  },80);
+}
 function openNoteEditor(noteId=null){
   const note=noteId?S.notes.find(n=>n.id===noteId):null;const isEdit=!!note;
-  let type=note?note.type:(currentNoteType==='all'||currentNoteType==='__manage'?(S.noteTypes[S.noteTypes.length-1]||'笔记'):currentNoteType);
-  
-  currentEditorImages = note ? [...(note.images || [])] : [];
-  currentEditorFiles = note ? [...(note.files || [])] : [];
-  
+  const type=note?note.type:(currentNoteType==='all'||currentNoteType==='__manage'?(S.noteTypes[S.noteTypes.length-1]||'笔记'):currentNoteType);
+  currentEditorImages=note?[...(note.images||[])]:[];
+  currentEditorFiles=note?[...(note.files||[])]:[];
+  if(isEdit){
+    _noteDraft={title:note.title,type:note.type,fields:{...(note.fields||{})},tags:[...(note.tags||[])]};
+    openNoteContentPage(noteId);
+  }else{
+    _noteDraft=null;
+    openNoteBasicInfoModal(type,()=>openNoteContentPage(null));
+  }
+}
+function openNoteContentPage(noteId){
   const editorPage=document.getElementById('note-editor-page');
   const editorContainer=document.getElementById('editorContent');
+  const isEdit=!!noteId;
   document.getElementById('editorTitle').innerText=isEdit?'编辑笔记':'新建笔记';
-  // 根据分类名字关键词，决定要不要显示专属字段（不再依赖固定id）
-  const getFieldsForType=(typeName)=>{
-    if(typeName.includes('收藏'))return['来源链接','原文摘要'];
-    if(typeName.includes('书影')||typeName.includes('影'))return['名称','作者/导演'];
-    if(typeName.includes('素材'))return['素材内容'];
-    return[];
+  const draft=_noteDraft;
+  const bodyContent=draft.fields?.['我的笔记']??draft.fields?.['素材内容']??draft.fields?.['原文摘要']??'';
+  editorContainer.innerHTML=`
+    <div class="note-basic-summary">
+      <div class="note-basic-summary-text" id="noteBasicSummaryText"><b>${esc(draft.title)}</b> · ${esc(draft.type)}</div>
+      <button class="note-basic-edit-btn" id="editBasicInfoBtn">✏️ 修改</button>
+    </div>
+    <textarea id="note_body" class="diary-style-textarea" placeholder="写下你的详细笔记、感悟或摘录…">${esc(bodyContent)}</textarea>
+    <div class="attachment-area">
+      <div class="note-field-label">📎 附件管理（持久化保存在本地）</div>
+      <div class="attachment-buttons">
+        <label class="attach-btn">📷 上传图片 <input type="file" accept="image/*" multiple id="note_img_input" style="display:none"></label>
+        <label class="attach-btn" style="background:var(--bg);color:var(--ink2);">📄 上传文件 <input type="file" accept="*/*" multiple id="note_file_input" style="display:none"></label>
+      </div>
+      <div class="image-preview" id="editorImgPreview"></div>
+      <div id="editorFilePreview"></div>
+    </div>`;
+  bindAutoGrow(document.getElementById('note_body'));
+
+  document.getElementById('note_img_input').onchange=(e)=>{
+    Array.from(e.target.files).forEach(file=>{const r=new FileReader();r.onload=(ev)=>{currentEditorImages.push(ev.target.result);renderEditorAttachments();};r.readAsDataURL(file);});
   };
-  
-  const buildEditorHTML=(currentType,currentNote)=>{
-    const metaFields=getFieldsForType(currentType);
-    let metaHtml=metaFields.map(f=>`<div class="note-field-group"><div class="note-field-label">${f}</div><input type="text" id="meta_${f.replace(/\s/g,'_').replace(/\//g,'_')}" class="note-input" value="${esc(currentNote?.fields?.[f]||'')}"></div>`).join('');
-    let tagsHtml='';
-    if(currentType.includes('素材')){tagsHtml=`<div class="note-field-group"><div class="note-field-label">自定义标签（逗号分隔）</div><input type="text" id="note_tags" class="note-input" value="${esc((currentNote?.tags||[]).join(', '))}"></div>`;}
-    const bodyContent=currentNote?.fields?.['我的笔记']||currentNote?.fields?.['素材内容']||currentNote?.fields?.['原文摘要']||'';
-    
-    return`
-      <div class="note-field-group"><div class="note-field-label">标题 <span style="color:var(--red)">*</span></div><input type="text" id="note_title" class="note-input" placeholder="给这篇笔记起个名字" value="${esc(currentNote?.title||'')}"></div>
-      <div class="note-field-group"><div class="note-field-label">类型</div><select id="note_type" class="note-select">${S.noteTypes.map(t=>`<option value="${esc(t)}" ${currentType===t?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
-      <div id="metaFields">${metaHtml}</div>
-      ${tagsHtml}
-      <div class="note-field-group"><div class="note-field-label">📝 正文 / 笔记内容</div><textarea id="note_body" class="note-textarea" placeholder="写下你的详细笔记、感悟或摘录…">${esc(bodyContent)}</textarea></div>
-      
-      <div class="attachment-area">
-        <div class="note-field-label">📎 附件管理（持久化保存在本地）</div>
-        <div class="attachment-buttons">
-          <label class="attach-btn">📷 上传图片 <input type="file" accept="image/*" multiple id="note_img_input" style="display:none"></label>
-          <label class="attach-btn" style="background:var(--bg);color:var(--ink2);">📄 上传文件 <input type="file" accept="*/*" multiple id="note_file_input" style="display:none"></label>
-        </div>
-        <div class="image-preview" id="editorImgPreview"></div>
-        <div id="editorFilePreview"></div>
-      </div>`;
+  document.getElementById('note_file_input').onchange=(e)=>{
+    Array.from(e.target.files).forEach(file=>{const r=new FileReader();r.onload=(ev)=>{currentEditorFiles.push({name:file.name,data:ev.target.result});renderEditorAttachments();};r.readAsDataURL(file);});
   };
-  
-  editorContainer.innerHTML=buildEditorHTML(type,note);
-  
-  const setupFileListeners = () => {
-    document.getElementById('note_img_input').onchange = (e) => {
-      Array.from(e.target.files).forEach(file => {
-        const r = new FileReader();
-        r.onload = (ev) => { currentEditorImages.push(ev.target.result); renderEditorAttachments(); };
-        r.readAsDataURL(file);
-      });
-    };
-    document.getElementById('note_file_input').onchange = (e) => {
-      Array.from(e.target.files).forEach(file => {
-        const r = new FileReader();
-        r.onload = (ev) => { currentEditorFiles.push({name: file.name, data: ev.target.result}); renderEditorAttachments(); };
-        r.readAsDataURL(file);
-      });
-    };
+  renderEditorAttachments();
+
+  document.getElementById('editBasicInfoBtn').onclick=()=>{
+    openNoteBasicInfoModal(draft.type,()=>{
+      document.getElementById('noteBasicSummaryText').innerHTML=`<b>${esc(_noteDraft.title)}</b> · ${esc(_noteDraft.type)}`;
+    },'保存');
   };
 
-  setupFileListeners();
-  renderEditorAttachments();
-  
-  document.getElementById('note_type').onchange=()=>{
-    const newType=document.getElementById('note_type').value;
-    const bodyVal=document.getElementById('note_body').value;const titleVal=document.getElementById('note_title').value;
-    const newMetaFields=getFieldsForType(newType);const metaDiv=document.getElementById('metaFields');
-    metaDiv.innerHTML=newMetaFields.map(f=>`<div class="note-field-group"><div class="note-field-label">${f}</div><input type="text" id="meta_${f.replace(/\s/g,'_').replace(/\//g,'_')}" class="note-input" value=""></div>`).join('');
-    const existingTagGroup=document.getElementById('note_tags')?.closest('.note-field-group');if(existingTagGroup)existingTagGroup.remove();
-    if(newType.includes('素材')){const tagDiv=document.createElement('div');tagDiv.className='note-field-group';tagDiv.innerHTML='<div class="note-field-label">自定义标签（逗号分隔）</div><input type="text" id="note_tags" class="note-input">';metaDiv.insertAdjacentElement('afterend',tagDiv);}
-    setTimeout(()=>{
-      if(document.getElementById('note_body'))document.getElementById('note_body').value=bodyVal;
-      if(document.getElementById('note_title'))document.getElementById('note_title').value=titleVal;
-      setupFileListeners();
-      renderEditorAttachments();
-    },0);
-  };
-  
   editorPage.classList.add('active');
   document.getElementById('editorCloseBtn').onclick=()=>{editorPage.classList.remove('active');renderNoteList();};
-  
+
   document.getElementById('editorSaveBtn').onclick=()=>{
-    const title=document.getElementById('note_title').value.trim();if(!title){toast('请输入标题');return;}
-    const newType=document.getElementById('note_type').value;const metaFieldsList=getFieldsForType(newType);const fields={};
-    metaFieldsList.forEach(f=>{const el=document.getElementById(`meta_${f.replace(/\s/g,'_').replace(/\//g,'_')}`);if(el)fields[f]=el.value;});
-    const bodyText=document.getElementById('note_body').value;fields['我的笔记']=bodyText;
-    if(newType.includes('收藏'))fields['原文摘要']=fields['原文摘要']||'';
-    if(newType.includes('素材'))fields['素材内容']=bodyText;
-    let tags=[];if(newType.includes('素材')){const tagsStr=document.getElementById('note_tags')?.value||'';tags=tagsStr.split(/[,，]/).map(t=>t.trim()).filter(t=>t);}
-    
+    const bodyText=document.getElementById('note_body').value;
+    const fields={...(_noteDraft.fields||{})};fields['我的笔记']=bodyText;
+    if(_noteDraft.type.includes('收藏'))fields['原文摘要']=fields['原文摘要']||'';
+    if(_noteDraft.type.includes('素材'))fields['素材内容']=bodyText;
+    const{title,type,tags}=_noteDraft;
     if(isEdit){
       const idx=S.notes.findIndex(n=>n.id===noteId);
-      if(idx!==-1)S.notes[idx]={...S.notes[idx],title,type:newType,fields,tags,images:currentEditorImages,files:currentEditorFiles,updatedAt:Date.now()};
+      if(idx!==-1)S.notes[idx]={...S.notes[idx],title,type,fields,tags,images:currentEditorImages,files:currentEditorFiles,updatedAt:Date.now()};
       toast('笔记已更新 ✓');
     }else{
-      S.notes.push({id:uid(),title,type:newType,fields,tags,images:currentEditorImages,files:currentEditorFiles,createdAt:Date.now(),updatedAt:Date.now()});
+      S.notes.push({id:uid(),title,type,fields,tags,images:currentEditorImages,files:currentEditorFiles,createdAt:Date.now(),updatedAt:Date.now()});
       toast('笔记已创建 ✓');
     }
     save();editorPage.classList.remove('active');renderNoteList();
