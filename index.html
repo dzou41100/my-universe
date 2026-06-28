@@ -69,7 +69,8 @@ body.t-ouhedailan{--g:#425066;--g-light:#e9d1d9;--g-mid:#E4C6D0;--g-dark:#303a49
 *{box-sizing:border-box;margin:0;padding:0;}
 /* 让页面内容跟随字体大小设置 */
 .pg, .pg div, .pg span, .pg p, .pg button, .pg input, .pg textarea, .pg select, .pg label{font-size:inherit;}
-body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang SC','Noto Sans SC',sans-serif;max-width:500px;margin:0 auto;padding-bottom:84px;min-height:100vh;font-size:var(--base-font);line-height:1.55;}
+html{overscroll-behavior-y:none;}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang SC','Noto Sans SC',sans-serif;max-width:500px;margin:0 auto;padding-bottom:84px;min-height:100vh;font-size:var(--base-font);line-height:1.55;overscroll-behavior-y:none;}
 .hdr{background:var(--white);padding:14px 18px 12px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--g-border);display:flex;justify-content:space-between;align-items:center;box-shadow:var(--shadow-sm);}
 .hdr h1{font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-.3px;}
 .hdr-date{font-size:11px;color:var(--ink3);margin-top:1px;}
@@ -210,7 +211,26 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .note-basic-summary-text{font-size:13px;color:var(--ink2);line-height:1.5;}
 .note-basic-summary-text b{color:var(--ink);}
 .note-basic-edit-btn{background:var(--white);border:1px solid var(--g-border);border-radius:16px;padding:5px 12px;font-size:12px;color:var(--g-dark);cursor:pointer;flex-shrink:0;}
-.attachment-area{background:var(--card);border-radius:var(--radius-md);padding:12px;margin-top:12px;border:1px dashed rgba(61,139,94,.2);}
+.attachment-area{background:var(--card);border-radius:var(--radius-md);padding:12px;margin-top:12px;border:1px dashed var(--g-border);}
+.quad-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.quad-cell{background:var(--card);border-radius:var(--radius-md);padding:10px;min-height:150px;border:1.5px solid var(--g-border);}
+.quad-cell-title{font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:8px;}
+.quad-item{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--g-xlight);}
+.quad-item.done .qi-text{opacity:.5;text-decoration:line-through;}
+.quad-item input[type=checkbox]{flex-shrink:0;}
+.quad-item .qi-text{flex:1;word-break:break-all;}
+.quad-item .qi-del{color:var(--ink3);cursor:pointer;flex-shrink:0;font-size:12px;padding:0 2px;}
+.quad-add-row{display:flex;gap:4px;margin-top:6px;}
+.quad-add-row input{flex:1;min-width:0;border:1px solid var(--g-border);border-radius:8px;padding:4px 6px;font-size:12px;background:var(--white);}
+.quad-add-row button{background:var(--g);color:#fff;border:none;border-radius:8px;padding:4px 8px;font-size:12px;flex-shrink:0;}
+.checklist-item{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--g-xlight);}
+.checklist-item.done .ci-text{opacity:.5;text-decoration:line-through;}
+.checklist-item input[type=checkbox]{width:18px;height:18px;flex-shrink:0;accent-color:var(--g);}
+.checklist-item .ci-text{flex:1;font-size:14px;word-break:break-all;}
+.checklist-item .ci-del{color:var(--ink3);cursor:pointer;flex-shrink:0;font-size:16px;padding:0 4px;}
+.checklist-add-row{display:flex;gap:8px;margin-top:12px;}
+.checklist-add-row input{flex:1;min-width:0;border:1.5px solid var(--g-border);border-radius:8px;padding:9px 12px;font-size:14px;background:var(--white);}
+.checklist-add-row button{background:var(--g);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;flex-shrink:0;}
 .attachment-buttons{display:flex;gap:10px;margin-bottom:10px;}
 .attach-btn{background:var(--g-light);border:none;padding:7px 16px;border-radius:24px;font-size:12px;cursor:pointer;color:var(--g);font-weight:500;display:inline-block;}
 .image-preview{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
@@ -1855,6 +1875,11 @@ function getProjPercent(p){
   return p.done>0?100:0;
 }
 function isProjDone(p){return getProjPercent(p)>=100;}
+// 子项目里完成的下沉到底部，未完成的留在上面（组内原有顺序不变）
+function sortChildrenByCompletion(arr){
+  if(!arr||arr.length<2)return;
+  arr.sort((a,b)=>(isProjDone(a)?1:0)-(isProjDone(b)?1:0));
+}
 
 // 项目树
 function renderProjects(){
@@ -1898,9 +1923,9 @@ function renderProjTree(){
       _colorIdx++;
     }
 
-    const movebtns=level===0?`
-      <button class="sbtn" style="padding:2px 6px;font-size:12px;" onclick="moveProjUp(${idx})" ${idx===0?'disabled style="opacity:.3;padding:2px 6px;font-size:12px;"':''}>↑</button>
-      <button class="sbtn" style="padding:2px 6px;font-size:12px;" onclick="moveProjDown(${idx})" ${idx===siblings-1?'disabled style="opacity:.3;padding:2px 6px;font-size:12px;"':''}>↓</button>`:'';
+    const movebtns=siblings>1?`
+      <button class="sbtn" style="padding:2px 6px;font-size:12px;${idx===0?'opacity:.3;pointer-events:none;':''}" onclick="moveProjNode('${p.id}',-1)">↑</button>
+      <button class="sbtn" style="padding:2px 6px;font-size:12px;${idx===siblings-1?'opacity:.3;pointer-events:none;':''}" onclick="moveProjNode('${p.id}',1)">↓</button>`:'';
 
     return`<div class="${cardClass} ${colorClass}">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
@@ -1916,13 +1941,29 @@ function renderProjTree(){
         <button class="sbtn" onclick="openSubProj('${p.id}')">➕ 子项目</button>
         ${hasNotes?`<button class="sbtn" onclick="viewProjHistory('${p.id}')">📜 历史</button>`:''}
       </div>
-      ${!isCollapsed&&hasChildren?`<div>${p.children.map((c,ci)=>renderNode(c,level+1,ci,p.children.length)).join('')}</div>`:(hasChildren?`<div style="font-size:11px;color:var(--ink3);padding:4px 0 2px">▶ ${p.children.length} 个子项目（已折叠）</div>`:'')}
+      ${!isCollapsed&&hasChildren?(()=>{sortChildrenByCompletion(p.children);return`<div>${p.children.map((c,ci)=>renderNode(c,level+1,ci,p.children.length)).join('')}</div>`;})():(hasChildren?`<div style="font-size:11px;color:var(--ink3);padding:4px 0 2px">▶ ${p.children.length} 个子项目（已折叠）</div>`:'')}
     </div>`;
   }
   listDiv.innerHTML=S.projs.map((p,i)=>renderNode(p,0,i,S.projs.length)).join('');
 }
-function moveProjUp(idx){if(idx<=0)return;[S.projs[idx-1],S.projs[idx]]=[S.projs[idx],S.projs[idx-1]];save();renderProjTree();}
-function moveProjDown(idx){if(idx>=S.projs.length-1)return;[S.projs[idx],S.projs[idx+1]]=[S.projs[idx+1],S.projs[idx]];save();renderProjTree();}
+// 通用上下移动：按id在树里找到它所在的那一层数组，和同级的兄弟节点交换位置
+function findProjSiblings(id,list){
+  list=list||S.projs;
+  for(let i=0;i<list.length;i++){
+    if(list[i].id===id)return{siblings:list,index:i};
+    if(list[i].children&&list[i].children.length){
+      const r=findProjSiblings(id,list[i].children);if(r)return r;
+    }
+  }
+  return null;
+}
+function moveProjNode(id,dir){
+  const r=findProjSiblings(id);if(!r)return;
+  const{siblings,index}=r;const ni=index+dir;
+  if(ni<0||ni>=siblings.length)return;
+  [siblings[index],siblings[ni]]=[siblings[ni],siblings[index]];
+  save();renderProjTree();
+}
 
 function viewProjHistory(id){
   const proj = findProj(id, S.projs); if(!proj||!proj.notes) return;
@@ -2124,7 +2165,17 @@ function renderNoteList(){
   if(!filtered.length){listDiv.innerHTML='<div class="empty" data-icon="📭">暂无笔记<br>点击右上角新建</div>';return;}
   
   listDiv.innerHTML=filtered.map(n=>{
-    let preview=n.fields?.['我的笔记']||n.fields?.['素材内容']||n.fields?.['名称']||'';
+    const mode=n.fields?.['_mode'];
+    let preview;
+    if(mode==='checklist'){
+      const items=n.fields?.['_checklist']||[];const doneCt=items.filter(i=>i.done).length;
+      preview=items.length?`☑️ ${doneCt}/${items.length} 已完成`:'☑️ 清单（暂无事项）';
+    }else if(mode==='quadrant'){
+      const q=n.fields?.['_quadrant']||{};const total=Object.values(q).reduce((s,arr)=>s+(arr?.length||0),0);
+      preview=total?`🧭 四象限（共${total}项）`:'🧭 四象限（暂无事项）';
+    }else{
+      preview=n.fields?.['我的笔记']||n.fields?.['素材内容']||n.fields?.['名称']||'';
+    }
     let attachmentCount = (n.images?.length || 0) + (n.files?.length || 0);
     let attachmentBadge = attachmentCount > 0 ? `<span style="font-size:11px;color:var(--g);background:var(--g-light);padding:1px 6px;border-radius:8px;margin-left:6px">📎 ${attachmentCount}</span>` : '';
     
@@ -2220,30 +2271,38 @@ function getFieldsForType(typeName){
   if(typeName.includes('素材'))return['素材内容'];
   return[];
 }
-function renderBasicInfoFields(typeName,draft){
+function renderBasicInfoFields(typeName,draft,isNewNote){
   const metaFields=getFieldsForType(typeName);
   const metaHtml=metaFields.map(f=>`<div class="note-field-group"><div class="note-field-label">${f}</div><input type="text" id="basic_meta_${f.replace(/\s/g,'_').replace(/\//g,'_')}" class="note-input" value="${esc(draft?.fields?.[f]||'')}"></div>`).join('');
   const tagsHtml=typeName.includes('素材')?`<div class="note-field-group"><div class="note-field-label">自定义标签（逗号分隔）</div><input type="text" id="basic_note_tags" class="note-input" value="${esc((draft?.tags||[]).join(', '))}"></div>`:'';
-  return metaHtml+tagsHtml;
+  const curMode=draft?.fields?.['_mode']||'text';
+  const modeHtml=(isNewNote&&typeName.includes('通用'))?`<div class="note-field-group"><div class="note-field-label">内容形式</div><select id="basic_note_mode" class="note-select">
+      <option value="text" ${curMode==='text'?'selected':''}>📝 普通文本</option>
+      <option value="quadrant" ${curMode==='quadrant'?'selected':''}>🧭 四象限（轻重缓急）</option>
+      <option value="checklist" ${curMode==='checklist'?'selected':''}>☑️ 清单（打勾）</option>
+    </select></div>`:'';
+  return modeHtml+metaHtml+tagsHtml;
 }
-function openNoteBasicInfoModal(initType,onDone,confirmText){
+function openNoteBasicInfoModal(initType,onDone,confirmText,isNewNote){
   const draft=_noteDraft||{title:'',type:initType,fields:{},tags:[]};
   const body=`
     <div class="note-field-group"><div class="note-field-label">标题 <span style="color:var(--red)">*</span></div><input type="text" id="basic_note_title" class="note-input" placeholder="给这篇笔记起个名字" value="${esc(draft.title||'')}"></div>
     <div class="note-field-group"><div class="note-field-label">类型</div><select id="basic_note_type" class="note-select">${S.noteTypes.map(t=>`<option value="${esc(t)}" ${initType===t?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
-    <div id="basicDynamicFields">${renderBasicInfoFields(initType,draft)}</div>
+    <div id="basicDynamicFields">${renderBasicInfoFields(initType,draft,isNewNote)}</div>
     <div style="font-size:11px;color:var(--ink3);margin-top:8px;">📝 填好基本信息后，下一步专心写正文</div>`;
   showModal('📋 基本信息',body,()=>{
     const title=document.getElementById('basic_note_title').value.trim();if(!title){toast('请输入标题');return;}
     const newType=document.getElementById('basic_note_type').value;
     const fields={};getFieldsForType(newType).forEach(f=>{const el=document.getElementById(`basic_meta_${f.replace(/\s/g,'_').replace(/\//g,'_')}`);if(el)fields[f]=el.value;});
+    const modeSel=document.getElementById('basic_note_mode');
+    if(modeSel)fields['_mode']=modeSel.value;else if(!isNewNote&&draft.fields?.['_mode'])fields['_mode']=draft.fields['_mode'];
     let tags=[];if(newType.includes('素材')){const tagsStr=document.getElementById('basic_note_tags')?.value||'';tags=tagsStr.split(/[,，]/).map(t=>t.trim()).filter(t=>t);}
     _noteDraft={title,type:newType,fields,tags};
     closeModal();onDone();
   },null,{confirmText:confirmText||'下一步'});
   setTimeout(()=>{
     const typeSel=document.getElementById('basic_note_type');
-    if(typeSel)typeSel.onchange=()=>{document.getElementById('basicDynamicFields').innerHTML=renderBasicInfoFields(typeSel.value,draft);};
+    if(typeSel)typeSel.onchange=()=>{document.getElementById('basicDynamicFields').innerHTML=renderBasicInfoFields(typeSel.value,draft,isNewNote);};
     document.getElementById('basic_note_title')?.focus();
   },80);
 }
@@ -2257,22 +2316,78 @@ function openNoteEditor(noteId=null){
     openNoteContentPage(noteId);
   }else{
     _noteDraft=null;
-    openNoteBasicInfoModal(type,()=>openNoteContentPage(null));
+    openNoteBasicInfoModal(type,()=>openNoteContentPage(null),null,true);
   }
 }
+const QUAD_LABELS={q1:'🔥 重要且紧急',q2:'🎯 重要不紧急',q3:'⏰ 紧急不重要',q4:'🌿 不重要不紧急'};
+let _quadState=null,_checklistState=null;
+function renderQuadGrid(){
+  const wrap=document.getElementById('quadGridWrap');if(!wrap)return;
+  wrap.innerHTML=`<div class="quad-grid">${Object.keys(QUAD_LABELS).map(k=>`
+    <div class="quad-cell">
+      <div class="quad-cell-title">${QUAD_LABELS[k]}</div>
+      <div>${(_quadState[k]||[]).map((it,i)=>`
+        <div class="quad-item ${it.done?'done':''}">
+          <input type="checkbox" ${it.done?'checked':''} onchange="toggleQuadItem('${k}',${i})">
+          <span class="qi-text">${esc(it.text)}</span>
+          <span class="qi-del" onclick="delQuadItem('${k}',${i})">✕</span>
+        </div>`).join('')}</div>
+      <div class="quad-add-row"><input type="text" id="quadInput_${k}" placeholder="+ 添加"><button onclick="addQuadItem('${k}')">添加</button></div>
+    </div>`).join('')}</div>`;
+  Object.keys(QUAD_LABELS).forEach(k=>{
+    const inp=document.getElementById('quadInput_'+k);
+    if(inp)inp.onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();addQuadItem(k);}};
+  });
+}
+function addQuadItem(k){const inp=document.getElementById('quadInput_'+k);const v=inp.value.trim();if(!v)return;if(!_quadState[k])_quadState[k]=[];_quadState[k].push({text:v,done:false});renderQuadGrid();}
+function toggleQuadItem(k,i){_quadState[k][i].done=!_quadState[k][i].done;renderQuadGrid();}
+function delQuadItem(k,i){_quadState[k].splice(i,1);renderQuadGrid();}
+function renderChecklist(){
+  const wrap=document.getElementById('checklistWrap');if(!wrap)return;
+  wrap.innerHTML=`
+    <div>${_checklistState.map((it,i)=>`
+      <div class="checklist-item ${it.done?'done':''}">
+        <input type="checkbox" ${it.done?'checked':''} onchange="toggleChecklistItem(${i})">
+        <span class="ci-text">${esc(it.text)}</span>
+        <span class="ci-del" onclick="delChecklistItem(${i})">🗑️</span>
+      </div>`).join('')}</div>
+    <div class="checklist-add-row"><input type="text" id="checklistInput" placeholder="+ 添加一项，回车快速添加"><button onclick="addChecklistItem()">添加</button></div>`;
+  const inp=document.getElementById('checklistInput');
+  if(inp)inp.onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();addChecklistItem();}};
+}
+function addChecklistItem(){const inp=document.getElementById('checklistInput');const v=inp.value.trim();if(!v)return;_checklistState.push({text:v,done:false});renderChecklist();document.getElementById('checklistInput')?.focus();}
+function toggleChecklistItem(i){_checklistState[i].done=!_checklistState[i].done;renderChecklist();}
+function delChecklistItem(i){_checklistState.splice(i,1);renderChecklist();}
+
 function openNoteContentPage(noteId){
   const editorPage=document.getElementById('note-editor-page');
   const editorContainer=document.getElementById('editorContent');
   const isEdit=!!noteId;
   document.getElementById('editorTitle').innerText=isEdit?'编辑笔记':'新建笔记';
   const draft=_noteDraft;
+  const mode=draft.fields?.['_mode']||'text';
   const bodyContent=draft.fields?.['我的笔记']??draft.fields?.['素材内容']??draft.fields?.['原文摘要']??'';
+
+  let bodyAreaHtml;
+  if(mode==='quadrant'){
+    _quadState=draft.fields?.['_quadrant']?JSON.parse(JSON.stringify(draft.fields['_quadrant'])):{q1:[],q2:[],q3:[],q4:[]};
+    bodyAreaHtml=`<div id="quadGridWrap"></div>`;
+  }else if(mode==='checklist'){
+    _checklistState=draft.fields?.['_checklist']?JSON.parse(JSON.stringify(draft.fields['_checklist'])):[];
+    bodyAreaHtml=`<div class="attachment-area" id="checklistWrap" style="border-style:solid;"></div>`;
+  }else{
+    bodyAreaHtml=`<div class="notebook-wrap">
+      <div class="notebook-rings">${Array(12).fill('<div class="notebook-ring"></div>').join('')}</div>
+      <div class="notebook-body"><textarea id="note_body" class="diary-style-textarea" placeholder="写下你的详细笔记、感悟或摘录…">${esc(bodyContent)}</textarea></div>
+    </div>`;
+  }
+
   editorContainer.innerHTML=`
     <div class="note-basic-summary">
       <div class="note-basic-summary-text" id="noteBasicSummaryText"><b>${esc(draft.title)}</b> · ${esc(draft.type)}</div>
       <button class="note-basic-edit-btn" id="editBasicInfoBtn">✏️ 修改</button>
     </div>
-    <textarea id="note_body" class="diary-style-textarea" placeholder="写下你的详细笔记、感悟或摘录…">${esc(bodyContent)}</textarea>
+    ${bodyAreaHtml}
     <div class="attachment-area">
       <div class="note-field-label">📎 附件管理（持久化保存在本地）</div>
       <div class="attachment-buttons">
@@ -2282,7 +2397,9 @@ function openNoteContentPage(noteId){
       <div class="image-preview" id="editorImgPreview"></div>
       <div id="editorFilePreview"></div>
     </div>`;
-  bindAutoGrow(document.getElementById('note_body'));
+  if(mode==='quadrant')renderQuadGrid();
+  else if(mode==='checklist')renderChecklist();
+  else bindAutoGrow(document.getElementById('note_body'));
 
   document.getElementById('note_img_input').onchange=(e)=>{
     Array.from(e.target.files).forEach(file=>{const r=new FileReader();r.onload=(ev)=>{currentEditorImages.push(ev.target.result);renderEditorAttachments();};r.readAsDataURL(file);});
@@ -2295,17 +2412,24 @@ function openNoteContentPage(noteId){
   document.getElementById('editBasicInfoBtn').onclick=()=>{
     openNoteBasicInfoModal(draft.type,()=>{
       document.getElementById('noteBasicSummaryText').innerHTML=`<b>${esc(_noteDraft.title)}</b> · ${esc(_noteDraft.type)}`;
-    },'保存');
+    },'保存',false);
   };
 
   editorPage.classList.add('active');
   document.getElementById('editorCloseBtn').onclick=()=>{editorPage.classList.remove('active');renderNoteList();};
 
   document.getElementById('editorSaveBtn').onclick=()=>{
-    const bodyText=document.getElementById('note_body').value;
-    const fields={...(_noteDraft.fields||{})};fields['我的笔记']=bodyText;
-    if(_noteDraft.type.includes('收藏'))fields['原文摘要']=fields['原文摘要']||'';
-    if(_noteDraft.type.includes('素材'))fields['素材内容']=bodyText;
+    const fields={...(_noteDraft.fields||{})};
+    if(mode==='quadrant'){
+      fields['_quadrant']=_quadState;
+    }else if(mode==='checklist'){
+      fields['_checklist']=_checklistState;
+    }else{
+      const bodyText=document.getElementById('note_body').value;
+      fields['我的笔记']=bodyText;
+      if(_noteDraft.type.includes('收藏'))fields['原文摘要']=fields['原文摘要']||'';
+      if(_noteDraft.type.includes('素材'))fields['素材内容']=bodyText;
+    }
     const{title,type,tags}=_noteDraft;
     if(isEdit){
       const idx=S.notes.findIndex(n=>n.id===noteId);
