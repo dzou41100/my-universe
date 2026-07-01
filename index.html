@@ -140,6 +140,9 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .ach-slogan{font-size:14px;color:var(--g);font-weight:600;margin-top:6px;cursor:pointer;letter-spacing:.5px;}
 .achi-card{background:linear-gradient(135deg,var(--white),var(--g-light));border-radius:var(--radius-md);padding:12px 14px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;box-shadow:var(--shadow-sm);}
 .addbtn{width:100%;padding:10px;background:var(--g-mid);border:1px solid var(--g-border);border-radius:var(--radius-sm);color:var(--g-dark);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+.fab-btn{position:fixed;right:18px;bottom:96px;z-index:150;background:var(--g);color:#fff;border:none;border-radius:28px;padding:13px 20px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.22);display:flex;align-items:center;gap:6px;}
+.fab-btn:active{opacity:.85;}
+#growHabit,#growProj,#growAch{padding-bottom:70px;}
 .addbtn:active{opacity:.8;}
 .pbtn{padding:8px 16px;background:var(--g);color:#fff;border:none;border-radius:var(--radius-sm);font-weight:600;cursor:pointer;font-size:13px;transition:background .15s;box-shadow:0 2px 8px var(--g-border);}
 .pbtn:active{background:var(--g-dark);}
@@ -324,6 +327,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .set-dot.on{background:var(--g);transform:scale(1.3);}
 /* ══ 本子计划（颜色全部跟随主题的 --nb-* 变量） ══ */
 .notebook-wrap{position:relative;background:var(--nb-bg);border-radius:var(--radius-md);box-shadow:3px 3px 0 rgba(0,0,0,.06),6px 6px 0 rgba(0,0,0,.1),0 8px 24px rgba(0,0,0,.12);margin:0 2px;overflow:hidden;}
+/* 给内含"自动增高textarea"的场景用：不裁切，避免高度计算稍有偏差时把底部文字和横线一起藏起来 */
+.notebook-wrap-grow{position:relative;background:var(--nb-bg);border-radius:var(--radius-md);box-shadow:3px 3px 0 rgba(0,0,0,.06),6px 6px 0 rgba(0,0,0,.1),0 8px 24px rgba(0,0,0,.12);margin:0 2px;overflow:visible;}
 .notebook-wrap::before{content:'';position:absolute;left:28px;top:0;bottom:0;width:1.5px;background:var(--nb-line);z-index:1;}
 .notebook-rings{position:absolute;left:18px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:space-around;padding:24px 0;pointer-events:none;z-index:2;}
 .notebook-ring{width:10px;height:10px;border-radius:50%;border:2px solid var(--nb-ink3);background:var(--nb-bg);box-shadow:inset 0 1px 2px rgba(0,0,0,.12);}
@@ -549,7 +554,13 @@ function load(){
   if(S.installBannerDismissed===undefined)S.installBannerDismissed=false;
   if(!S.quoteIntervalMinutes)S.quoteIntervalMinutes=30;
 }
-function save(){localStorage.setItem('myu_final_v10',JSON.stringify(S));}
+function save(){
+  try{
+    localStorage.setItem('myu_final_v10',JSON.stringify(S));
+  }catch(e){
+    alert('⚠️ 保存失败！可能是本地存储空间已满（通常是附件图片太大/太多导致）。\n\n请立刻用「设置→导出备份」把当前内容导出保存一份，再清理一些图片附件后重试。\n\n错误详情：'+e.message);
+  }
+}
 function uid(){return Date.now()+'-'+Math.random().toString(36).substr(2,6);}
 function formatDate(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function fmtDateShort(s){if(!s)return s;const cur=String(new Date().getFullYear());return s.startsWith(cur+'-')?s.slice(5):s;}
@@ -557,8 +568,16 @@ function td(){return formatDate(new Date());}
 function nowStr(){let d=new Date();return`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
 function toast(m){let t=document.getElementById('toast');t.innerText=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1800);}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function autoGrow(el){if(!el)return;el.style.height='auto';el.style.height=el.scrollHeight+'px';}
-function bindAutoGrow(el){if(!el)return;autoGrow(el);el.oninput=()=>autoGrow(el);}
+function autoGrow(el){if(!el)return;el.style.height='auto';el.style.height=(el.scrollHeight+2)+'px';}
+function bindAutoGrow(el){
+  if(!el)return;
+  // 用 requestAnimationFrame 延后到下一帧再量高度：
+  // 如果这时候页面还是 display:none（刚从隐藏切到显示的过渡瞬间），量出来的高度会是 0，
+  // 之前的写法在这种情况下会把输入框错误地"锁"成一个偏矮的高度，
+  // 打字打到后面文字/横线超出这个高度就会被裁掉、看起来像"消失了"。
+  requestAnimationFrame(()=>requestAnimationFrame(()=>autoGrow(el)));
+  el.oninput=()=>autoGrow(el);
+}
 function escHtml(s){return esc(s).replace(/\n/g,'<br>');}
 
 // ==================== 安装引导（Android Chrome） ====================
@@ -804,6 +823,21 @@ document.getElementById('exportBtn').onclick=()=>{
 
 // ==================== 页面切换 ====================
 const _pageInited={};
+let _touchStartY=0;
+document.addEventListener('touchstart',e=>{_touchStartY=e.touches[0].clientY;},{passive:true});
+document.addEventListener('touchmove',e=>{
+  const atTop=(window.scrollY||document.documentElement.scrollTop)<=0;
+  const movingDown=e.touches[0].clientY-_touchStartY>0;
+  if(!atTop||!movingDown)return;
+  // 手指如果是在一个自己能滚动的小区域里（弹窗内的长列表、设置面板等），不要拦截，
+  // 否则会连带把这些地方原本正常的滚动也一起挡住
+  let el=e.target;
+  while(el&&el!==document.body){
+    if(el.scrollHeight>el.clientHeight+2){const cs=getComputedStyle(el);if(cs.overflowY==='auto'||cs.overflowY==='scroll')return;}
+    el=el.parentElement;
+  }
+  e.preventDefault();
+},{passive:false});
 function switchPage(pageId){
   document.querySelectorAll('.pg').forEach(pg=>pg.classList.remove('active'));
   document.getElementById('pg-'+pageId).classList.add('active');
@@ -1384,7 +1418,7 @@ function renderDiaries(){
       <span style="font-size:11px;color:var(--ink3);margin-right:2px;">标签：</span>
       ${allTags.map(t=>`<div class="plan-outer-tab${diaryNewTag===t?' on':''}" data-ntag="${esc(t)}" style="font-size:11px;padding:4px 10px;">${esc(t)}</div>`).join('')}
     </div>
-    <div class="notebook-wrap" id="diaryNotebook">
+    <div class="notebook-wrap-grow" id="diaryNotebook">
       <div class="notebook-rings">${Array(7).fill('<div class="notebook-ring"></div>').join('')}</div>
       <div class="notebook-header" style="display:flex;align-items:center;justify-content:space-between;">
         <div>
@@ -1810,7 +1844,7 @@ function renderGrow(){
 }
 function renderHabits(){
   const el=document.getElementById('growHabit');if(!el)return;
-  el.innerHTML=`<div id="goodList"></div><button class="addbtn" id="addHabitBtn">+ 添加好习惯</button>`;
+  el.innerHTML=`<div id="goodList"></div><button class="fab-btn" id="addHabitBtn">➕ 添加好习惯</button>`;
   document.getElementById('addHabitBtn').onclick=openHabitModal;
   const goodDiv=document.getElementById('goodList');
   if(!S.goodH.length){goodDiv.innerHTML='<div class="empty" data-icon="🌿">还没有习惯</div>';return;}
@@ -1884,7 +1918,7 @@ function sortChildrenByCompletion(arr){
 // 项目树
 function renderProjects(){
   const el=document.getElementById('growProj');if(!el)return;
-  el.innerHTML=`<div id="projTree"></div><button class="addbtn" id="addRootProjBtn">+ 创建顶级项目</button>`;
+  el.innerHTML=`<div id="projTree"></div><button class="fab-btn" id="addRootProjBtn">➕ 创建项目</button>`;
   document.getElementById('addRootProjBtn').onclick=openRootProj;renderProjTree();
 }
 function toggleProjCollapse(id){if(collapsedProjs.has(id)){collapsedProjs.delete(id);}else{collapsedProjs.add(id);}renderProjTree();}
@@ -1924,6 +1958,7 @@ function renderProjTree(){
     }
 
     const movebtns=siblings>1?`
+      ${idx>1?`<button class="sbtn" style="padding:2px 6px;font-size:12px;" onclick="pinProjToTop('${p.id}')" title="置顶">📌</button>`:''}
       <button class="sbtn" style="padding:2px 6px;font-size:12px;${idx===0?'opacity:.3;pointer-events:none;':''}" onclick="moveProjNode('${p.id}',-1)">↑</button>
       <button class="sbtn" style="padding:2px 6px;font-size:12px;${idx===siblings-1?'opacity:.3;pointer-events:none;':''}" onclick="moveProjNode('${p.id}',1)">↓</button>`:'';
 
@@ -1963,6 +1998,13 @@ function moveProjNode(id,dir){
   if(ni<0||ni>=siblings.length)return;
   [siblings[index],siblings[ni]]=[siblings[ni],siblings[index]];
   save();renderProjTree();
+}
+function pinProjToTop(id){
+  const r=findProjSiblings(id);if(!r)return;
+  const{siblings,index}=r;if(index<=0)return;
+  const[node]=siblings.splice(index,1);
+  siblings.unshift(node);
+  save();renderProjTree();toast('已置顶 ✓');
 }
 
 function viewProjHistory(id){
@@ -2109,7 +2151,7 @@ function manageSelfNoteCats(){
 
 function renderAchievements(){
   const el=document.getElementById('growAch');if(!el)return;
-  el.innerHTML=`<div class="ach-header"><div class="ach-icon">🏆</div><div class="ach-slogan" id="achSlogan" onclick="editAchieveSlogan()">你做到的，都算数</div></div><div class="top-tabs" id="achTabs"><button class="tab-main on" data-ach="all">全部</button><button class="tab-main" data-ach="first">🎯 第一次</button><button class="tab-main" data-ach="done">✅ 完成了</button></div><div id="achListGrow"></div><button class="addbtn" id="addAchBtn">+ 记录成就</button>`;
+  el.innerHTML=`<div class="ach-header"><div class="ach-icon">🏆</div><div class="ach-slogan" id="achSlogan" onclick="editAchieveSlogan()">你做到的，都算数</div></div><div class="top-tabs" id="achTabs"><button class="tab-main on" data-ach="all">全部</button><button class="tab-main" data-ach="first">🎯 第一次</button><button class="tab-main" data-ach="done">✅ 完成了</button></div><div id="achListGrow"></div><button class="fab-btn" id="addAchBtn">➕ 记录成就</button>`;
   document.getElementById('addAchBtn').onclick=addAchievement;filterAchievements('all');
   document.getElementById('achTabs').addEventListener('click',(e)=>{const btn=e.target.closest('[data-ach]');if(btn){document.querySelectorAll('#achTabs [data-ach]').forEach(b=>b.classList.remove('on'));btn.classList.add('on');filterAchievements(btn.dataset.ach==='first'?'第一次':(btn.dataset.ach==='done'?'完成了':'all'));}});
 }
@@ -2376,7 +2418,7 @@ function openNoteContentPage(noteId){
     _checklistState=draft.fields?.['_checklist']?JSON.parse(JSON.stringify(draft.fields['_checklist'])):[];
     bodyAreaHtml=`<div class="attachment-area" id="checklistWrap" style="border-style:solid;"></div>`;
   }else{
-    bodyAreaHtml=`<div class="notebook-wrap">
+    bodyAreaHtml=`<div class="notebook-wrap-grow">
       <div class="notebook-rings">${Array(12).fill('<div class="notebook-ring"></div>').join('')}</div>
       <div class="notebook-body"><textarea id="note_body" class="diary-style-textarea" placeholder="写下你的详细笔记、感悟或摘录…">${esc(bodyContent)}</textarea></div>
     </div>`;
