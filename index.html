@@ -183,6 +183,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .floating-card{width:82%;max-width:360px;height:60%;max-height:460px;background:linear-gradient(145deg,#2a1a4a,#150a2a);border-radius:26px;border:2px solid #e8c940;box-shadow:0 0 0 3px rgba(0,0,0,.2),0 24px 48px rgba(0,0,0,.5),0 0 24px rgba(232,201,64,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;}
 .floating-card.rotating{animation:card3DRotate 1.2s ease-in-out 2;}
 @keyframes card3DRotate{0%{transform:rotateY(0deg);}100%{transform:rotateY(360deg);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 .floating-card .card-back{font-size:52px;color:#e8c940;text-shadow:0 0 12px rgba(232,201,64,.6);}
 .floating-card .card-front{font-size:18px;font-weight:500;color:#f5e8b0;line-height:1.7;word-break:break-word;}
 .floating-card .card-front.hide,.floating-card .card-back.hide{display:none;}
@@ -863,14 +864,20 @@ function getQuoteInterval(){
 function startQuoteRotate(){
   if(quoteRotateInterval)clearInterval(quoteRotateInterval);
   const interval=getQuoteInterval();
+  let lastIdx=-1;
+  let lastSwitchAt=Date.now();
   quoteRotateInterval=setInterval(()=>{
+    if(Date.now()-lastSwitchAt<interval)return; // 还没到设定的切换间隔，先不换
+    lastSwitchAt=Date.now();
     const qs=getDisplayQuotes();
     if(qs.length>=2){
-      const idx=Math.floor(Date.now()/interval)%qs.length;
+      let idx=Math.floor(Math.random()*qs.length);
+      if(idx===lastIdx)idx=(idx+1)%qs.length; // 避免连续两次抽到同一条
+      lastIdx=idx;
       const q=document.getElementById('quoteEl');
       if(q)q.innerHTML=`"${esc(qs[idx])}"`;
     }
-  },Math.min(interval,60000)); // 最多每分钟检查一次
+  },Math.min(interval,60000)); // 最多每分钟检查一次是否到点该换了
 }
 
 function editFortuneMessages(){
@@ -917,8 +924,8 @@ function drawFortuneCard(){
   const randomMsg=messages[Math.floor(Math.random()*messages.length)];
   const today=td();
   const existing=S.fortuneRecords.find(r=>r.msg===randomMsg&&r.date===today);
-  if(existing){existing.drawCount=(existing.drawCount||1)+1;}
-  else{S.fortuneRecords.push({id:uid(),msg:randomMsg,date:today,drawCount:1,done:false});}
+  if(existing){existing.drawCount=(existing.drawCount||1)+1;existing.ts=Date.now();}
+  else{S.fortuneRecords.push({id:uid(),msg:randomMsg,date:today,drawCount:1,done:false,ts:Date.now()});}
   save();
   const mask=document.getElementById('floatingCardMask');
   const card=document.getElementById('floatingCard');
@@ -942,18 +949,18 @@ function showOracleRecords(){
       allMsgs[r.msg].drawCount+=r.drawCount||1;
       if(r.done)allMsgs[r.msg].doneCount++;
     });
-    let html=`<div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">共抽了 ${S.fortuneRecords.length} 次</div>`;
-    const todayRecs=S.fortuneRecords.filter(r=>r.date===td());
-    if(todayRecs.length){
-      html+=`<div style="font-weight:700;font-size:13px;color:var(--ink2);margin-bottom:8px;">📅 今日抽到</div>`;
-      todayRecs.forEach(r=>{
-        html+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--g-border);">
-          <span style="flex:1;font-size:13px">${esc(r.msg)}</span>
-          <span style="font-size:11px;color:var(--ink3)">x${r.drawCount||1}</span>
-          <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;"><input type="checkbox" ${r.done?'checked':''} data-rid="${r.id}" style="width:auto">做了</label>
-        </div>`;
-      });
-    }
+    let html=`<div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">共抽了 ${S.fortuneRecords.length} 次 · 随时可以回来补勾"做了"</div>`;
+    html+=`<div style="font-weight:700;font-size:13px;color:var(--ink2);margin-bottom:8px;">📜 全部记录（新→旧）</div>`;
+    const sorted=[...S.fortuneRecords].sort((a,b)=>(b.ts||0)-(a.ts||0));
+    sorted.forEach(r=>{
+      html+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--g-border);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;">${esc(r.msg)}</div>
+          <div style="font-size:10px;color:var(--ink3);margin-top:2px;">${esc(r.date)}${r.drawCount>1?` · 抽过${r.drawCount}次`:''}</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;flex-shrink:0;"><input type="checkbox" ${r.done?'checked':''} data-rid="${r.id}" style="width:auto">做了</label>
+      </div>`;
+    });
     html+=`<div style="font-weight:700;font-size:13px;color:var(--ink2);margin:14px 0 8px;">📊 累计统计</div>`;
     Object.entries(allMsgs).forEach(([msg,stat])=>{
       html+=`<div style="padding:6px 0;border-bottom:1px solid rgba(61,139,94,.06);font-size:12px;display:flex;gap:8px;align-items:center;"><span style="flex:1">${esc(msg)}</span><span style="color:var(--ink3)">抽${stat.drawCount}次</span><span style="color:var(--g)">做${stat.doneCount}次</span></div>`;
@@ -967,7 +974,8 @@ function showOracleRecords(){
 }
 
 function renderToday(){
-  const displayQuote=getDisplayQuotes().length?getDisplayQuotes()[0]:'这是我的课题，那是别人的课题。';
+  const _dq=getDisplayQuotes();
+  const displayQuote=_dq.length?_dq[Math.floor(Math.random()*_dq.length)]:'这是我的课题，那是别人的课题。';
   document.getElementById('todayContent').innerHTML=`
     <div class="quote-box">
       <div class="quote-txt" id="quoteEl">"${esc(displayQuote)}"</div>
@@ -979,7 +987,7 @@ function renderToday(){
       <button class="addbtn" id="addTaskBtn">+ 添加任务（最多3件）</button>
     </div>
     <div class="timer-section">
-      <div class="section-divider"><div class="stl">🚀 专注启动</div></div>
+      <div class="section-divider"><div class="stl">🚀 启动</div></div>
       <div class="timer-btns">
         <button class="timer-btn timer-btn-1" onclick="selectTaskForTimer(60)">1 分钟</button>
         <button class="timer-btn timer-btn-3" onclick="selectTaskForTimer(180)">3 分钟</button>
@@ -1168,32 +1176,54 @@ function manageTaskTypes(){
 
 function selectTaskForTimer(secs){
   const tasks=S.tasks.filter(t=>t.date===td()&&!t.done);
-  if(!tasks.length){toast('没有未完成任务');return;}
-  const body=`<select id="timerTaskSelect">${tasks.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select>`;
-  showModal('选择要专注的任务',body,()=>{
-    const tid=document.getElementById('timerTaskSelect').value;
-    const task=tasks.find(t=>t.id===tid);closeModal();if(task)startTimer(secs,task.name,task.id);
-  });
+  const chipsHtml=tasks.length?`
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:6px;">今天的任务，点一下快速带入 ↓</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="timerTaskChips">
+      ${tasks.map(t=>`<div class="plan-outer-tab" data-ttid="${t.id}" style="font-size:12px;padding:5px 12px;cursor:pointer;">${esc(t.name)}</div>`).join('')}
+    </div>`:'';
+  const body=`
+    ${chipsHtml}
+    <div class="note-field-group"><div class="note-field-label">要启动做什么？（不填也能开始）</div><input type="text" id="timerTaskInput" placeholder="随便写，或者留空直接启动"></div>`;
+  showModal('🚀 启动',body,()=>{
+    const name=document.getElementById('timerTaskInput').value.trim();
+    const linked=document.getElementById('timerTaskInput').dataset.linkedId||null;
+    closeModal();
+    startTimer(secs,name,linked);
+  },null,{confirmText:'启动'});
+  setTimeout(()=>{
+    document.querySelectorAll('#timerTaskChips [data-ttid]').forEach(chip=>{
+      chip.onclick=()=>{
+        const t=tasks.find(x=>x.id===chip.dataset.ttid);if(!t)return;
+        const inp=document.getElementById('timerTaskInput');
+        inp.value=t.name;inp.dataset.linkedId=t.id;
+        document.querySelectorAll('#timerTaskChips [data-ttid]').forEach(c=>c.classList.remove('on'));
+        chip.classList.add('on');
+      };
+    });
+    document.getElementById('timerTaskInput')?.focus();
+  },80);
 }
 
 let timerInt=null;
 function startTimer(secs,taskName,taskId){
   if(timerInt)clearInterval(timerInt);
   const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;background:linear-gradient(135deg,#f0f8f3,#e8f5ee);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;';
+  ov.style.cssText='position:fixed;inset:0;background:linear-gradient(135deg,var(--bg),var(--g-light));z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;';
   let s=secs;
   const fmt=()=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-  ov.innerHTML=`<div style="font-size:26px;">🍃 专注中</div><div style="font-size:16px;color:var(--ink2);font-weight:500;">${esc(taskName)}</div><div style="font-size:88px;font-weight:800;color:var(--g);letter-spacing:-4px;" id="timerDisp">${fmt()}</div><button class="pbtn" style="background:var(--red);" onclick="this.parentElement.remove();clearInterval(timerInt);">停止</button>`;
+  ov.innerHTML=`<div style="font-size:26px;">🚀 启动中</div>${taskName?`<div style="font-size:16px;color:var(--ink2);font-weight:500;">${esc(taskName)}</div>`:''}<div style="font-size:88px;font-weight:800;color:var(--g);letter-spacing:-4px;" id="timerDisp">${fmt()}</div><button class="pbtn" style="background:var(--red);" onclick="this.parentElement.remove();clearInterval(timerInt);">停止</button>`;
   document.body.appendChild(ov);
   timerInt=setInterval(()=>{
     s--;const d=document.getElementById('timerDisp');if(d)d.innerText=fmt();
     if(s<=0){
       clearInterval(timerInt);ov.remove();toast('时间到！');
       if(taskId){
-        showModal('🎉 专注完成！', `<p style="font-size:14px;color:var(--ink2);">恭喜你成功专注了！是否现在就将任务【<b>${esc(taskName)}</b>】标记为完成？</p>`,()=>{
+        showModal('🎉 启动完成！', `<p style="font-size:14px;color:var(--ink2);">迈出第一步了！是否现在就将任务【<b>${esc(taskName)}</b>】标记为完成？</p>`,()=>{
           const t=S.tasks.find(x=>x.id===taskId);if(t){t.done=true;save();renderTasks();toast('任务完成，小宇宙爆发！');}
           closeModal();
         },null,{confirmText:'标记完成',cancelText:'暂不'});
+      }else{
+        toast('迈出第一步了，要不要趁热再启动一轮？');
       }
     }
   },1000);
@@ -1392,12 +1422,18 @@ function delWishConfirm(id){confirmDel(()=>{S.wishes=S.wishes.filter(w=>w.id!==i
 // ==================== 日记（本子版） ====================
 let _diaryPage=0; // 0=写新日记, 1=最新一篇, 2=更早...
 
-function getFilteredDiaries(){return S.diaries;}
+let diarySearchKeyword='';
+function getFilteredDiaries(){
+  if(!diarySearchKeyword)return S.diaries;
+  const kw=diarySearchKeyword;
+  return S.diaries.filter(d=>(d.t||'').toLowerCase().includes(kw));
+}
 
 function renderDiaries(){
   const el=document.getElementById('recDiary');if(!el)return;
 
   el.innerHTML=`
+    <div class="search-wrapper" style="margin-bottom:10px;"><input id="diarySearch" class="search-bar" placeholder="搜索日记内容…" value="${esc(diarySearchKeyword)}"><button class="search-btn" id="diarySearchBtn">🔍</button></div>
     <div class="notebook-wrap-grow" id="diaryNotebook">
       <div class="notebook-rings">${Array(7).fill('<div class="notebook-ring"></div>').join('')}</div>
       <div class="notebook-header" style="display:flex;align-items:center;justify-content:space-between;">
@@ -1414,6 +1450,18 @@ function renderDiaries(){
       <div class="notebook-body" id="diaryNbBody"></div>
     </div>
     <div id="diaryActionArea"></div>`;
+
+  const doSearch=()=>{
+    diarySearchKeyword=document.getElementById('diarySearch').value.trim().toLowerCase();
+    const results=getFilteredDiaries();
+    if(diarySearchKeyword){
+      if(!results.length){toast('没有找到匹配的日记');_diaryPage=0;}
+      else{_diaryPage=1;} // 跳到第一条匹配结果
+    }
+    renderDiaryNbPage();
+  };
+  document.getElementById('diarySearchBtn').onclick=doSearch;
+  document.getElementById('diarySearch').onkeypress=e=>{if(e.key==='Enter')doSearch();};
 
   document.getElementById('diaryPrevBtn').onclick=()=>{
     const diaries=getFilteredDiaries();
@@ -1871,8 +1919,9 @@ function renderProjTree(){
         <button class="delbtn" onclick="delProjConfirm('${p.id}')">🗑️</button>
       </div>
       <div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div><div style="font-size:11px;color:var(--ink3)">完成 ${percent}%</div>
-      <div style="display:flex;gap:8px;margin:8px 0">
+      <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;">
         ${hasChildren?'':`<button class="sbtn" onclick="checkInProj('${p.id}')">✅ 打卡</button>`}
+        ${(!hasChildren&&p.done>0)?`<button class="sbtn" onclick="undoCheckInProj('${p.id}')">↩️ 撤销</button>`:''}
         <button class="sbtn" onclick="openSubProj('${p.id}')">➕ 子项目</button>
         ${hasNotes?`<button class="sbtn" onclick="viewProjHistory('${p.id}')">📜 历史</button>`:''}
       </div>
@@ -1943,8 +1992,47 @@ function checkInProj(id){
   const proj=findProj(id,S.projs);if(!proj)return;
   if(proj.children&&proj.children.length){toast('该项目有子项目，请去子项目打卡');return;}
   if(proj.total>0&&proj.done>=proj.total){toast('已完成全部目标！');return;}
-  proj.done++;if(!proj.notes)proj.notes=[];proj.notes.push({date:nowStr()});
+  proj.done++;
+  if(!proj.notes)proj.notes=[];
+  const entryId=uid();
+  proj.notes.push({id:entryId,date:nowStr(),note:''});
   save();renderProjects();toast(`+1 ${proj.name}`);
+  openCheckInNotePopup(id,entryId);
+}
+function openCheckInNotePopup(projId,entryId){
+  const mask=document.createElement('div');
+  mask.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:500;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .15s;';
+  const card=document.createElement('div');
+  card.style.cssText='background:var(--card);border-radius:18px 18px 0 0;padding:18px 18px max(18px,env(safe-area-inset-bottom));width:100%;max-width:500px;box-shadow:0 -4px 24px rgba(0,0,0,.25);';
+  card.innerHTML=`
+    <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:2px;">✅ 打卡成功！</div>
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">写点感想也行，不想写就点卡片外面直接关掉</div>
+    <textarea id="checkinNoteTA" rows="3" placeholder="随手记两句…" style="width:100%;"></textarea>
+    <button class="pbtn" id="checkinNoteSaveBtn" style="width:100%;margin-top:10px;">保存并关闭</button>`;
+  mask.appendChild(card);
+  document.body.appendChild(mask);
+  const ta=card.querySelector('#checkinNoteTA');
+  setTimeout(()=>ta.focus(),50);
+  const saveAndClose=()=>{
+    const val=ta.value.trim();
+    if(val){
+      const proj=findProj(projId,S.projs);
+      const entry=proj?.notes?.find(n=>n.id===entryId);
+      if(entry){entry.note=val;save();}
+    }
+    mask.remove();
+  };
+  mask.addEventListener('click',(e)=>{if(e.target===mask)saveAndClose();});
+  card.querySelector('#checkinNoteSaveBtn').onclick=saveAndClose;
+}
+function undoCheckInProj(id){
+  const proj=findProj(id,S.projs);if(!proj)return;
+  if(!proj.done||proj.done<=0){toast('还没有打卡记录');return;}
+  showModal('撤销上一次打卡','<p style="color:var(--ink2);font-size:14px;line-height:1.6">会去掉最近一次打卡记录（含备注），确定吗？</p>',()=>{
+    proj.done=Math.max(0,proj.done-1);
+    if(proj.notes&&proj.notes.length)proj.notes.pop();
+    save();closeModal();renderProjects();toast('已撤销上一次打卡');
+  },null,{showCancel:true});
 }
 function editProjItem(id){
   const p=findProj(id,S.projs);if(!p)return;
