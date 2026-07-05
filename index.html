@@ -555,6 +555,20 @@ function load(){
   if(!S.lastBackupReminder)S.lastBackupReminder=0;
   if(S.installBannerDismissed===undefined)S.installBannerDismissed=false;
   if(!S.quoteIntervalMinutes)S.quoteIntervalMinutes=30;
+  // ==== 阶段日程：数据迁移 ====
+  if(!S.phases)S.phases=[];
+  if(!S.lastPhaseReminderShown)S.lastPhaseReminderShown='';
+  (S.goodH||[]).forEach(h=>{
+    // 老习惯（21格打卡）自动升级成"每天型"，从今天开始重新记连续天数；
+    // 老的 records 数据保留在存储里不会丢，只是新版不再显示那种格子
+    if(!h.repeatType)h.repeatType='daily';
+    if(!h.everyN)h.everyN=3;
+    if(typeof h.defaultWeekday!=='number')h.defaultWeekday=1;
+    if(h.phaseId===undefined)h.phaseId=null;
+    if(!h.log)h.log={};
+    if(!h.weekOverrides)h.weekOverrides={};
+    if(!h.restRanges)h.restRanges=[];
+  });
 }
 function save(){
   try{
@@ -882,14 +896,19 @@ function startQuoteRotate(){
 
 function editFortuneMessages(){
   const body=(container)=>{
-    const renderList=()=>{
+    const renderList=(focusLast)=>{
       let html=`<div style="margin-bottom:12px;"><div style="font-size:12px;color:var(--ink3);margin-bottom:10px;">每条卡牌内容</div><div id="fortuneList">`;
-      (S.fortuneMessages||[]).forEach((msg,idx)=>{html+=`<div style="display:flex;gap:8px;margin-bottom:8px;"><input type="text" style="flex:1;padding:8px;" value="${esc(msg)}" data-idx="${idx}" class="fortune-edit-input"><button class="delbtn" data-idx="${idx}">🗑️</button></div>`;});
+      (S.fortuneMessages||[]).forEach((msg,idx)=>{html+=`<div style="display:flex;gap:8px;margin-bottom:8px;"><input type="text" style="flex:1;padding:8px;" placeholder="写一条任务/提示…" value="${esc(msg)}" data-idx="${idx}" class="fortune-edit-input"><button class="delbtn" data-idx="${idx}">🗑️</button></div>`;});
       html+=`</div><button class="addbtn" id="addFortuneBtn">+ 添加新卡牌</button></div>`;
       container.innerHTML=html;
       container.querySelectorAll('.delbtn').forEach(btn=>{btn.onclick=()=>{S.fortuneMessages.splice(parseInt(btn.dataset.idx),1);save();renderList();};});
       container.querySelectorAll('.fortune-edit-input').forEach(inp=>{inp.onchange=()=>{S.fortuneMessages[parseInt(inp.dataset.idx)]=inp.value;save();};});
-      container.querySelector('#addFortuneBtn').onclick=()=>{S.fortuneMessages.push('新的天意任务');save();renderList();};
+      container.querySelector('#addFortuneBtn').onclick=()=>{S.fortuneMessages.push('');save();renderList(true);};
+      if(focusLast){
+        const inputs=container.querySelectorAll('.fortune-edit-input');
+        const last=inputs[inputs.length-1];
+        if(last)last.focus();
+      }
     };
     renderList();
   };
@@ -986,6 +1005,10 @@ function renderToday(){
       <div id="taskList"></div>
       <button class="addbtn" id="addTaskBtn">+ 添加任务（最多3件）</button>
     </div>
+    <div class="task-section">
+      <div class="section-divider"><div class="stl">📅 今天该做的（阶段日程）</div></div>
+      <div id="todayHabitsList"></div>
+    </div>
     <div class="timer-section">
       <div class="section-divider"><div class="stl">🚀 启动</div></div>
       <div class="timer-btns">
@@ -1005,9 +1028,10 @@ function renderToday(){
     <div id="pomodoroSection"></div>`;
   document.getElementById('addTaskBtn').onclick=openAddTaskModal;
   renderTasks();
+  renderTodayHabitsSection();
   renderPomodoroTrigger();
   if(getDisplayQuotes().length>=2)startQuoteRotate();
-  setTimeout(()=>{showInstallBanner();checkBackupReminder();},300);
+  setTimeout(()=>{showInstallBanner();checkBackupReminder();checkPhaseEndingReminder();},300);
 }
 
 function openQuoteModal(){
@@ -1786,17 +1810,263 @@ function showGrowTab(tab){
 }
 function renderGrow(){
   const gc=document.getElementById('growContent');
-  gc.innerHTML=`<div class="top-tabs" id="growTabs"><button class="tab-main on" data-grow="habit">🌿 习惯</button><button class="tab-main" data-grow="proj">📂 项目</button><button class="tab-main" data-grow="self">🪞 认识我</button><button class="tab-main" data-grow="ach">🏆 成就</button></div><div id="growHabit"></div><div id="growProj" style="display:none"></div><div id="growSelf" style="display:none"></div><div id="growAch" style="display:none"></div>`;
+  gc.innerHTML=`<div class="top-tabs" id="growTabs"><button class="tab-main on" data-grow="habit">📅 阶段日程</button><button class="tab-main" data-grow="proj">📂 项目</button><button class="tab-main" data-grow="self">🪞 认识我</button><button class="tab-main" data-grow="ach">🏆 成就</button></div><div id="growHabit"></div><div id="growProj" style="display:none"></div><div id="growSelf" style="display:none"></div><div id="growAch" style="display:none"></div>`;
   renderHabits();renderProjects();renderSelf();renderAchievements();
   document.getElementById('growTabs').addEventListener('click',(e)=>{const btn=e.target.closest('[data-grow]');if(btn)showGrowTab(btn.dataset.grow);});
 }
+// ==================== 阶段日程系统 ====================
+const STAGE_BADGES=[{min:0,emoji:'✨'},{min:3,emoji:'⭐'},{min:7,emoji:'🍀'},{min:14,emoji:'🌸'},{min:30,emoji:'🎁'},{min:60,emoji:'🌈'},{min:100,emoji:'🏅'}];
+function getBadgeForCount(n){let b=STAGE_BADGES[0];STAGE_BADGES.forEach(item=>{if(n>=item.min)b=item;});return b.emoji;}
+function getISOWeekKey(dateStr){
+  const d=new Date(dateStr+'T00:00:00');
+  const day=(d.getDay()+6)%7;
+  d.setDate(d.getDate()-day+3);
+  const firstThu=new Date(d.getFullYear(),0,4);
+  const diff=(d-firstThu)/86400000;
+  const week=1+Math.round((diff-3+((firstThu.getDay()+6)%7))/7);
+  return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
+}
+function addDaysStr(dateStr,n){const d=new Date(dateStr+'T00:00:00');d.setDate(d.getDate()+n);return formatDate(d);}
+function isDateRestForHabit(h,dateStr){
+  if(h.log?.[dateStr]?.status==='skip')return true;
+  return (h.restRanges||[]).some(r=>dateStr>=r.start&&dateStr<=r.end);
+}
+function isDateDoneForHabit(h,dateStr){return h.log?.[dateStr]?.status==='done';}
+function getActivePhase(){return (S.phases||[]).find(p=>p.status==='active')||null;}
+function isHabitDueToday(h){
+  const t=td();
+  if(isDateDoneForHabit(h,t))return false;
+  if(isDateRestForHabit(h,t))return false;
+  const phase=getActivePhase();
+  if(h.phaseId&&(!phase||phase.id!==h.phaseId))return false;
+  if(h.repeatType==='everyNDays'){
+    const doneDates=Object.keys(h.log||{}).filter(dt=>h.log[dt].status==='done').sort();
+    if(!doneDates.length)return true;
+    let nextDue=addDaysStr(doneDates[doneDates.length-1],h.everyN||3);
+    let guard=0;while(isDateRestForHabit(h,nextDue)&&guard<30){nextDue=addDaysStr(nextDue,1);guard++;}
+    return t>=nextDue;
+  }
+  if(h.repeatType==='weeklyRotation'){
+    const wk=getISOWeekKey(t);
+    const doneThisWeek=Object.keys(h.log||{}).some(dt=>h.log[dt].status==='done'&&getISOWeekKey(dt)===wk);
+    if(doneThisWeek)return false;
+    const assignedWd=(h.weekOverrides&&h.weekOverrides[wk]!==undefined)?h.weekOverrides[wk]:h.defaultWeekday;
+    const todayWd=(new Date(t+'T00:00:00').getDay()+6)%7;
+    return todayWd>=assignedWd;
+  }
+  return true; // daily
+}
+function getHabitStreak(h){
+  const t=td();
+  if(h.repeatType==='weeklyRotation'){
+    let count=0;
+    const doneThisWeek=Object.keys(h.log||{}).some(dt=>h.log[dt].status==='done'&&getISOWeekKey(dt)===getISOWeekKey(t));
+    let cursor=doneThisWeek?t:addDaysStr(t,-7);
+    let guard=0;
+    while(guard<520){
+      const cwk=getISOWeekKey(cursor);
+      const done=Object.keys(h.log||{}).some(dt=>h.log[dt].status==='done'&&getISOWeekKey(dt)===cwk);
+      if(!done)break;
+      count++;cursor=addDaysStr(cursor,-7);guard++;
+    }
+    return count;
+  }
+  if(h.repeatType==='everyNDays'){
+    const doneDates=Object.keys(h.log||{}).filter(dt=>h.log[dt].status==='done').sort();
+    if(!doneDates.length)return 0;
+    let count=1;
+    for(let i=1;i<doneDates.length;i++){
+      let expected=addDaysStr(doneDates[i-1],h.everyN||3);
+      let guard=0;while(isDateRestForHabit(h,expected)&&guard<30){expected=addDaysStr(expected,1);guard++;}
+      count=(doneDates[i]<=expected)?count+1:1;
+    }
+    return count;
+  }
+  // daily
+  let count=0;let cursor=isDateDoneForHabit(h,t)?t:addDaysStr(t,-1);let guard=0;
+  while(guard<3660){
+    if(isDateDoneForHabit(h,cursor)){count++;cursor=addDaysStr(cursor,-1);}
+    else if(isDateRestForHabit(h,cursor)){cursor=addDaysStr(cursor,-1);}
+    else break;
+    guard++;
+  }
+  return count;
+}
+function checkInHabitToday(id){
+  const h=S.goodH.find(x=>x.id===id);if(!h)return;
+  const t=td();if(!h.log)h.log={};
+  h.log[t]={status:'done',note:'',tag:'',priority:'orange',doneAt:Date.now()};
+  save();renderHabits();
+  if(document.getElementById('todayHabitsList'))renderTodayHabitsSection();
+  toast('打卡成功 ✓ '+getBadgeForCount(getHabitStreak(h)));
+  openHabitCheckinDetailPopup(id,t);
+}
+function undoHabitCheckinToday(id){
+  const h=S.goodH.find(x=>x.id===id);if(!h)return;
+  const t=td();if(h.log&&h.log[t])delete h.log[t];
+  save();renderHabits();if(document.getElementById('todayHabitsList'))renderTodayHabitsSection();toast('已取消今天的打卡');
+}
+function openHabitCheckinDetailPopup(habitId,dateStr){
+  const h=S.goodH.find(x=>x.id===habitId);if(!h)return;
+  const entry=h.log[dateStr]||{};
+  const mask=document.createElement('div');
+  mask.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:500;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .15s;';
+  const card=document.createElement('div');
+  card.style.cssText='background:var(--card);border-radius:18px 18px 0 0;padding:18px 18px max(18px,env(safe-area-inset-bottom));width:100%;max-width:500px;box-shadow:0 -4px 24px rgba(0,0,0,.25);';
+  card.innerHTML=`
+    <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:2px;">✅ ${esc(h.name)} 打卡成功！</div>
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">可以顺手记点备注、打个标签、定个重要性，不弄也没关系</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <div class="priority-option p-red" data-p="red" style="flex:1;text-align:center;">🔴 重要</div>
+      <div class="priority-option p-orange selected" data-p="orange" style="flex:1;text-align:center;">🟠 一般</div>
+      <div class="priority-option p-green" data-p="green" style="flex:1;text-align:center;">🟢 随意</div>
+    </div>
+    <input type="text" id="habitCheckinTag" placeholder="标签（可选）" value="${esc(entry.tag||'')}" style="margin-bottom:8px;">
+    <textarea id="habitCheckinNote" rows="2" placeholder="随手记两句…">${esc(entry.note||'')}</textarea>
+    <button class="pbtn" id="habitCheckinSaveBtn" style="width:100%;margin-top:10px;">保存并关闭</button>`;
+  mask.appendChild(card);document.body.appendChild(mask);
+  card.querySelectorAll('.priority-option').forEach(opt=>{opt.onclick=()=>{card.querySelectorAll('.priority-option').forEach(o=>o.classList.remove('selected'));opt.classList.add('selected');};});
+  const saveAndClose=()=>{
+    const hh=S.goodH.find(x=>x.id===habitId);
+    if(hh&&hh.log[dateStr]){
+      const sel=card.querySelector('.priority-option.selected');
+      hh.log[dateStr].priority=sel?sel.dataset.p:'orange';
+      hh.log[dateStr].tag=card.querySelector('#habitCheckinTag').value.trim();
+      hh.log[dateStr].note=card.querySelector('#habitCheckinNote').value.trim();
+      save();
+    }
+    mask.remove();
+  };
+  mask.addEventListener('click',(e)=>{if(e.target===mask)saveAndClose();});
+  card.querySelector('#habitCheckinSaveBtn').onclick=saveAndClose;
+}
+function takeRestToday(id){
+  const h=S.goodH.find(x=>x.id===id);if(!h)return;
+  const t=td();if(!h.log)h.log={};
+  h.log[t]={status:'skip'};
+  save();renderHabits();if(document.getElementById('todayHabitsList'))renderTodayHabitsSection();toast('今天已请假 🌤');
+}
+function openRestRangeModal(id){
+  const h=S.goodH.find(x=>x.id===id);if(!h)return;
+  const body=`<div class="note-field-group"><div class="note-field-label">开始日期</div><input type="date" id="restStart" value="${td()}"></div><div class="note-field-group"><div class="note-field-label">结束日期</div><input type="date" id="restEnd" value="${td()}"></div>`;
+  showModal('请假一段时间',body,()=>{
+    const s=document.getElementById('restStart').value,e=document.getElementById('restEnd').value;
+    if(!s||!e||e<s){toast('日期不对');return;}
+    if(!h.restRanges)h.restRanges=[];
+    h.restRanges.push({start:s,end:e});
+    save();closeModal();renderHabits();if(document.getElementById('todayHabitsList'))renderTodayHabitsSection();toast('已请假 '+s+' 到 '+e);
+  });
+}
+function openMoveWeeklyDayModal(id){
+  const h=S.goodH.find(x=>x.id===id);if(!h)return;
+  const wk=getISOWeekKey(td());
+  const body=`<div class="note-field-group"><div class="note-field-label">这周改到星期几</div><select id="moveWdSel" class="note-select">${['一','二','三','四','五','六','日'].map((d,i)=>`<option value="${i}">星期${d}</option>`).join('')}</select></div>`;
+  showModal('换一天做',body,()=>{
+    const wd=parseInt(document.getElementById('moveWdSel').value);
+    if(!h.weekOverrides)h.weekOverrides={};
+    h.weekOverrides[wk]=wd;
+    save();closeModal();if(document.getElementById('todayHabitsList'))renderTodayHabitsSection();toast('已改到这周星期'+['一','二','三','四','五','六','日'][wd]);
+  });
+}
+// ---- 阶段管理 ----
+function openCreatePhaseModal(){
+  const body=`<div class="note-field-group"><div class="note-field-label">阶段名称</div><input id="phaseName" placeholder="例如：暑假作息"></div><div style="display:flex;gap:10px;"><div class="note-field-group" style="flex:1"><div class="note-field-label">开始日期</div><input type="date" id="phaseStart" value="${td()}"></div><div class="note-field-group" style="flex:1"><div class="note-field-label">结束日期（可不填）</div><input type="date" id="phaseEnd"></div></div><div style="font-size:11px;color:var(--ink3);">新建阶段后，之前生效中的阶段会自动归档，可以在"历史"里回顾。</div>`;
+  showModal('新建阶段',body,()=>{
+    const name=document.getElementById('phaseName').value.trim();if(!name){toast('请输入阶段名称');return;}
+    const start=document.getElementById('phaseStart').value||td();
+    const end=document.getElementById('phaseEnd').value;
+    const old=getActivePhase();if(old)old.status='archived';
+    S.phases.push({id:uid(),name,startDate:start,endDate:end||'',status:'active',createdAt:Date.now()});
+    save();closeModal();renderHabits();toast('阶段已创建 ✓');
+  });
+}
+function viewPhaseHistory(){
+  const body=(container)=>{
+    const list=[...S.phases].sort((a,b)=>b.createdAt-a.createdAt);
+    if(!list.length){container.innerHTML='<div class="empty" data-icon="📅">还没有阶段记录</div>';return;}
+    container.innerHTML=list.map(p=>{
+      const cnt=S.goodH.filter(h=>h.phaseId===p.id).length;
+      return `<div style="padding:10px 0;border-bottom:1px solid var(--g-border);">
+        <div style="font-weight:700;font-size:14px;color:var(--ink2);">${p.status==='active'?'🟢 ':'⬜ '}${esc(p.name)}</div>
+        <div style="font-size:11px;color:var(--ink3);margin:2px 0;">${p.startDate} ~ ${p.endDate||'不限'}</div>
+        <div style="font-size:11px;color:var(--ink3);">包含 ${cnt} 个习惯</div>
+      </div>`;
+    }).join('');
+  };
+  showModal('📅 阶段历史',body,null,null,{hideConfirm:true});
+}
+function checkPhaseEndingReminder(){
+  const phase=getActivePhase();if(!phase||!phase.endDate)return;
+  const t=td();
+  if(S.lastPhaseReminderShown===t)return;
+  const daysLeft=Math.round((new Date(phase.endDate+'T00:00:00')-new Date(t+'T00:00:00'))/86400000);
+  if(daysLeft>=0&&daysLeft<=2){
+    S.lastPhaseReminderShown=t;save();
+    showModal('📅 阶段即将结束',`<p style="font-size:14px;color:var(--ink2);line-height:1.7;">你的「<b>${esc(phase.name)}</b>」还有 ${daysLeft} 天就要结束啦，开始规划你的下一阶段吧！</p>`,()=>{closeModal();openCreatePhaseModal();},null,{confirmText:'现在就规划',cancelText:'过会儿再说',showCancel:true});
+  }
+}
+// ---- 今日页：今天该做的习惯 ----
+function renderTodayHabitsSection(){
+  const el=document.getElementById('todayHabitsList');if(!el)return;
+  const due=(S.goodH||[]).filter(h=>isHabitDueToday(h));
+  if(!due.length){el.innerHTML='<div style="font-size:12px;color:var(--ink3);padding:8px 0;">今天没有排到的习惯，休息一下 🌿</div>';return;}
+  el.innerHTML=due.map(h=>{
+    const extra=h.repeatType==='weeklyRotation'?`<button class="sbtn" style="padding:2px 8px;font-size:11px;" onclick="openMoveWeeklyDayModal('${h.id}')">🔀 换一天</button>`:'';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--g-border);flex-wrap:wrap;">
+      <span style="font-size:20px;">${h.emoji||'💪'}</span>
+      <span style="flex:1;font-size:14px;min-width:60px;">${esc(h.name)}</span>
+      ${extra}
+      <button class="sbtn" style="padding:2px 8px;font-size:11px;" onclick="takeRestToday('${h.id}')">🌤 请假</button>
+      <button class="pbtn" style="padding:5px 14px;font-size:12px;" onclick="checkInHabitToday('${h.id}')">✓ 完成</button>
+    </div>`;
+  }).join('');
+}
+// ---- 习惯列表主渲染 ----
 function renderHabits(){
   const el=document.getElementById('growHabit');if(!el)return;
-  el.innerHTML=`<div id="goodList"></div><button class="fab-btn" id="addHabitBtn">➕ 添加好习惯</button>`;
+  const phase=getActivePhase();
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
+      <div style="font-size:13px;color:var(--ink2);">${phase?`🟢 当前阶段：<b>${esc(phase.name)}</b>`:'尚未设置阶段（不影响习惯正常使用）'}</div>
+      <div style="display:flex;gap:6px;">
+        <button class="sbtn" onclick="openCreatePhaseModal()">➕ 新阶段</button>
+        <button class="sbtn" onclick="viewPhaseHistory()">📜 历史</button>
+      </div>
+    </div>
+    <div id="goodList"></div>
+    <button class="fab-btn" id="addHabitBtn">➕ 添加</button>`;
   document.getElementById('addHabitBtn').onclick=openHabitModal;
   const goodDiv=document.getElementById('goodList');
-  if(!S.goodH.length){goodDiv.innerHTML='<div class="empty" data-icon="🌿">还没有习惯</div>';return;}
-  goodDiv.innerHTML=S.goodH.map((h,idx)=>`<div class="habit-card"><div class="habit-header"><span style="font-size:28px;cursor:pointer" onclick="pickHabitIcon('${h.id}')">${h.emoji||'💪'}</span><span style="flex:1;font-weight:600;font-size:15px">${esc(h.name)}</span><button class="sbtn" style="padding:2px 6px;" onclick="moveHabitUp(${idx})" ${idx===0?'disabled':''}> ↑</button><button class="sbtn" style="padding:2px 6px;" onclick="moveHabitDown(${idx})" ${idx===S.goodH.length-1?'disabled':''}>↓</button><button class="sbtn" onclick="editHabit('${h.id}')">编辑</button><button class="delbtn" onclick="delHabitConfirm('${h.id}')">🗑️</button></div><div class="habit-dots">${Array.from({length:21},(_,i)=>{const day=i+1;const on=!!h.records?.[day];return`<button class="habit-day ${on?'on':''}" onclick="toggleHabitDay('${h.id}',${day})">${day}</button>`;}).join('')}</div></div>`).join('');
+  if(!S.goodH.length){goodDiv.innerHTML='<div class="empty" data-icon="🌿">还没有习惯，点右下角添加一个吧</div>';return;}
+  const REPEAT_LABEL={daily:'每天',everyNDays:'隔N天',weeklyRotation:'每周轮值'};
+  goodDiv.innerHTML=S.goodH.map((h,idx)=>{
+    const streak=getHabitStreak(h);
+    const badge=getBadgeForCount(streak);
+    const doneToday=isDateDoneForHabit(h,td());
+    const restToday=isDateRestForHabit(h,td())&&!doneToday;
+    let repeatDesc=REPEAT_LABEL[h.repeatType]||'每天';
+    if(h.repeatType==='everyNDays')repeatDesc=`每隔 ${h.everyN} 天`;
+    if(h.repeatType==='weeklyRotation')repeatDesc=`每周轮值 · 默认星期${['一','二','三','四','五','六','日'][h.defaultWeekday]}`;
+    return `<div class="habit-card">
+      <div class="habit-header">
+        <span style="font-size:26px;cursor:pointer;" onclick="pickHabitIcon('${h.id}')">${h.emoji||'💪'}</span>
+        <span style="flex:1;">
+          <div style="font-weight:600;font-size:15px;">${esc(h.name)}</div>
+          <div style="font-size:10px;color:var(--ink3);">${repeatDesc}</div>
+        </span>
+        <span style="font-size:20px;" title="连续 ${streak}">${badge}${streak>0?streak:''}</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+        ${doneToday?`<button class="sbtn" onclick="undoHabitCheckinToday('${h.id}')">↩️ 撤销今天</button>`:(restToday?`<span style="font-size:12px;color:var(--ink3);padding:6px;">🌤 今天请假中</span>`:`<button class="sbtn" onclick="checkInHabitToday('${h.id}')">✅ 今天打卡</button>`)}
+        ${(!doneToday&&!restToday)?`<button class="sbtn" onclick="takeRestToday('${h.id}')">🌤 今天请假</button>`:''}
+        <button class="sbtn" onclick="openRestRangeModal('${h.id}')">🗓 请假一段</button>
+        <button class="sbtn" onclick="moveHabitUp(${idx})" ${idx===0?'style="opacity:.3;pointer-events:none;"':''}>↑</button>
+        <button class="sbtn" onclick="moveHabitDown(${idx})" ${idx===S.goodH.length-1?'style="opacity:.3;pointer-events:none;"':''}>↓</button>
+        <button class="sbtn" onclick="editHabit('${h.id}')">编辑</button>
+        <button class="delbtn" onclick="delHabitConfirm('${h.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 function moveHabitUp(idx){if(idx<=0)return;[S.goodH[idx-1],S.goodH[idx]]=[S.goodH[idx],S.goodH[idx-1]];save();renderHabits();}
 function moveHabitDown(idx){if(idx>=S.goodH.length-1)return;[S.goodH[idx],S.goodH[idx+1]]=[S.goodH[idx+1],S.goodH[idx]];save();renderHabits();}
@@ -1808,38 +2078,67 @@ function pickHabitIcon(hid){
   };
   showModal('选择图标',body,null,null,{hideConfirm:true});
 }
-
-function toggleHabitDay(id,day){
-  const h=S.goodH.find(x=>x.id===id);if(!h)return;
-  if(!h.records)h.records={};
-  if(h.records[day]){
-    delete h.records[day];
-    save();renderHabits();toast('已取消该日打卡');
-  } else {
-    h.records[day]='on';
-    save();renderHabits();toast('打卡成功 ✓');
-  }
+// ---- 新建/编辑习惯：重复方式表单 ----
+function renderRepeatExtra(rt,everyN,wd){
+  if(rt==='everyNDays')return `<div class="note-field-group"><div class="note-field-label">间隔天数</div><input type="number" id="habitEveryN" min="2" value="${everyN}"></div>`;
+  if(rt==='weeklyRotation')return `<div class="note-field-group"><div class="note-field-label">默认星期几</div><select id="habitWeekday" class="note-select">${['一','二','三','四','五','六','日'].map((d,i)=>`<option value="${i}" ${wd===i?'selected':''}>星期${d}</option>`).join('')}</select></div>`;
+  return '';
 }
-
+function renderRepeatTypeFields(h){
+  const rt=h?.repeatType||'daily';
+  const everyN=h?.everyN||3;
+  const wd=(typeof h?.defaultWeekday==='number')?h.defaultWeekday:1;
+  const phaseId=h?.phaseId||'';
+  const phaseOptions=`<option value="">不属于任何阶段（常驻显示）</option>`+(S.phases||[]).map(p=>`<option value="${p.id}" ${phaseId===p.id?'selected':''}>${p.status==='active'?'🟢':'⬜'} ${esc(p.name)}</option>`).join('');
+  return `
+    <div class="note-field-group"><div class="note-field-label">重复方式</div><select id="habitRepeatType" class="note-select">
+      <option value="daily" ${rt==='daily'?'selected':''}>每天</option>
+      <option value="everyNDays" ${rt==='everyNDays'?'selected':''}>每隔 N 天</option>
+      <option value="weeklyRotation" ${rt==='weeklyRotation'?'selected':''}>每周轮值</option>
+    </select></div>
+    <div id="repeatExtraFields">${renderRepeatExtra(rt,everyN,wd)}</div>
+    <div class="note-field-group"><div class="note-field-label">所属阶段</div><select id="habitPhase" class="note-select">${phaseOptions}</select></div>`;
+}
+function bindRepeatTypeToggle(container){
+  const sel=container.querySelector('#habitRepeatType');
+  if(sel)sel.onchange=()=>{container.querySelector('#repeatExtraFields').innerHTML=renderRepeatExtra(sel.value,3,1);};
+}
+function readRepeatTypeFromForm(){
+  return{
+    repeatType:document.getElementById('habitRepeatType').value,
+    everyN:parseInt(document.getElementById('habitEveryN')?.value)||3,
+    defaultWeekday:parseInt(document.getElementById('habitWeekday')?.value)||0,
+    phaseId:document.getElementById('habitPhase').value||null,
+  };
+}
 function openHabitModal(){
   const body=(container)=>{
     let selectedIcon='💪';
-    container.innerHTML=`<div class="note-field-group"><div class="note-field-label">习惯名称</div><input id="newHabitName" placeholder="例如：每天读书"></div><div class="note-field-group"><div class="note-field-label">选择图标</div><div id="habitIconPicker" style="display:flex;flex-wrap:wrap;gap:6px;max-height:120px;overflow:auto">${ALL_EMOJIS.slice(0,24).map(e=>`<span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;transition:background .1s" data-hicon="${e}">${e}</span>`).join('')}</div></div>`;
+    container.innerHTML=`<div class="note-field-group"><div class="note-field-label">习惯名称</div><input id="newHabitName" placeholder="例如：每天读书"></div><div class="note-field-group"><div class="note-field-label">选择图标</div><div id="habitIconPicker" style="display:flex;flex-wrap:wrap;gap:6px;max-height:120px;overflow:auto">${ALL_EMOJIS.slice(0,24).map(e=>`<span style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;transition:background .1s" data-hicon="${e}">${e}</span>`).join('')}</div></div>${renderRepeatTypeFields(null)}`;
     container.querySelectorAll('[data-hicon]').forEach(el=>{el.onclick=()=>{selectedIcon=el.dataset.hicon;container.querySelectorAll('[data-hicon]').forEach(e=>e.style.background='');el.style.background='var(--g-light)';};});
     container._getIcon=()=>selectedIcon;
+    bindRepeatTypeToggle(container);
   };
   showModal('添加习惯',body,()=>{
     const name=document.getElementById('newHabitName').value.trim();if(!name){toast('请输入习惯名称');return;}
     const container=document.getElementById('modalBody');
     const icon=container._getIcon?container._getIcon():'💪';
-    S.goodH.push({id:uid(),name,emoji:icon,records:{},notes:{}});
+    const rp=readRepeatTypeFromForm();
+    S.goodH.push({id:uid(),name,emoji:icon,records:{},notes:{},log:{},weekOverrides:{},restRanges:[],...rp});
     save();closeModal();renderHabits();toast('习惯已添加 ✓');
   });
   setTimeout(()=>{const el=document.getElementById('newHabitName');if(el)el.focus();},100);
 }
 function editHabit(id){
   const h=S.goodH.find(x=>x.id===id);if(!h)return;
-  showModal('编辑习惯',`<div class="note-field-group"><div class="note-field-label">习惯名称</div><input id="editHabitName" value="${esc(h.name)}"></div>`,()=>{const name=document.getElementById('editHabitName').value.trim();if(name){h.name=name;save();closeModal();renderHabits();}});
+  const body=(container)=>{
+    container.innerHTML=`<div class="note-field-group"><div class="note-field-label">习惯名称</div><input id="editHabitName" value="${esc(h.name)}"></div>${renderRepeatTypeFields(h)}`;
+    bindRepeatTypeToggle(container);
+  };
+  showModal('编辑习惯',body,()=>{
+    const name=document.getElementById('editHabitName').value.trim();
+    if(name){h.name=name;Object.assign(h,readRepeatTypeFromForm());save();closeModal();renderHabits();}
+  });
 }
 function delHabitConfirm(id){confirmDel(()=>{S.goodH=S.goodH.filter(h=>h.id!==id);save();renderHabits();});}
 
@@ -2362,9 +2661,8 @@ function openNoteEditor(noteId=null){
 }
 const QUAD_LABELS={q1:'🔥 重要且紧急',q2:'🎯 重要不紧急',q3:'⏰ 紧急不重要',q4:'🌿 不重要不紧急'};
 let _quadState=null,_checklistState=null;
-function renderQuadGrid(){
-  const wrap=document.getElementById('quadGridWrap');if(!wrap)return;
-  wrap.innerHTML=`<div class="quad-grid">${Object.keys(QUAD_LABELS).map(k=>`
+function quadGridInnerHtml(){
+  return `<div class="quad-grid">${Object.keys(QUAD_LABELS).map(k=>`
     <div class="quad-cell">
       <div class="quad-cell-title">${QUAD_LABELS[k]}</div>
       <div>${(_quadState[k]||[]).map((it,i)=>`
@@ -2375,26 +2673,39 @@ function renderQuadGrid(){
         </div>`).join('')}</div>
       <div class="quad-add-row"><input type="text" id="quadInput_${k}" placeholder="+ 添加"><button onclick="addQuadItem('${k}')">添加</button></div>
     </div>`).join('')}</div>`;
+}
+function bindQuadGridEvents(){
   Object.keys(QUAD_LABELS).forEach(k=>{
     const inp=document.getElementById('quadInput_'+k);
     if(inp)inp.onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();addQuadItem(k);}};
   });
 }
+function renderQuadGrid(){
+  const wrap=document.getElementById('quadGridWrap');if(!wrap)return;
+  wrap.innerHTML=quadGridInnerHtml();
+  bindQuadGridEvents();
+}
 function addQuadItem(k){const inp=document.getElementById('quadInput_'+k);const v=inp.value.trim();if(!v)return;if(!_quadState[k])_quadState[k]=[];_quadState[k].push({text:v,done:false});renderQuadGrid();}
 function toggleQuadItem(k,i){_quadState[k][i].done=!_quadState[k][i].done;renderQuadGrid();}
 function delQuadItem(k,i){_quadState[k].splice(i,1);renderQuadGrid();}
-function renderChecklist(){
-  const wrap=document.getElementById('checklistWrap');if(!wrap)return;
-  wrap.innerHTML=`
-    <div>${_checklistState.map((it,i)=>`
+
+function checklistInnerHtml(){
+  return `<div>${_checklistState.map((it,i)=>`
       <div class="checklist-item ${it.done?'done':''}">
         <input type="checkbox" ${it.done?'checked':''} onchange="toggleChecklistItem(${i})">
         <span class="ci-text">${esc(it.text)}</span>
         <span class="ci-del" onclick="delChecklistItem(${i})">🗑️</span>
       </div>`).join('')}</div>
     <div class="checklist-add-row"><input type="text" id="checklistInput" placeholder="+ 添加一项，回车快速添加"><button onclick="addChecklistItem()">添加</button></div>`;
+}
+function bindChecklistEvents(){
   const inp=document.getElementById('checklistInput');
   if(inp)inp.onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();addChecklistItem();}};
+}
+function renderChecklist(){
+  const wrap=document.getElementById('checklistWrap');if(!wrap)return;
+  wrap.innerHTML=checklistInnerHtml();
+  bindChecklistEvents();
 }
 function addChecklistItem(){const inp=document.getElementById('checklistInput');const v=inp.value.trim();if(!v)return;_checklistState.push({text:v,done:false});renderChecklist();document.getElementById('checklistInput')?.focus();}
 function toggleChecklistItem(i){_checklistState[i].done=!_checklistState[i].done;renderChecklist();}
@@ -2406,8 +2717,7 @@ const NUMLIST_STYLES={
   bullet:{label:'• 圆点',fn:()=>'•'},
 };
 let _numlistState=null;
-function renderNumList(){
-  const wrap=document.getElementById('numlistWrap');if(!wrap)return;
+function numListInnerHtml(){
   const st=_numlistState;
   const styleBtns=Object.keys(NUMLIST_STYLES).map(k=>`<div class="numlist-style-opt${st.style===k?' on':''}" data-nstyle="${k}">${NUMLIST_STYLES[k].label}</div>`).join('');
   const rowsHtml=st.items.map((it,i)=>`
@@ -2416,7 +2726,11 @@ function renderNumList(){
       <textarea class="numlist-input" data-nidx="${i}" rows="1" placeholder="${i===0?'写下第一条，按回车换下一条…':''}">${esc(it.text)}</textarea>
       <div class="numlist-del" onclick="delNumListItem(${i})">✕</div>
     </div>`).join('');
-  wrap.innerHTML=`<div class="numlist-style-row">${styleBtns}</div><div id="numlistRows">${rowsHtml}</div>`;
+  return `<div class="numlist-style-row">${styleBtns}</div><div id="numlistRows">${rowsHtml}</div>`;
+}
+function bindNumListEvents(){
+  const wrap=document.getElementById('numlistWrap');if(!wrap)return;
+  const st=_numlistState;
   wrap.querySelectorAll('[data-nstyle]').forEach(btn=>{btn.onclick=()=>{st.style=btn.dataset.nstyle;renderNumList();};});
   wrap.querySelectorAll('.numlist-input').forEach(ta=>{
     autoGrow(ta);
@@ -2437,6 +2751,11 @@ function renderNumList(){
     };
   });
 }
+function renderNumList(){
+  const wrap=document.getElementById('numlistWrap');if(!wrap)return;
+  wrap.innerHTML=numListInnerHtml();
+  bindNumListEvents();
+}
 function delNumListItem(i){
   if(_numlistState.items.length<=1){_numlistState.items[0].text='';renderNumList();return;}
   _numlistState.items.splice(i,1);renderNumList();
@@ -2454,13 +2773,13 @@ function openNoteContentPage(noteId){
   let bodyAreaHtml;
   if(mode==='quadrant'){
     _quadState=draft.fields?.['_quadrant']?JSON.parse(JSON.stringify(draft.fields['_quadrant'])):{q1:[],q2:[],q3:[],q4:[]};
-    bodyAreaHtml=`<div id="quadGridWrap"></div>`;
+    bodyAreaHtml=`<div id="quadGridWrap">${quadGridInnerHtml()}</div>`;
   }else if(mode==='checklist'){
     _checklistState=draft.fields?.['_checklist']?JSON.parse(JSON.stringify(draft.fields['_checklist'])):[];
-    bodyAreaHtml=`<div class="attachment-area" id="checklistWrap" style="border-style:solid;"></div>`;
+    bodyAreaHtml=`<div class="attachment-area" id="checklistWrap" style="border-style:solid;">${checklistInnerHtml()}</div>`;
   }else if(mode==='numlist'){
     _numlistState=draft.fields?.['_numlist']?JSON.parse(JSON.stringify(draft.fields['_numlist'])):{style:'arabic',items:[{text:''}]};
-    bodyAreaHtml=`<div class="attachment-area" id="numlistWrap" style="border-style:solid;"></div>`;
+    bodyAreaHtml=`<div class="attachment-area" id="numlistWrap" style="border-style:solid;">${numListInnerHtml()}</div>`;
   }else{
     bodyAreaHtml=`<div class="notebook-wrap-grow">
       <div class="notebook-rings">${Array(12).fill('<div class="notebook-ring"></div>').join('')}</div>
@@ -2483,9 +2802,9 @@ function openNoteContentPage(noteId){
       <div class="image-preview" id="editorImgPreview"></div>
       <div id="editorFilePreview"></div>
     </div>`;
-  if(mode==='quadrant')renderQuadGrid();
-  else if(mode==='checklist')renderChecklist();
-  else if(mode==='numlist')renderNumList();
+  if(mode==='quadrant')bindQuadGridEvents();
+  else if(mode==='checklist')bindChecklistEvents();
+  else if(mode==='numlist')bindNumListEvents();
   else bindAutoGrow(document.getElementById('note_body'));
 
   document.getElementById('note_img_input').onchange=(e)=>{
