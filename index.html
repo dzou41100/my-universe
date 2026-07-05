@@ -552,6 +552,14 @@ function load(){
     if(!Array.isArray(S.plans.month))S.plans.month=[];
     if(!Array.isArray(S.plans.year))S.plans.year=[];
   }
+  // "日计划"标签已下线，把里面还没做完的条目自动搬进"今日任务"，避免数据丢失
+  if(S.plans.day&&S.plans.day.length){
+    S.plans.day.forEach(item=>{
+      if(item.done)return;
+      S.tasks.push({id:uid(),date:td(),name:item.title||item.text||'未命名任务',taskType:'💭 其他',priority:'orange',note:item.note||'',done:false});
+    });
+    S.plans.day=[];
+  }
   if(!S.lastBackupReminder)S.lastBackupReminder=0;
   if(S.installBannerDismissed===undefined)S.installBannerDismissed=false;
   if(!S.quoteIntervalMinutes)S.quoteIntervalMinutes=30;
@@ -1003,7 +1011,7 @@ function renderToday(){
     <div class="task-section">
       <div class="section-divider"><div class="stl">📋 今日任务</div></div>
       <div id="taskList"></div>
-      <button class="addbtn" id="addTaskBtn">+ 添加任务（最多3件）</button>
+      <button class="addbtn" id="addTaskBtn">+ 添加任务</button>
     </div>
     <div class="task-section">
       <div class="section-divider"><div class="stl">📅 今天该做的（阶段日程）</div></div>
@@ -1114,9 +1122,10 @@ function editTask(id){
   const body=(container)=>{
     container.innerHTML=`
       <div class="note-field-group"><div class="note-field-label">任务名称</div><input id="editTaskName" value="${esc(t.name)}"></div>
+      <div class="note-field-group"><div class="note-field-label">日期</div><input type="date" id="editTaskDate" value="${t.date||td()}"></div>
       <div class="note-field-group"><div class="note-field-label">类型</div><div style="display:flex;flex-wrap:wrap;gap:6px" id="editTaskTypeSelector">${S.taskTypes.map(tp=>`<div class="sbtn edit-task-type-opt${t.taskType===tp?' selected':''}" data-type="${tp}" style="${t.taskType===tp?'background:var(--g);color:#fff':''}">${tp}</div>`).join('')}<div class="sbtn" style="border:1px dashed var(--g-mid);background:transparent" onclick="manageTaskTypes()">⚙️ 管理</div></div></div>
       <div class="note-field-group"><div class="note-field-label">优先级</div><div class="priority-selector"><div class="priority-option p-red ${t.priority==='red'?'selected':''}" data-p="red">🔴 高</div><div class="priority-option p-orange ${t.priority==='orange'?'selected':''}" data-p="orange">🟠 中</div><div class="priority-option p-green ${t.priority==='green'||!t.priority?'selected':''}" data-p="green">🟢 低</div></div></div>
-      <div class="note-field-group"><div class="note-field-label">备注</div><input id="editTaskNote" value="${esc(t.note||'')}"></div>`;
+      <div class="note-field-group"><div class="note-field-label">备注</div><textarea id="editTaskNote" rows="3">${esc(t.note||'')}</textarea></div>`;
     container.querySelectorAll('.edit-task-type-opt').forEach(opt=>{opt.onclick=()=>{container.querySelectorAll('.edit-task-type-opt').forEach(o=>{o.classList.remove('selected');o.style.background='';o.style.color='';});opt.classList.add('selected');opt.style.background='var(--g)';opt.style.color='#fff';};});
     container.querySelectorAll('.priority-option').forEach(opt=>{opt.onclick=()=>{container.querySelectorAll('.priority-option').forEach(o=>o.classList.remove('selected'));opt.classList.add('selected');};});
   };
@@ -1124,31 +1133,32 @@ function editTask(id){
     const name=document.getElementById('editTaskName').value.trim();if(!name)return;
     const typeSel=document.querySelector('.edit-task-type-opt.selected');
     const priSel=document.querySelector('.priority-option.selected');
-    t.name=name;t.taskType=typeSel?typeSel.dataset.type:(S.taskTypes[S.taskTypes.length-1]||'其他');t.priority=priSel?priSel.dataset.p:'green';t.note=document.getElementById('editTaskNote').value.trim();
+    t.name=name;t.date=document.getElementById('editTaskDate').value||t.date||td();t.taskType=typeSel?typeSel.dataset.type:(S.taskTypes[S.taskTypes.length-1]||'其他');t.priority=priSel?priSel.dataset.p:'green';t.note=document.getElementById('editTaskNote').value.trim();
     save();closeModal();renderTasks();toast('已保存');
   });
 }
 
 function openAddTaskModal(){
-  if(S.tasks.filter(t=>t.date===td()&&!t.done).length>=3){toast('今日最多3件未完成任务');return;}
   const body=(container)=>{
     container.innerHTML=`
       <div class="note-field-group"><div class="note-field-label">任务名称</div><input id="newTaskName" placeholder="今天要做什么…"></div>
+      <div class="note-field-group"><div class="note-field-label">日期</div><input type="date" id="newTaskDate" value="${td()}"></div>
       <div class="note-field-group"><div class="note-field-label">类型</div><div style="display:flex;flex-wrap:wrap;gap:6px" id="taskTypeSelector">${S.taskTypes.map((t,i)=>`<div class="sbtn task-type-opt${i===S.taskTypes.length-1?' selected':''}" data-type="${t}" style="${i===S.taskTypes.length-1?'background:var(--g);color:#fff':''}">${t}</div>`).join('')}<div class="sbtn" style="border:1px dashed var(--g-mid);background:transparent" onclick="manageTaskTypes()">⚙️ 管理</div></div></div>
       <div class="note-field-group"><div class="note-field-label">优先级</div><div class="priority-selector"><div class="priority-option p-red" data-p="red">🔴 高</div><div class="priority-option p-orange" data-p="orange">🟠 中</div><div class="priority-option p-green selected" data-p="green">🟢 低</div></div></div>
-      <div class="note-field-group"><div class="note-field-label">备注</div><input id="newTaskNote" placeholder="可选备注…"></div>`;
+      <div class="note-field-group"><div class="note-field-label">备注</div><textarea id="newTaskNote" rows="3" placeholder="可选备注…"></textarea></div>`;
     container.querySelectorAll('.task-type-opt').forEach(opt=>{opt.onclick=()=>{container.querySelectorAll('.task-type-opt').forEach(o=>{o.classList.remove('selected');o.style.background='';o.style.color='';});opt.classList.add('selected');opt.style.background='var(--g)';opt.style.color='#fff';};});
     container.querySelectorAll('.priority-option').forEach(opt=>{opt.onclick=()=>{container.querySelectorAll('.priority-option').forEach(o=>o.classList.remove('selected'));opt.classList.add('selected');};});
   };
-  showModal('添加今日任务',body,()=>{
+  showModal('添加任务',body,()=>{
     const name=document.getElementById('newTaskName').value.trim();if(!name)return;
+    const date=document.getElementById('newTaskDate').value||td();
     const typeSel=document.querySelector('.task-type-opt.selected');
     const taskType=typeSel?typeSel.dataset.type:(S.taskTypes[S.taskTypes.length-1]||'其他');
     const priSel=document.querySelector('.priority-option.selected');
     const priority=priSel?priSel.dataset.p:'green';
     const note=document.getElementById('newTaskNote').value.trim();
-    S.tasks.push({id:uid(),date:td(),name,taskType,priority,note,done:false});
-    save();closeModal();renderTasks();toast('任务已添加 ✓');
+    S.tasks.push({id:uid(),date,name,taskType,priority,note,done:false});
+    save();closeModal();renderTasks();toast(date===td()?'任务已添加 ✓':`已添加到 ${fmtDateShort(date)} ✓`);
   });
   setTimeout(()=>{const el=document.getElementById('newTaskName');if(el)el.focus();},100);
 }
@@ -1612,7 +1622,6 @@ function openClarityModal(){
 // ==================== 计划页面（本子版） ====================
 let _planType='day';
 const PLAN_TABS=[
-  {key:'day',label:'今日',icon:'☀️'},
   {key:'week',label:'本周',icon:'📅'},
   {key:'month',label:'本月',icon:'🗓'},
   {key:'year',label:'今年',icon:'🎯'},
@@ -1620,18 +1629,18 @@ const PLAN_TABS=[
 ];
 
 function renderPlan(){
-  _planType='day';
+  _planType='week';
   const pc=document.getElementById('planContent');
   const now=new Date();
   pc.innerHTML=`
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;">
-      ${PLAN_TABS.map(t=>`<div class="plan-outer-tab${t.key==='day'?' on':''}" data-pt="${t.key}" style="text-align:center;">${t.icon} ${t.label}</div>`).join('')}
+      ${PLAN_TABS.map(t=>`<div class="plan-outer-tab${t.key==='week'?' on':''}" data-pt="${t.key}" style="text-align:center;">${t.icon} ${t.label}</div>`).join('')}
       <button id="planFixedAddBtn" class="plan-outer-tab" style="text-align:center;background:var(--g);color:#fff;border-color:var(--g);cursor:pointer;">＋ 添加</button>
     </div>
     <div class="notebook-wrap" id="planNotebook">
       <div class="notebook-rings">${Array(6).fill('<div class="notebook-ring"></div>').join('')}</div>
       <div class="notebook-header">
-        <div class="notebook-title" id="planNbTitle">☀️ 今日计划</div>
+        <div class="notebook-title" id="planNbTitle">📅 本周计划</div>
         <div class="notebook-date" id="planNbDate">${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日</div>
       </div>
       <div class="notebook-body" id="planNbBody"></div>
@@ -1765,14 +1774,6 @@ function deleteNbPlan(idx){
   confirmDel(()=>{S.plans[_planType].splice(idx,1);save();renderPlanNbItems();});
 }
 
-function moveNbToToday(idx){
-  const item=S.plans[_planType][idx];if(!item)return;
-  if(!S.plans.day)S.plans.day=[];
-  S.plans.day.push({id:uid(),title:item.title||item.text||'',note:item.note||'',due:item.due||'',text:item.title||item.text||'',done:false});
-  S.plans[_planType].splice(idx,1);
-  save();renderPlanNbItems();toast('已移至今日 ✓');
-}
-
 function renderPlanArchive(){
   const el=document.getElementById('planNbBody');if(!el)return;
   const archives=S.planArchives.slice(0,50);
@@ -1800,7 +1801,6 @@ function delPlanArchive(idx){
 function addPlanItem(type){_planType=type;addNbPlanItem();}
 function togglePlanItem(type,idx){_planType=type;toggleNbPlan(idx);}
 function deletePlanItem(type,idx){_planType=type;deleteNbPlan(idx);}
-function moveToToday(type,idx){_planType=type;moveNbToToday(idx);}
 
 // ==================== 成长页面 ====================
 function showGrowTab(tab){
