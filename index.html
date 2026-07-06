@@ -583,6 +583,7 @@ function load(){
 function save(){
   try{
     localStorage.setItem('myu_final_v10',JSON.stringify(S));
+    if(!_applyingRemoteUpdate)localStorage.setItem('myu_local_updated_at',String(Date.now()));
   }catch(e){
     alert('⚠️ 保存失败！可能是本地存储空间已满（通常是附件图片太大/太多导致）。\n\n请立刻用「设置→导出备份」把当前内容导出保存一份，再清理一些图片附件后重试。\n\n错误详情：'+e.message);
   }
@@ -694,6 +695,41 @@ function disconnectSync(){
   toast('已断开同步（本地数据保留）');
   renderSyncPanel();
 }
+function getLocalUpdatedAt(){return parseInt(localStorage.getItem('myu_local_updated_at')||'0');}
+function manualSyncNow(){
+  const code=getSyncCode();
+  if(!code){toast('还没有连接同步码');return;}
+  updateSyncStatusUI('正在同步…');
+  if(!initFirebase()){toast('连不上，检查一下网络/VPN');updateSyncStatusUI('☁️ 连不上（检查网络/VPN）');return;}
+  const pushNow=()=>{
+    const now=Date.now();_lastPushedAt=now;
+    _fbDb.collection('syncData').doc(code).set({data:JSON.stringify(S),updatedAt:now}).then(()=>{
+      toast('☁️ 已推送最新数据到云端');
+      updateSyncStatusUI('已同步 · '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}));
+    }).catch(e=>{toast('推送失败：'+e.message);updateSyncStatusUI('推送失败：'+e.message);});
+  };
+  _fbDb.collection('syncData').doc(code).get().then(docSnap=>{
+    if(!docSnap.exists){pushNow();return;}
+    const remote=docSnap.data();
+    const remoteUpdatedAt=remote.updatedAt||0;
+    const localUpdatedAt=getLocalUpdatedAt();
+    if(remoteUpdatedAt>localUpdatedAt&&remote.data){
+      try{
+        const remoteS=JSON.parse(remote.data);
+        _applyingRemoteUpdate=true;
+        Object.keys(S).forEach(k=>delete S[k]);
+        Object.assign(S,remoteS);
+        save();
+        _applyingRemoteUpdate=false;
+        refreshAllVisibleContent();
+        toast('☁️ 已拉取对方设备的最新数据');
+        updateSyncStatusUI('已同步（刚拉取了对方的更新）');
+      }catch(e){toast('同步出错：'+e.message);updateSyncStatusUI('同步出错：'+e.message);}
+    }else{
+      pushNow();
+    }
+  }).catch(e=>{toast('同步失败：'+e.message);updateSyncStatusUI('同步失败：'+e.message);});
+}
 function copySyncCode(){
   const code=getSyncCode();if(!code)return;
   navigator.clipboard?.writeText(code).then(()=>toast('同步码已复制')).catch(()=>toast('复制失败，请手动选中复制'));
@@ -708,8 +744,9 @@ function syncPanelHtml(){
         <button class="sbtn" onclick="copySyncCode()">📋 复制</button>
       </div>
       <div id="syncStatusText" style="text-align:center;font-size:12px;color:var(--ink3);margin-bottom:14px;">已连接，实时同步中</div>
+      <button class="pbtn" style="width:100%;margin-bottom:10px;" onclick="manualSyncNow()">🔄 立即同步</button>
       <div style="font-size:11px;color:var(--ink3);line-height:1.7;background:var(--card);border:1px solid var(--g-border);border-radius:10px;padding:10px;margin-bottom:14px;">
-        在另一台设备的「设置→云同步」里输入这个同步码，就能让两边数据实时同步。
+        在另一台设备的「设置→云同步」里输入这个同步码即可连接。平时改动会自动同步；如果网络/VPN是偶尔才开一下的，开着的时候点一下"立即同步"最保险，会自动判断该拉取还是推送。
       </div>
       <button class="pbtn" style="background:var(--red);width:100%;" onclick="disconnectSync()">断开同步</button>
     `:`
