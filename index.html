@@ -636,6 +636,35 @@ function pushToCloud(){
     }).catch(e=>{updateSyncStatusUI('同步失败：'+e.message);});
   },1500); // 防抖：1.5秒内的多次改动合并成一次上传，不用每敲一个字就传一次
 }
+function getLocalUpdatedAt(){return parseInt(localStorage.getItem('myu_local_updated_at')||'0');}
+// 每次要用云端/对方数据覆盖本地之前，先把"覆盖前"的本地数据存一份快照，防止覆盖错了没法回头
+function backupBeforeOverwrite(){
+  try{
+    localStorage.setItem('myu_pre_overwrite_backup',JSON.stringify({data:S,savedAt:Date.now()}));
+  }catch(e){console.error('覆盖前备份失败',e);}
+}
+function hasPreOverwriteBackup(){return !!localStorage.getItem('myu_pre_overwrite_backup');}
+function getPreOverwriteBackupInfo(){
+  try{
+    const raw=localStorage.getItem('myu_pre_overwrite_backup');
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+    return{savedAt:parsed.savedAt};
+  }catch(e){return null;}
+}
+function restorePreOverwriteBackup(){
+  const raw=localStorage.getItem('myu_pre_overwrite_backup');
+  if(!raw){toast('没有可恢复的备份');return;}
+  showModal('恢复到覆盖前的状态',`<p style="color:var(--ink2);font-size:14px;line-height:1.7;">会把数据恢复到"上一次同步覆盖之前"的状态。这台设备现在的内容会被替换掉，确定吗？</p>`,()=>{
+    try{
+      const parsed=JSON.parse(raw);
+      Object.keys(S).forEach(k=>delete S[k]);
+      Object.assign(S,parsed.data);
+      localStorage.setItem('myu_final_v10',JSON.stringify(S));
+      closeModal();refreshAllVisibleContent();toast('已恢复到覆盖前的状态 ✓');renderSyncPanel();
+    }catch(e){toast('恢复失败：'+e.message);}
+  },null,{showCancel:true});
+}
 function startSyncListener(code){
   if(!initFirebase()){updateSyncStatusUI('☁️ 云同步暂时连不上（网络问题），本地数据不受影响');return;}
   if(_syncUnsub){_syncUnsub();_syncUnsub=null;}
@@ -644,7 +673,15 @@ function startSyncListener(code){
     const remote=docSnap.data();
     if(!remote||!remote.data)return;
     if(remote.updatedAt&&remote.updatedAt<=_lastPushedAt)return; // 这是自己刚推上去的，不用再读回来
+    const localUpdatedAt=getLocalUpdatedAt();
+    if(remote.updatedAt&&remote.updatedAt<=localUpdatedAt){
+      // 本地这边有更新的、还没推送成功的改动——绝对不能被旧数据覆盖！
+      // 反过来把本地这份重新推一次，保护刚写的内容
+      pushToCloud();
+      return;
+    }
     try{
+      backupBeforeOverwrite(); // 覆盖前先存一份快照，防止万一
       const remoteS=JSON.parse(remote.data);
       _applyingRemoteUpdate=true;
       Object.keys(S).forEach(k=>delete S[k]);
@@ -652,7 +689,7 @@ function startSyncListener(code){
       save(); // 写本地存储；因为 _applyingRemoteUpdate=true，不会再被推回云端形成循环
       _applyingRemoteUpdate=false;
       refreshAllVisibleContent();
-      toast('☁️ 已从其他设备同步最新数据');
+      toast('☁️ 已从其他设备同步最新数据（已自动保留覆盖前的备份）');
     }catch(e){console.error('应用远程数据失败',e);_applyingRemoteUpdate=false;}
   },err=>{updateSyncStatusUI('监听失败：'+err.message);});
 }
@@ -676,6 +713,7 @@ function joinSyncCode(inputCode){
     const remote=docSnap.data();
     if(remote&&remote.data){
       try{
+        backupBeforeOverwrite();
         const remoteS=JSON.parse(remote.data);
         Object.keys(S).forEach(k=>delete S[k]);
         Object.assign(S,remoteS);
@@ -695,7 +733,6 @@ function disconnectSync(){
   toast('已断开同步（本地数据保留）');
   renderSyncPanel();
 }
-function getLocalUpdatedAt(){return parseInt(localStorage.getItem('myu_local_updated_at')||'0');}
 function manualSyncNow(){
   const code=getSyncCode();
   if(!code){toast('还没有连接同步码');return;}
@@ -715,6 +752,7 @@ function manualSyncNow(){
     const localUpdatedAt=getLocalUpdatedAt();
     if(remoteUpdatedAt>localUpdatedAt&&remote.data){
       try{
+        backupBeforeOverwrite();
         const remoteS=JSON.parse(remote.data);
         _applyingRemoteUpdate=true;
         Object.keys(S).forEach(k=>delete S[k]);
@@ -735,8 +773,15 @@ function copySyncCode(){
   navigator.clipboard?.writeText(code).then(()=>toast('同步码已复制')).catch(()=>toast('复制失败，请手动选中复制'));
 }
 function syncPanelHtml(){
+  const backupInfo=getPreOverwriteBackupInfo();
+  const restoreBlock=backupInfo?`
+    <div style="background:#fff3f1;border:1px solid var(--red);border-radius:10px;padding:10px;margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--ink2);margin-bottom:8px;">🛟 有一份"覆盖前"的本地快照，保存于 ${new Date(backupInfo.savedAt).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+      <button class="sbtn" style="width:100%;" onclick="restorePreOverwriteBackup()">恢复到这份快照</button>
+    </div>`:'';
   return `
     <div style="text-align:center;font-size:11px;color:var(--ink3);font-weight:600;letter-spacing:.5px;margin-bottom:12px;">☁️ 云同步</div>
+    ${restoreBlock}
     ${getSyncCode()?`
       <div style="background:var(--g-light);border-radius:12px;padding:16px;text-align:center;margin-bottom:12px;">
         <div style="font-size:11px;color:var(--ink3);margin-bottom:6px;">你的同步码</div>
