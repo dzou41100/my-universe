@@ -583,7 +583,6 @@ function load(){
 function save(){
   try{
     localStorage.setItem('myu_final_v10',JSON.stringify(S));
-    if(!_applyingRemoteUpdate)localStorage.setItem('myu_local_updated_at',String(Date.now()));
   }catch(e){
     alert('⚠️ 保存失败！可能是本地存储空间已满（通常是附件图片太大/太多导致）。\n\n请立刻用「设置→导出备份」把当前内容导出保存一份，再清理一些图片附件后重试。\n\n错误详情：'+e.message);
   }
@@ -636,7 +635,6 @@ function pushToCloud(){
     }).catch(e=>{updateSyncStatusUI('同步失败：'+e.message);});
   },1500); // 防抖：1.5秒内的多次改动合并成一次上传，不用每敲一个字就传一次
 }
-function getLocalUpdatedAt(){return parseInt(localStorage.getItem('myu_local_updated_at')||'0');}
 // 每次要用云端/对方数据覆盖本地之前，先把"覆盖前"的本地数据存一份快照，防止覆盖错了没法回头
 function backupBeforeOverwrite(){
   try{
@@ -672,26 +670,22 @@ function startSyncListener(code){
     if(!docSnap.exists)return;
     const remote=docSnap.data();
     if(!remote||!remote.data)return;
-    if(remote.updatedAt&&remote.updatedAt<=_lastPushedAt)return; // 这是自己刚推上去的，不用再读回来
-    const localUpdatedAt=getLocalUpdatedAt();
-    if(remote.updatedAt&&remote.updatedAt<=localUpdatedAt){
-      // 本地这边有更新的、还没推送成功的改动——绝对不能被旧数据覆盖！
-      // 反过来把本地这份重新推一次，保护刚写的内容
-      pushToCloud();
-      return;
-    }
-    try{
-      backupBeforeOverwrite(); // 覆盖前先存一份快照，防止万一
-      const remoteS=JSON.parse(remote.data);
-      _applyingRemoteUpdate=true;
-      Object.keys(S).forEach(k=>delete S[k]);
-      Object.assign(S,remoteS);
-      save(); // 写本地存储；因为 _applyingRemoteUpdate=true，不会再被推回云端形成循环
-      _applyingRemoteUpdate=false;
-      refreshAllVisibleContent();
-      toast('☁️ 已从其他设备同步最新数据（已自动保留覆盖前的备份）');
-    }catch(e){console.error('应用远程数据失败',e);_applyingRemoteUpdate=false;}
+    if(remote.updatedAt&&remote.updatedAt<=_lastPushedAt)return; // 这是自己刚推上去的，不用理会
+    // 不再自动覆盖本地数据！只做提醒，由你自己决定要不要拉取——
+    // 之前"自动判断谁更新"的做法被证明不可靠（哪怕只是打开App看看，也可能被误判成"这台设备更新"）
+    _cloudHasUnpulledUpdate=true;
+    updateSyncStatusUI('☁️ 云端有新的更新，点"⬇️ 从云端拉取"同步过来');
+    showCloudUpdateBanner();
   },err=>{updateSyncStatusUI('监听失败：'+err.message);});
+}
+let _cloudHasUnpulledUpdate=false;
+function showCloudUpdateBanner(){
+  if(document.getElementById('cloudUpdateBanner'))return; // 已经显示了，不重复弹
+  const el=document.createElement('div');
+  el.id='cloudUpdateBanner';
+  el.style.cssText='position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:600;background:var(--g-dark);color:#fff;padding:10px 16px;border-radius:20px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;max-width:90%;';
+  el.innerHTML=`<span>☁️ 云端有新更新</span><button style="background:#fff;color:var(--g-dark);border:none;border-radius:14px;padding:4px 12px;font-size:12px;font-weight:600;" onclick="pullFromCloudExplicit();this.parentElement.remove();">拉取</button><span style="cursor:pointer;opacity:.8;" onclick="this.parentElement.remove()">✕</span>`;
+  document.body.appendChild(el);
 }
 function connectNewSyncCode(){
   if(!initFirebase()){toast('云同步暂时连不上，检查一下网络（国内可能需要能访问 Google 服务的网络环境）');return;}
@@ -733,24 +727,31 @@ function disconnectSync(){
   toast('已断开同步（本地数据保留）');
   renderSyncPanel();
 }
-function manualSyncNow(){
-  const code=getSyncCode();
-  if(!code){toast('还没有连接同步码');return;}
-  updateSyncStatusUI('正在同步…');
-  if(!initFirebase()){toast('连不上，检查一下网络/VPN');updateSyncStatusUI('☁️ 连不上（检查网络/VPN）');return;}
-  const pushNow=()=>{
+// ⬆️ 明确"推"：以这台设备为准，覆盖云端
+function pushToCloudExplicit(){
+  const code=getSyncCode();if(!code){toast('还没有连接同步码');return;}
+  showModal('推送到云端',`<p style="color:var(--ink2);font-size:14px;line-height:1.7;">会用<b>这台设备</b>的数据覆盖云端。如果另一台设备有还没同步过来的新内容，会被盖掉，确定这台设备的内容是最新的吗？</p>`,()=>{
+    closeModal();
+    if(!initFirebase()){toast('连不上，检查一下网络/VPN');return;}
+    updateSyncStatusUI('正在推送…');
     const now=Date.now();_lastPushedAt=now;
     _fbDb.collection('syncData').doc(code).set({data:JSON.stringify(S),updatedAt:now}).then(()=>{
-      toast('☁️ 已推送最新数据到云端');
-      updateSyncStatusUI('已同步 · '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}));
+      toast('☁️ 已推送到云端 ✓');
+      updateSyncStatusUI('已推送 · '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}));
     }).catch(e=>{toast('推送失败：'+e.message);updateSyncStatusUI('推送失败：'+e.message);});
-  };
-  _fbDb.collection('syncData').doc(code).get().then(docSnap=>{
-    if(!docSnap.exists){pushNow();return;}
-    const remote=docSnap.data();
-    const remoteUpdatedAt=remote.updatedAt||0;
-    const localUpdatedAt=getLocalUpdatedAt();
-    if(remoteUpdatedAt>localUpdatedAt&&remote.data){
+  },null,{showCancel:true,confirmText:'确定推送'});
+}
+// ⬇️ 明确"拉"：以云端为准，覆盖这台设备
+function pullFromCloudExplicit(){
+  const code=getSyncCode();if(!code){toast('还没有连接同步码');return;}
+  showModal('从云端拉取',`<p style="color:var(--ink2);font-size:14px;line-height:1.7;">会用<b>云端</b>的数据覆盖这台设备。如果这台设备有还没推送过的新内容，会被盖掉（会自动留一份覆盖前的快照），确定要拉取吗？</p>`,()=>{
+    closeModal();
+    if(!initFirebase()){toast('连不上，检查一下网络/VPN');return;}
+    updateSyncStatusUI('正在拉取…');
+    _fbDb.collection('syncData').doc(code).get().then(docSnap=>{
+      if(!docSnap.exists){toast('云端还没有数据');return;}
+      const remote=docSnap.data();
+      if(!remote||!remote.data){toast('云端数据为空');return;}
       try{
         backupBeforeOverwrite();
         const remoteS=JSON.parse(remote.data);
@@ -759,14 +760,13 @@ function manualSyncNow(){
         Object.assign(S,remoteS);
         save();
         _applyingRemoteUpdate=false;
+        _cloudHasUnpulledUpdate=false;
         refreshAllVisibleContent();
-        toast('☁️ 已拉取对方设备的最新数据');
-        updateSyncStatusUI('已同步（刚拉取了对方的更新）');
-      }catch(e){toast('同步出错：'+e.message);updateSyncStatusUI('同步出错：'+e.message);}
-    }else{
-      pushNow();
-    }
-  }).catch(e=>{toast('同步失败：'+e.message);updateSyncStatusUI('同步失败：'+e.message);});
+        toast('☁️ 已拉取云端最新数据 ✓（已自动保留覆盖前的备份）');
+        updateSyncStatusUI('已拉取 · '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}));
+      }catch(e){toast('拉取出错：'+e.message);_applyingRemoteUpdate=false;}
+    }).catch(e=>{toast('拉取失败：'+e.message);updateSyncStatusUI('拉取失败：'+e.message);});
+  },null,{showCancel:true,confirmText:'确定拉取'});
 }
 function copySyncCode(){
   const code=getSyncCode();if(!code)return;
@@ -788,10 +788,13 @@ function syncPanelHtml(){
         <div style="font-size:28px;font-weight:800;letter-spacing:4px;color:var(--g-dark);margin-bottom:10px;">${getSyncCode()}</div>
         <button class="sbtn" onclick="copySyncCode()">📋 复制</button>
       </div>
-      <div id="syncStatusText" style="text-align:center;font-size:12px;color:var(--ink3);margin-bottom:14px;">已连接，实时同步中</div>
-      <button class="pbtn" style="width:100%;margin-bottom:10px;" onclick="manualSyncNow()">🔄 立即同步</button>
+      <div id="syncStatusText" style="text-align:center;font-size:12px;color:var(--ink3);margin-bottom:14px;">已连接</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button class="pbtn" style="flex:1;" onclick="pushToCloudExplicit()">⬆️ 推送到云端</button>
+        <button class="pbtn" style="flex:1;" onclick="pullFromCloudExplicit()">⬇️ 从云端拉取</button>
+      </div>
       <div style="font-size:11px;color:var(--ink3);line-height:1.7;background:var(--card);border:1px solid var(--g-border);border-radius:10px;padding:10px;margin-bottom:14px;">
-        在另一台设备的「设置→云同步」里输入这个同步码即可连接。平时改动会自动同步；如果网络/VPN是偶尔才开一下的，开着的时候点一下"立即同步"最保险，会自动判断该拉取还是推送。
+        在另一台设备的「设置→云同步」里输入这个同步码即可连接。<b>同步不会自动猜方向</b>——哪台设备写了新内容，就在那台设备点"推送"；想把别的设备的更新拿过来，就点"拉取"。云端有新内容时会有小提示，但不会自动覆盖你本地的东西。
       </div>
       <button class="pbtn" style="background:var(--red);width:100%;" onclick="disconnectSync()">断开同步</button>
     `:`
