@@ -89,6 +89,17 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .pg{display:none;padding:16px;}
 .pg.active{display:block;}
 .top-tabs{display:flex;justify-content:flex-start;gap:6px;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid var(--g-border);overflow-x:auto;scrollbar-width:none;}
+.rec-group-label{font-size:11px;color:var(--ink3);font-weight:600;letter-spacing:.5px;margin:0 0 6px 2px;}
+.countdown-wrap{margin-bottom:16px;}
+.countdown-main{background:linear-gradient(135deg,var(--g),var(--g-dark));color:#fff;border-radius:var(--radius-md);padding:18px;text-align:center;margin-bottom:10px;position:relative;}
+.countdown-main .cd-title{font-size:14px;opacity:.9;margin-bottom:6px;}
+.countdown-main .cd-days{font-size:36px;font-weight:800;}
+.countdown-main .cd-days small{font-size:14px;font-weight:500;}
+.countdown-side-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;}
+.countdown-side-card{flex-shrink:0;background:var(--card);border:1px solid var(--g-border);border-radius:10px;padding:10px 14px;min-width:100px;text-align:center;}
+.countdown-side-card .cd-title{font-size:11px;color:var(--ink3);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.countdown-side-card .cd-days{font-size:18px;font-weight:700;color:var(--g-dark);}
+.lifebuoy-btn{display:block;margin:0 auto 16px;background:none;border:1px dashed var(--g-mid);color:var(--g-dark);border-radius:20px;padding:6px 16px;font-size:12px;cursor:pointer;}
 .top-tabs::-webkit-scrollbar{display:none;}
 .tab-main{background:none;border:none;font-size:14px;font-family:inherit;cursor:pointer;padding:7px 14px;border-radius:30px;color:var(--ink3);display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s;font-weight:500;}
 .tab-main.on{color:var(--g);font-weight:600;background:var(--g-light);}
@@ -565,6 +576,11 @@ function load(){
   if(!S.lastBackupReminder)S.lastBackupReminder=0;
   if(S.installBannerDismissed===undefined)S.installBannerDismissed=false;
   if(!S.quoteIntervalMinutes)S.quoteIntervalMinutes=30;
+  // ==== 第一批新功能：数据初始化 ====
+  if(!S.memos)S.memos=[]; // 快速备忘：[{id,text,createdAt}]
+  if(!S.waterTarget)S.waterTarget=2000; // 每日喝水目标，单位ml
+  if(!S.waterLog)S.waterLog={}; // {'2026-07-13':[{id,amount,time}]}
+  if(!S.countdowns)S.countdowns=[]; // 倒数日：[{id,title,date,isMain}]
   // ==== 阶段日程：数据迁移 ====
   if(!S.phases)S.phases=[];
   if(!S.lastPhaseReminderShown)S.lastPhaseReminderShown='';
@@ -1248,6 +1264,8 @@ function renderToday(){
       <div class="quote-txt" id="quoteEl">"${esc(displayQuote)}"</div>
       <button class="quote-edit-btn" onclick="openQuoteModal()">编辑</button>
     </div>
+    <button class="lifebuoy-btn" onclick="openLifebuoy()">🛟 救生圈</button>
+    <div id="countdownSection"></div>
     <div class="task-section">
       <div class="section-divider"><div class="stl">📋 今日任务</div></div>
       <div id="taskList"></div>
@@ -1277,11 +1295,99 @@ function renderToday(){
   document.getElementById('addTaskBtn').onclick=openAddTaskModal;
   renderTasks();
   renderTodayHabitsSection();
+  renderCountdownSection();
   renderPomodoroTrigger();
   if(getDisplayQuotes().length>=2)startQuoteRotate();
   setTimeout(()=>{showInstallBanner();checkBackupReminder();checkPhaseEndingReminder();},300);
 }
 
+// ==================== 倒数日 ====================
+function daysUntil(dateStr){
+  const target=new Date(dateStr+'T00:00:00');
+  const today=new Date(td()+'T00:00:00');
+  return Math.round((target-today)/86400000);
+}
+function renderCountdownSection(){
+  const el=document.getElementById('countdownSection');if(!el)return;
+  if(!S.countdowns.length){
+    el.innerHTML=`<button class="addbtn" style="margin-bottom:16px;" onclick="openAddCountdownModal()">+ 添加倒数日</button>`;
+    return;
+  }
+  const main=S.countdowns.find(c=>c.isMain)||S.countdowns[0];
+  const others=S.countdowns.filter(c=>c.id!==main.id);
+  const mainDays=daysUntil(main.date);
+  const dayText=(d)=>d>0?`还有 <small>天</small>${d}`:(d===0?'就是今天！':`已过 <small>天</small>${-d}`);
+  el.innerHTML=`
+    <div class="countdown-wrap">
+      <div class="countdown-main" onclick="openCountdownManage()">
+        <div class="cd-title">${esc(main.title)}</div>
+        <div class="cd-days">${dayText(mainDays)}</div>
+      </div>
+      ${others.length?`<div class="countdown-side-row">${others.map(c=>{
+        const d=daysUntil(c.date);
+        return `<div class="countdown-side-card" onclick="openCountdownManage()"><div class="cd-title">${esc(c.title)}</div><div class="cd-days">${d>0?d+'天':(d===0?'今天':'已过'+(-d)+'天')}</div></div>`;
+      }).join('')}</div>`:''}
+    </div>`;
+}
+function openAddCountdownModal(){
+  const body=`
+    <div class="note-field-group"><div class="note-field-label">名称</div><input id="cdTitleInput" placeholder="例如：秋招开始"></div>
+    <div class="note-field-group"><div class="note-field-label">日期</div><input type="date" id="cdDateInput" value="${td()}"></div>`;
+  showModal('添加倒数日',body,()=>{
+    const title=document.getElementById('cdTitleInput').value.trim();if(!title){toast('请输入名称');return;}
+    const date=document.getElementById('cdDateInput').value;if(!date){toast('请选日期');return;}
+    const isMain=S.countdowns.length===0; // 第一个自动设为主要
+    S.countdowns.push({id:uid(),title,date,isMain});
+    save();closeModal();renderCountdownSection();toast('已添加 ✓');
+  });
+}
+function openCountdownManage(){
+  const body=(container)=>{
+    const render=()=>{
+      if(!S.countdowns.length){container.innerHTML='<div class="empty" data-icon="⏳">还没有倒数日</div>';}
+      else{
+        container.innerHTML=S.countdowns.map(c=>{
+          const d=daysUntil(c.date);
+          return `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--g-border);">
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:600;">${esc(c.title)} ${c.isMain?'<span style="color:var(--g);font-size:11px;">★主要</span>':''}</div>
+              <div style="font-size:11px;color:var(--ink3);">${c.date} · ${d>0?'还有'+d+'天':(d===0?'今天':'已过'+(-d)+'天')}</div>
+            </div>
+            ${!c.isMain?`<button class="sbtn" data-setmain="${c.id}">设为主要</button>`:''}
+            <button class="delbtn" data-delcd="${c.id}">🗑️</button>
+          </div>`;
+        }).join('');
+        container.querySelectorAll('[data-setmain]').forEach(btn=>{
+          btn.onclick=()=>{S.countdowns.forEach(c=>c.isMain=(c.id===btn.dataset.setmain));save();render();renderCountdownSection();};
+        });
+        container.querySelectorAll('[data-delcd]').forEach(btn=>{
+          btn.onclick=()=>{confirmDel(()=>{
+            const wasMain=S.countdowns.find(c=>c.id===btn.dataset.delcd)?.isMain;
+            S.countdowns=S.countdowns.filter(c=>c.id!==btn.dataset.delcd);
+            if(wasMain&&S.countdowns.length)S.countdowns[0].isMain=true;
+            save();render();renderCountdownSection();
+          });};
+        });
+      }
+    };
+    render();
+    container.insertAdjacentHTML('beforeend','<button class="addbtn" style="margin-top:10px;" onclick="closeModal();openAddCountdownModal();">+ 添加倒数日</button>');
+  };
+  showModal('⏳ 管理倒数日',body,null,null,{hideConfirm:true});
+}
+
+// ==================== 救生圈 ====================
+function openLifebuoy(){
+  const qs=getDisplayQuotes();
+  const quote=qs.length?qs[Math.floor(Math.random()*qs.length)]:'休息一下，没关系的。';
+  const body=`
+    <div style="text-align:center;padding:6px 0;">
+      <div style="font-size:15px;color:var(--ink2);line-height:1.8;margin-bottom:22px;font-style:italic;">"${esc(quote)}"</div>
+      <div style="font-size:13px;color:var(--ink3);margin-bottom:14px;">状态不好也没关系，要不先启动1分钟就好？</div>
+      <button class="pbtn" style="width:100%;" onclick="closeModal();selectTaskForTimer(60);">🚀 启动 1 分钟</button>
+    </div>`;
+  showModal('🛟 救生圈',body,null,null,{hideConfirm:true});
+}
 function openQuoteModal(){
   const renderQuoteBody=(container)=>{
     container.innerHTML=`
@@ -1670,16 +1776,34 @@ function stopPomodoro(){
 // ==================== 记录页面 ====================
 function renderRecord(){
   const rc=document.getElementById('recordContent');
-  rc.innerHTML=`<div class="top-tabs" id="recTabs"><button class="tab-main on" data-rec="wish">💭 想法流</button><button class="tab-main" data-rec="diary">📔 日记</button><button class="tab-main" data-rec="dump">🗑️ 清空</button></div><div id="recWish"></div><div id="recDiary" style="display:none"></div><div id="recDump" style="display:none"></div>`;
-  renderWishes();renderDiaries();renderDump();
-  document.getElementById('recTabs').addEventListener('click',(e)=>{
-    const btn=e.target.closest('[data-rec]');if(btn){
-      document.querySelectorAll('#recTabs [data-rec]').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
-      document.getElementById('recWish').style.display=btn.dataset.rec==='wish'?'':'none';
-      document.getElementById('recDiary').style.display=btn.dataset.rec==='diary'?'':'none';
-      document.getElementById('recDump').style.display=btn.dataset.rec==='dump'?'':'none';
-    }
-  });
+  rc.innerHTML=`
+    <div class="rec-group-label">日常</div>
+    <div class="top-tabs" id="recTabsA">
+      <button class="tab-main on" data-rec="wish">💭 想法流</button>
+      <button class="tab-main" data-rec="diary">📔 日记</button>
+      <button class="tab-main" data-rec="memo">📌 快速备忘</button>
+      <button class="tab-main" data-rec="dump">🗑️ 清空</button>
+    </div>
+    <div class="rec-group-label">健康</div>
+    <div class="top-tabs" id="recTabsB">
+      <button class="tab-main" data-rec="water">💧 喝水</button>
+    </div>
+    <div id="recWish"></div>
+    <div id="recDiary" style="display:none"></div>
+    <div id="recMemo" style="display:none"></div>
+    <div id="recDump" style="display:none"></div>
+    <div id="recWater" style="display:none"></div>`;
+  renderWishes();renderDiaries();renderDump();renderMemos();renderWater();
+  const allRecPages=['wish','diary','memo','dump','water'];
+  const switchRecTab=(key)=>{
+    document.querySelectorAll('#recTabsA [data-rec],#recTabsB [data-rec]').forEach(b=>b.classList.toggle('on',b.dataset.rec===key));
+    allRecPages.forEach(k=>{
+      const el=document.getElementById('rec'+k.charAt(0).toUpperCase()+k.slice(1));
+      if(el)el.style.display=(k===key)?'':'none';
+    });
+  };
+  document.getElementById('recTabsA').addEventListener('click',(e)=>{const btn=e.target.closest('[data-rec]');if(btn)switchRecTab(btn.dataset.rec);});
+  document.getElementById('recTabsB').addEventListener('click',(e)=>{const btn=e.target.closest('[data-rec]');if(btn)switchRecTab(btn.dataset.rec);});
 }
 
 function renderWishes(){
@@ -1841,6 +1965,110 @@ function renderDumpHistory(){
 }
 function editDump(id){const e=S.emotions.find(x=>x.id===id);if(!e)return;showModal('编辑记录',`<textarea id="editDumpTA" rows="4">${esc(e.t)}</textarea>`,()=>{const val=document.getElementById('editDumpTA').value.trim();if(val){e.t=val;save();closeModal();renderDumpHistory();}});}
 function delDumpConfirm(id){confirmDel(()=>{S.emotions=S.emotions.filter(e=>e.id!==id);save();renderDumpHistory();});}
+
+// ==================== 快速备忘（真正不能忘的小事，不会被顶走） ====================
+function renderMemos(){
+  const el=document.getElementById('recMemo');if(!el)return;
+  el.innerHTML=`
+    <div class="checklist-add-row" style="margin-top:0;margin-bottom:14px;">
+      <input type="text" id="memoInput" placeholder="真正不能忘的事，回车快速添加">
+      <button onclick="addMemo()">添加</button>
+    </div>
+    <div id="memoListWrap"></div>`;
+  document.getElementById('memoInput').onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();addMemo();}};
+  renderMemoList();
+}
+function renderMemoList(){
+  const wrap=document.getElementById('memoListWrap');if(!wrap)return;
+  if(!S.memos.length){wrap.innerHTML='<div class="empty" data-icon="📌">还没有备忘，写点不能忘的事吧</div>';return;}
+  wrap.innerHTML=[...S.memos].reverse().map(m=>`
+    <div class="checklist-item">
+      <input type="checkbox" onchange="finishMemo('${m.id}')">
+      <span class="ci-text">${esc(m.text)}</span>
+      <span class="ci-del" onclick="delMemoConfirm('${m.id}')">🗑️</span>
+    </div>`).join('');
+}
+function addMemo(){
+  const inp=document.getElementById('memoInput');
+  const v=inp.value.trim();if(!v)return;
+  S.memos.push({id:uid(),text:v,createdAt:Date.now()});
+  save();inp.value='';renderMemoList();
+}
+function finishMemo(id){
+  // 划掉 = 处理完了，直接从列表里消失（不留"已完成"的历史，快速备忘只关心"还没做的"）
+  S.memos=S.memos.filter(m=>m.id!==id);
+  save();renderMemoList();toast('已完成 ✓');
+}
+function delMemoConfirm(id){
+  confirmDel(()=>{S.memos=S.memos.filter(m=>m.id!==id);save();renderMemoList();});
+}
+
+// ==================== 喝水打卡 ====================
+function renderWater(){
+  const el=document.getElementById('recWater');if(!el)return;
+  const t=td();
+  const todayLog=S.waterLog[t]||[];
+  const drunk=todayLog.reduce((sum,item)=>sum+item.amount,0);
+  const target=S.waterTarget||2000;
+  const pct=Math.min(100,Math.round(drunk/target*100));
+  el.innerHTML=`
+    <div style="text-align:center;margin-bottom:18px;">
+      <div style="font-size:13px;color:var(--ink3);margin-bottom:6px;">今天已喝 <b style="color:var(--g-dark);font-size:18px;">${drunk}</b> / ${target} ml</div>
+      <div style="background:var(--g-xlight);border-radius:10px;height:14px;overflow:hidden;">
+        <div style="background:var(--g);height:100%;width:${pct}%;transition:width .3s;"></div>
+      </div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:4px;cursor:pointer;text-decoration:underline;" onclick="openWaterTargetModal()">目标 ${target}ml，点这里改</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
+      <button class="sbtn" onclick="addWater(50)">+50ml</button>
+      <button class="sbtn" onclick="addWater(100)">+100ml</button>
+      <button class="sbtn" onclick="addWater(150)">+150ml</button>
+      <button class="sbtn" onclick="addWater(200)">+200ml</button>
+    </div>
+    <button class="addbtn" onclick="openCustomWaterModal()">+ 自定义分量</button>
+    <div class="section-divider"><div class="stl">📋 今天的记录</div></div>
+    <div id="waterTodayList"></div>`;
+  renderWaterTodayList();
+}
+function renderWaterTodayList(){
+  const wrap=document.getElementById('waterTodayList');if(!wrap)return;
+  const t=td();
+  const todayLog=S.waterLog[t]||[];
+  if(!todayLog.length){wrap.innerHTML='<div class="empty" data-icon="💧">今天还没喝水记录</div>';return;}
+  wrap.innerHTML=[...todayLog].reverse().map(item=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--g-border);">
+      <span style="flex:1;font-size:14px;">💧 ${item.amount}ml</span>
+      <span style="font-size:11px;color:var(--ink3);">${item.time}</span>
+      <span class="ci-del" onclick="delWaterEntry('${item.id}')">🗑️</span>
+    </div>`).join('');
+}
+function addWater(amount){
+  const t=td();
+  if(!S.waterLog[t])S.waterLog[t]=[];
+  const now=new Date();
+  S.waterLog[t].push({id:uid(),amount,time:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')});
+  save();renderWater();toast(`+${amount}ml ✓`);
+}
+function openCustomWaterModal(){
+  showModal('自定义分量',`<div class="note-field-group"><div class="note-field-label">喝了多少毫升？</div><input type="number" id="customWaterInput" min="1" placeholder="例如：120"></div>`,()=>{
+    const v=parseInt(document.getElementById('customWaterInput').value);
+    if(!v||v<=0){toast('请输入正确的数量');return;}
+    closeModal();addWater(v);
+  });
+}
+function delWaterEntry(id){
+  const t=td();
+  if(!S.waterLog[t])return;
+  S.waterLog[t]=S.waterLog[t].filter(item=>item.id!==id);
+  save();renderWater();
+}
+function openWaterTargetModal(){
+  showModal('设置每日喝水目标',`<div class="note-field-group"><div class="note-field-label">目标（毫升）</div><input type="number" id="waterTargetInput" min="500" value="${S.waterTarget||2000}"></div>`,()=>{
+    const v=parseInt(document.getElementById('waterTargetInput').value);
+    if(!v||v<=0){toast('请输入正确的数量');return;}
+    S.waterTarget=v;closeModal();save();renderWater();
+  });
+}
 
 function openClarityModal(){
   const renderBody=(container)=>{
