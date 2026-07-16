@@ -588,6 +588,7 @@ function load(){
   if(!S.sizeNotes)S.sizeNotes=[]; // 尺码笔记：[{id,category,brand,size,note,createdAt}]
   if(!S.periodLogs)S.periodLogs=[]; // 生理期：[{id,startDate,duration,flow,note}]
   if(!S.periodTips)S.periodTips=[]; // 经期自我关怀小贴士：字符串数组
+  if(!S.timelineEvents)S.timelineEvents=[]; // 手动补充的时间线事件：[{id,date,time,text,icon}]
   // ==== 阶段日程：数据迁移 ====
   if(!S.phases)S.phases=[];
   if(!S.lastPhaseReminderShown)S.lastPhaseReminderShown='';
@@ -1468,7 +1469,7 @@ function renderTasks(){
     </div>`).join('');
 }
 
-function toggleTask(id){const t=S.tasks.find(x=>x.id===id);if(t){t.done=!t.done;save();renderTasks();}}
+function toggleTask(id){const t=S.tasks.find(x=>x.id===id);if(t){t.done=!t.done;t.completedAt=t.done?Date.now():null;save();renderTasks();}}
 function delTaskConfirm(id){confirmDel(()=>{S.tasks=S.tasks.filter(t=>t.id!==id);save();renderTasks();});}
 function editTask(id){
   const t=S.tasks.find(x=>x.id===id);if(!t)return;
@@ -1606,7 +1607,7 @@ function startTimer(secs,taskName,taskId){
       clearInterval(timerInt);ov.remove();toast('时间到！');
       if(taskId){
         showModal('🎉 启动完成！', `<p style="font-size:14px;color:var(--ink2);">迈出第一步了！是否现在就将任务【<b>${esc(taskName)}</b>】标记为完成？</p>`,()=>{
-          const t=S.tasks.find(x=>x.id===taskId);if(t){t.done=true;save();renderTasks();toast('任务完成，小宇宙爆发！');}
+          const t=S.tasks.find(x=>x.id===taskId);if(t){t.done=true;t.completedAt=Date.now();save();renderTasks();toast('任务完成，小宇宙爆发！');}
           closeModal();
         },null,{confirmText:'标记完成',cancelText:'暂不'});
       }else{
@@ -1789,6 +1790,7 @@ function renderRecord(){
       <button class="tab-main on" data-rec="wish">💭 想法流</button>
       <button class="tab-main" data-rec="diary">📔 日记</button>
       <button class="tab-main" data-rec="memo">📌 快速备忘</button>
+      <button class="tab-main" data-rec="timeline">🕐 时间线</button>
       <button class="tab-main" data-rec="dump">🗑️ 清空</button>
     </div>
     <div class="rec-group-label">健康</div>
@@ -1801,13 +1803,14 @@ function renderRecord(){
     <div id="recWish"></div>
     <div id="recDiary" style="display:none"></div>
     <div id="recMemo" style="display:none"></div>
+    <div id="recTimeline" style="display:none"></div>
     <div id="recDump" style="display:none"></div>
     <div id="recWater" style="display:none"></div>
     <div id="recSleep" style="display:none"></div>
     <div id="recBody" style="display:none"></div>
     <div id="recPeriod" style="display:none"></div>`;
-  renderWishes();renderDiaries();renderDump();renderMemos();renderWater();renderSleep();renderBodyData();renderPeriod();
-  const allRecPages=['wish','diary','memo','dump','water','sleep','body','period'];
+  renderWishes();renderDiaries();renderDump();renderMemos();renderWater();renderSleep();renderBodyData();renderPeriod();renderTimeline();
+  const allRecPages=['wish','diary','memo','timeline','dump','water','sleep','body','period'];
   const switchRecTab=(key)=>{
     document.querySelectorAll('#recTabsA [data-rec],#recTabsB [data-rec]').forEach(b=>b.classList.toggle('on',b.dataset.rec===key));
     allRecPages.forEach(k=>{
@@ -2368,6 +2371,115 @@ function addPeriodTip(){
   S.periodTips.push(v);save();inp.value='';renderPeriodTips();
 }
 
+// ==================== 一天时间线（自动拼接各处已有的时间戳，不用你重新手动记一遍） ====================
+let _timelineDate=null; // null 表示"今天"，会在渲染时惰性赋值
+function parseNowStr(s){
+  // 把 nowStr() 格式（"2026/7/13 14:30"）解析成 {dateKey:'2026-07-13', time:'14:30'}
+  const m=(s||'').match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{2}:\d{2})$/);
+  if(!m)return null;
+  return{dateKey:`${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`,time:m[4]};
+}
+function collectAllProjNotesForDate(list,dateKey,out){
+  (list||[]).forEach(p=>{
+    (p.notes||[]).forEach(n=>{
+      const parsed=parseNowStr(n.date);
+      if(parsed&&parsed.dateKey===dateKey){
+        out.push({time:parsed.time,icon:'✅',text:`打卡：${p.name}${n.note?'（'+n.note+'）':''}`});
+      }
+    });
+    if(p.children&&p.children.length)collectAllProjNotesForDate(p.children,dateKey,out);
+  });
+}
+function getTimelineEvents(dateKey){
+  const events=[];
+  // 1. 阶段日程习惯打卡
+  (S.goodH||[]).forEach(h=>{
+    const entry=h.log&&h.log[dateKey];
+    if(entry&&entry.status==='done'&&entry.doneAt){
+      const d=new Date(entry.doneAt);
+      events.push({time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),icon:h.emoji||'✅',text:`完成习惯：${h.name}`});
+    }
+  });
+  // 2. 项目打卡（递归整棵树）
+  collectAllProjNotesForDate(S.projs,dateKey,events);
+  // 3. 今日任务完成
+  (S.tasks||[]).forEach(t=>{
+    if(t.done&&t.completedAt){
+      const d=new Date(t.completedAt);
+      const dk=formatDate(d);
+      if(dk===dateKey)events.push({time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),icon:'☑️',text:`完成任务：${t.name}`});
+    }
+  });
+  // 4. 喝水
+  (S.waterLog[dateKey]||[]).forEach(w=>{
+    events.push({time:w.time,icon:'💧',text:`喝水 ${w.amount}ml`});
+  });
+  // 5. 日记
+  (S.diaries||[]).forEach(d=>{
+    const parsed=parseNowStr(d.date);
+    if(parsed&&parsed.dateKey===dateKey)events.push({time:parsed.time,icon:'📔',text:'写了日记'});
+  });
+  // 6. 快速备忘（创建时间）
+  (S.memos||[]).forEach(m=>{
+    const d=new Date(m.createdAt);
+    if(formatDate(d)===dateKey)events.push({time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),icon:'📌',text:`记下：${m.text}`});
+  });
+  // 7. 手动补充的事件
+  (S.timelineEvents||[]).forEach(e=>{
+    if(e.date===dateKey)events.push({id:e.id,time:e.time,icon:e.icon||'📍',text:e.text,manual:true});
+  });
+  // 按时间排序
+  events.sort((a,b)=>a.time.localeCompare(b.time));
+  return events;
+}
+function renderTimeline(){
+  const el=document.getElementById('recTimeline');if(!el)return;
+  if(!_timelineDate)_timelineDate=td();
+  const dateKey=_timelineDate;
+  const events=getTimelineEvents(dateKey);
+  const isToday=dateKey===td();
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <button class="sbtn" onclick="shiftTimelineDate(-1)">‹ 前一天</button>
+      <div style="text-align:center;">
+        <div style="font-size:14px;font-weight:700;">${dateKey}${isToday?'（今天）':''}</div>
+      </div>
+      <button class="sbtn" onclick="shiftTimelineDate(1)" ${isToday?'style="opacity:.3;pointer-events:none;"':''}>后一天 ›</button>
+    </div>
+    <button class="addbtn" style="margin-bottom:14px;" onclick="openAddTimelineEventModal()">+ 补充记一件事</button>
+    <div id="timelineListWrap"></div>`;
+  const wrap=document.getElementById('timelineListWrap');
+  if(!events.length){wrap.innerHTML='<div class="empty" data-icon="🕐">这一天还没有记录到什么</div>';return;}
+  wrap.innerHTML=`<div style="position:relative;padding-left:18px;">
+    <div style="position:absolute;left:5px;top:6px;bottom:6px;width:1.5px;background:var(--g-border);"></div>
+    ${events.map(e=>`
+      <div style="position:relative;padding:8px 0 8px 14px;">
+        <div style="position:absolute;left:-13px;top:12px;width:8px;height:8px;border-radius:50%;background:var(--g);"></div>
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:2px;">${e.time}</div>
+        <div style="font-size:13px;">${e.icon} ${esc(e.text)}${e.manual?` <span class="ci-del" style="font-size:11px;" onclick="delTimelineEvent('${e.id}')">🗑️</span>`:''}</div>
+      </div>`).join('')}
+  </div>`;
+}
+function shiftTimelineDate(delta){
+  _timelineDate=addDaysStr(_timelineDate||td(),delta);
+  if(_timelineDate>td())_timelineDate=td(); // 不能看到未来
+  renderTimeline();
+}
+function openAddTimelineEventModal(){
+  const body=`
+    <div class="note-field-group"><div class="note-field-label">时间</div><input type="time" id="tlEventTime" value="${new Date().toTimeString().slice(0,5)}"></div>
+    <div class="note-field-group"><div class="note-field-label">这时候在做什么</div><input id="tlEventText" placeholder="例如：出门散步了"></div>`;
+  showModal('补充记一件事',body,()=>{
+    const time=document.getElementById('tlEventTime').value;if(!time){toast('请选择时间');return;}
+    const text=document.getElementById('tlEventText').value.trim();if(!text){toast('请输入内容');return;}
+    S.timelineEvents.push({id:uid(),date:_timelineDate||td(),time,text,icon:'📍'});
+    save();closeModal();renderTimeline();toast('已添加 ✓');
+  });
+}
+function delTimelineEvent(id){
+  confirmDel(()=>{S.timelineEvents=S.timelineEvents.filter(e=>e.id!==id);save();renderTimeline();});
+}
+
 // ==================== 计划页面 ====================
 // ==================== 计划页面（本子版） ====================
 let _planType='day';
@@ -2418,35 +2530,56 @@ function renderPlan(){
 function renderPlanNbItems(){
   const body=document.getElementById('planNbBody');if(!body)return;
   const items=(S.plans[_planType]||[]);
-  const done=items.filter(i=>i.done).length;
+  const done=items.filter(i=>i.children&&i.children.length?i.children.every(c=>c.done):i.done).length;
   body.innerHTML=`
     <div style="font-size:11px;color:var(--nb-ink3);line-height:32px;text-align:right;">完成 ${done}/${items.length}</div>
-    ${items.length?items.map((item,idx)=>renderNbItem(item,idx)).join(''):'<div class="nb-empty">还没有计划，点右上角＋添加</div>'}`;
+    ${items.length?items.map((item)=>renderNbItem(item)).join(''):'<div class="nb-empty">还没有计划，点右上角＋添加</div>'}`;
 }
 
-function renderNbItem(item,idx){
+function renderNbItem(item){
+  const hasChildren=item.children&&item.children.length>0;
   const hasNote=item.note&&item.note.trim();
   const hasDue=item.due;
   const hasDate=item.planDate&&item.planDate!==td();
-  return`<div class="nb-item${item.done?' done-nb':''}">
-    <div class="nb-check${item.done?' done':''}" onclick="toggleNbPlan(${idx})">${item.done?'✓':''}</div>
+  const childDone=hasChildren?item.children.filter(c=>c.done).length:0;
+  const allChildDone=hasChildren&&childDone===item.children.length;
+  return`<div class="nb-item${(!hasChildren&&item.done)?' done-nb':''}">
+    ${hasChildren?
+      `<div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:10px;" title="有子任务，进度自动计算">${childDone}/${item.children.length}</div>`
+      :`<div class="nb-check${item.done?' done':''}" onclick="toggleNbPlan('${item.id}')">${item.done?'✓':''}</div>`}
     <div class="nb-content">
-      <div class="nb-item-title${item.done?' done':''}">${esc(item.title||item.text||'')}</div>
+      <div class="nb-item-title${(!hasChildren&&item.done)?' done':''}">${esc(item.title||item.text||'')}</div>
       ${hasNote?`<div class="nb-item-note">${esc(item.note)}</div>`:''}
       ${hasDue?`<div class="nb-item-meta">⏰ 截止 ${fmtDateShort(item.due)}</div>`:''}
       ${hasDate?`<div class="nb-item-meta">📅 计划于 ${fmtDateShort(item.planDate)}</div>`:''}
+      ${hasChildren?`
+        <div style="background:var(--g-xlight);border-radius:6px;height:6px;margin:6px 0;overflow:hidden;">
+          <div style="background:var(--g);height:100%;width:${Math.round(childDone/item.children.length*100)}%;"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          ${item.children.map(c=>`
+            <div style="display:flex;align-items:center;gap:6px;padding:3px 0;">
+              <div class="nb-check${c.done?' done':''}" style="width:14px;height:14px;font-size:9px;" onclick="toggleChildPlan('${item.id}','${c.id}')">${c.done?'✓':''}</div>
+              <span style="flex:1;font-size:12px;${c.done?'text-decoration:line-through;color:var(--nb-ink3);':''}">${esc(c.title)}</span>
+              <span class="ci-del" style="font-size:11px;" onclick="deleteChildPlan('${item.id}','${c.id}')">✕</span>
+            </div>`).join('')}
+        </div>
+        ${allChildDone?`<button class="sbtn" style="margin-top:6px;font-size:11px;padding:3px 10px;" onclick="archiveWholePlan('${item.id}')">📁 全部完成，归档整组</button>`:''}
+      `:''}
     </div>
     <div class="nb-item-btns">
-      <button onclick="moveNbToTask(${idx})" title="移到今日任务" style="color:var(--g);">→任务</button>
-      <button onclick="editNbPlan(${idx})" title="编辑">✏️</button>
-      <button onclick="deleteNbPlan(${idx})" title="删除" style="color:#c04040;">×</button>
+      <button onclick="openAddChildPlanModal('${item.id}')" title="加子任务" style="color:var(--g);">➕子</button>
+      <button onclick="editNbPlan('${item.id}')" title="编辑">✏️</button>
+      <button onclick="deleteNbPlan('${item.id}')" title="删除" style="color:#c04040;">×</button>
     </div>
   </div>`;
 }
 
-function openNbPlanModal(existingIdx){
-  const isEdit=existingIdx!==undefined;
-  const item=isEdit?(S.plans[_planType][existingIdx]||{}):{};
+function findPlanItem(id){return (S.plans[_planType]||[]).find(i=>i.id===id);}
+
+function openNbPlanModal(existingId){
+  const isEdit=existingId!==undefined;
+  const item=isEdit?(findPlanItem(existingId)||{}):{};
   const body=(container)=>{
     container.innerHTML=`
       <div style="margin-bottom:10px;">
@@ -2469,59 +2602,60 @@ function openNbPlanModal(existingIdx){
     const due=document.getElementById('nbPlanDue').value;
     if(!S.plans[_planType])S.plans[_planType]=[];
     if(isEdit){
-      S.plans[_planType][existingIdx]={...S.plans[_planType][existingIdx],title,note,due,text:title};
+      Object.assign(item,{title,note,due,text:title});
     }else{
-      S.plans[_planType].push({id:uid(),title,note,due,text:title,done:false});
+      S.plans[_planType].push({id:uid(),title,note,due,text:title,done:false,children:[]});
     }
     save();closeModal();renderPlanNbItems();toast(isEdit?'已更新 ✓':'已添加 ✓');
   });
 }
 
 function addNbPlanItem(){openNbPlanModal();}
-function editNbPlan(idx){openNbPlanModal(idx);}
+function editNbPlan(id){openNbPlanModal(id);}
 
-function moveNbToTask(idx){
-  const item=S.plans[_planType][idx];if(!item)return;
-  const title=item.title||item.text||'';
-  showModal('移到今日任务',`
-    <div style="font-size:13px;color:var(--ink2);margin-bottom:12px;">「${esc(title)}」</div>
-    <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;">选择优先级</div>
-    <div class="priority-selector">
-      <div class="priority-option p-red" data-p="red">🔴 重要</div>
-      <div class="priority-option p-orange selected" data-p="orange">🟠 一般</div>
-      <div class="priority-option p-green" data-p="green">🟢 随意</div>
-    </div>`,
-  ()=>{
-    const sel=document.querySelector('.priority-option.selected[data-p]');
-    const priority=sel?sel.dataset.p:'orange';
-    S.tasks.push({id:uid(),date:td(),name:title,taskType:'💭 其他',priority,note:item.note||'',done:false});
-    S.plans[_planType].splice(idx,1);
-    save();closeModal();renderPlanNbItems();
-    if(typeof renderTasks==='function')renderTasks();
-    toast('已加入今日任务 ✓');
+function openAddChildPlanModal(parentId){
+  showModal('添加子任务','<div class="note-field-group"><div class="note-field-label">子任务标题</div><input id="childPlanTitle" placeholder="例如：报名"></div>',()=>{
+    const title=document.getElementById('childPlanTitle').value.trim();if(!title){toast('请输入标题');return;}
+    const parent=findPlanItem(parentId);if(!parent)return;
+    if(!parent.children)parent.children=[];
+    parent.children.push({id:uid(),title,done:false});
+    save();closeModal();renderPlanNbItems();toast('已添加子任务 ✓');
   });
-  setTimeout(()=>{
-    document.querySelectorAll('.priority-option[data-p]').forEach(opt=>{
-      opt.onclick=()=>{
-        document.querySelectorAll('.priority-option[data-p]').forEach(o=>o.classList.remove('selected'));
-        opt.classList.add('selected');
-      };
-    });
-  },50);
+}
+function toggleChildPlan(parentId,childId){
+  const parent=findPlanItem(parentId);if(!parent)return;
+  const child=(parent.children||[]).find(c=>c.id===childId);if(!child)return;
+  child.done=!child.done;
+  save();renderPlanNbItems();
+}
+function deleteChildPlan(parentId,childId){
+  const parent=findPlanItem(parentId);if(!parent)return;
+  confirmDel(()=>{
+    parent.children=(parent.children||[]).filter(c=>c.id!==childId);
+    save();renderPlanNbItems();
+  });
+}
+function archiveWholePlan(id){
+  const item=findPlanItem(id);if(!item)return;
+  const childSummary=(item.children||[]).map(c=>'· '+c.title).join('\n');
+  S.planArchives.unshift({id:uid(),type:_planType,content:item.title||item.text||'',note:(item.note?item.note+'\n\n':'')+childSummary,date:nowStr()});
+  S.plans[_planType]=S.plans[_planType].filter(i=>i.id!==id);
+  save();renderPlanNbItems();toast('✓ 整组已存档');
 }
 
-function toggleNbPlan(idx){
-  const item=S.plans[_planType][idx];if(!item)return;
+function toggleNbPlan(id){
+  const item=findPlanItem(id);if(!item)return;
+  if(item.children&&item.children.length)return; // 有子任务的，通过子任务勾选/归档按钮处理，不走这里
   if(!item.done){
     item.done=true;
     S.planArchives.unshift({id:uid(),type:_planType,content:item.title||item.text||'',note:item.note||'',date:nowStr()});
-    S.plans[_planType].splice(idx,1);
+    S.plans[_planType]=S.plans[_planType].filter(i=>i.id!==id);
     save();renderPlanNbItems();toast('✓ 已存档');
   }
 }
 
-function deleteNbPlan(idx){
-  confirmDel(()=>{S.plans[_planType].splice(idx,1);save();renderPlanNbItems();});
+function deleteNbPlan(id){
+  confirmDel(()=>{S.plans[_planType]=S.plans[_planType].filter(i=>i.id!==id);save();renderPlanNbItems();});
 }
 
 function renderPlanArchive(){
@@ -2554,16 +2688,17 @@ function deletePlanItem(type,idx){_planType=type;deleteNbPlan(idx);}
 
 // ==================== 成长页面 ====================
 function showGrowTab(tab){
-  const tabs=['habit','proj','self','ach'];
+  const tabs=['habit','proj','self','ach','stats'];
   tabs.forEach(t=>{const el=document.getElementById('grow'+t.charAt(0).toUpperCase()+t.slice(1));if(el)el.style.display=t===tab?'':'none';});
   document.querySelectorAll('#growTabs [data-grow]').forEach(b=>{b.classList.toggle('on',b.dataset.grow===tab);});
 }
 function renderGrow(){
   const gc=document.getElementById('growContent');
-  gc.innerHTML=`<div class="top-tabs" id="growTabs"><button class="tab-main on" data-grow="habit">📅 阶段日程</button><button class="tab-main" data-grow="proj">📂 项目</button><button class="tab-main" data-grow="self">🪞 认识我</button><button class="tab-main" data-grow="ach">🏆 成就</button></div><div id="growHabit"></div><div id="growProj" style="display:none"></div><div id="growSelf" style="display:none"></div><div id="growAch" style="display:none"></div>`;
-  renderHabits();renderProjects();renderSelf();renderAchievements();
+  gc.innerHTML=`<div class="top-tabs" id="growTabs"><button class="tab-main on" data-grow="habit">📅 阶段日程</button><button class="tab-main" data-grow="proj">📂 项目</button><button class="tab-main" data-grow="self">🪞 认识我</button><button class="tab-main" data-grow="ach">🏆 成就</button><button class="tab-main" data-grow="stats">📊 统计</button></div><div id="growHabit"></div><div id="growProj" style="display:none"></div><div id="growSelf" style="display:none"></div><div id="growAch" style="display:none"></div><div id="growStats" style="display:none"></div>`;
+  renderHabits();renderProjects();renderSelf();renderAchievements();renderStats();
   document.getElementById('growTabs').addEventListener('click',(e)=>{const btn=e.target.closest('[data-grow]');if(btn)showGrowTab(btn.dataset.grow);});
 }
+
 // ==================== 阶段日程系统 ====================
 const STAGE_BADGES=[{min:0,emoji:'✨'},{min:3,emoji:'⭐'},{min:7,emoji:'🍀'},{min:14,emoji:'🌸'},{min:30,emoji:'🎁'},{min:60,emoji:'🌈'},{min:100,emoji:'🏅'}];
 function getBadgeForCount(n){let b=STAGE_BADGES[0];STAGE_BADGES.forEach(item=>{if(n>=item.min)b=item;});return b.emoji;}
@@ -3222,6 +3357,119 @@ function editAchievementItem(id){
   });
 }
 function delAchConfirm(id){confirmDel(()=>{S.achievements=S.achievements.filter(a=>a.id!==id);save();filterAchievements('all');});}
+
+// ==================== 大统计 ====================
+let _statsRange='week'; // 'week'=近7天, 'month'=近30天
+function renderStats(){
+  const el=document.getElementById('growStats');if(!el)return;
+  el.innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <div class="plan-outer-tab${_statsRange==='week'?' on':''}" data-sr="week" style="flex:1;text-align:center;">近7天</div>
+      <div class="plan-outer-tab${_statsRange==='month'?' on':''}" data-sr="month" style="flex:1;text-align:center;">近30天</div>
+    </div>
+    <div id="statsBody"></div>`;
+  el.querySelectorAll('[data-sr]').forEach(t=>{t.onclick=()=>{_statsRange=t.dataset.sr;renderStats();};});
+  renderStatsBody();
+}
+function renderStatsBody(){
+  const wrap=document.getElementById('statsBody');if(!wrap)return;
+  const days=_statsRange==='week'?7:30;
+  const today=td();
+  const dateKeys=[];
+  for(let i=0;i<days;i++)dateKeys.push(addDaysStr(today,-i));
+  const dateSet=new Set(dateKeys);
+
+  // ---- 任务统计：按类型分组 ----
+  const doneTasks=(S.tasks||[]).filter(t=>t.done&&t.completedAt&&dateSet.has(formatDate(new Date(t.completedAt))));
+  const byType={};
+  doneTasks.forEach(t=>{const type=t.taskType||'其他';byType[type]=(byType[type]||0)+1;});
+  const typeSorted=Object.entries(byType).sort((a,b)=>b[1]-a[1]);
+  const maxTypeCount=typeSorted.length?typeSorted[0][1]:1;
+
+  // ---- 习惯打卡率 ----
+  const habitStats=(S.goodH||[]).map(h=>{
+    const doneCount=dateKeys.filter(dk=>h.log&&h.log[dk]&&h.log[dk].status==='done').length;
+    return{name:h.name,emoji:h.emoji,doneCount,rate:Math.round(doneCount/days*100)};
+  }).sort((a,b)=>b.doneCount-a.doneCount);
+
+  // ---- 项目打卡次数 ----
+  const projStats=[];
+  const walkProj=(list)=>{
+    (list||[]).forEach(p=>{
+      const cnt=(p.notes||[]).filter(n=>{const parsed=parseNowStr(n.date);return parsed&&dateSet.has(parsed.dateKey);}).length;
+      if(cnt>0)projStats.push({name:p.name,cnt});
+      if(p.children)walkProj(p.children);
+    });
+  };
+  walkProj(S.projs);
+  projStats.sort((a,b)=>b.cnt-a.cnt);
+
+  // ---- 喝水 ----
+  let waterDaysWithData=0,waterTotal=0,waterTargetHitDays=0;
+  dateKeys.forEach(dk=>{
+    const log=S.waterLog[dk];
+    if(log&&log.length){
+      waterDaysWithData++;
+      const sum=log.reduce((s,i)=>s+i.amount,0);
+      waterTotal+=sum;
+      if(sum>=(S.waterTarget||2000))waterTargetHitDays++;
+    }
+  });
+  const waterAvg=waterDaysWithData?Math.round(waterTotal/waterDaysWithData):0;
+
+  // ---- 睡眠 ----
+  const sleepInRange=(S.sleepLogs||[]).filter(s=>dateSet.has(s.date));
+  let sleepAvgMin=0;
+  if(sleepInRange.length){
+    const totalMin=sleepInRange.reduce((s,x)=>s+(x.deepMin||0)+(x.lightMin||0),0);
+    sleepAvgMin=Math.round(totalMin/sleepInRange.length);
+  }
+
+  // ---- 体重变化 ----
+  const weightInRange=[...(S.bodyLogs||[])].filter(b=>dateSet.has(b.date)&&b.weight).sort((a,b)=>a.date.localeCompare(b.date));
+  let weightChangeTxt='';
+  if(weightInRange.length>=2){
+    const diff=(weightInRange[weightInRange.length-1].weight-weightInRange[0].weight).toFixed(1);
+    weightChangeTxt=`${weightInRange[0].weight}kg → ${weightInRange[weightInRange.length-1].weight}kg（${diff>0?'+':''}${diff}kg）`;
+  }else if(weightInRange.length===1){
+    weightChangeTxt=`${weightInRange[0].weight}kg（这段时间只有1条记录）`;
+  }
+
+  wrap.innerHTML=`
+    <div class="section-divider"><div class="stl">☑️ 任务完成情况</div></div>
+    ${doneTasks.length?`
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;">共完成 ${doneTasks.length} 个任务</div>
+      ${typeSorted.map(([type,cnt])=>`
+        <div style="margin-bottom:6px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px;"><span>${esc(type)}</span><span>${cnt}个</span></div>
+          <div style="background:var(--g-xlight);border-radius:6px;height:6px;overflow:hidden;"><div style="background:var(--g);height:100%;width:${Math.round(cnt/maxTypeCount*100)}%;"></div></div>
+        </div>`).join('')}
+    `:'<div class="empty" data-icon="☑️">这段时间还没有完成的任务</div>'}
+
+    <div class="section-divider"><div class="stl">📅 习惯打卡率</div></div>
+    ${habitStats.length?habitStats.map(h=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:16px;">${h.emoji}</span>
+        <span style="flex:1;font-size:12px;">${esc(h.name)}</span>
+        <span style="font-size:12px;color:var(--ink3);">${h.doneCount}/${days}天 · ${h.rate}%</span>
+      </div>`).join(''):'<div class="empty" data-icon="📅">还没有习惯</div>'}
+
+    <div class="section-divider"><div class="stl">📂 项目打卡</div></div>
+    ${projStats.length?projStats.map(p=>`
+      <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--g-xlight);">
+        <span>${esc(p.name)}</span><span style="color:var(--ink3);">打卡${p.cnt}次</span>
+      </div>`).join(''):'<div class="empty" data-icon="📂">这段时间没有项目打卡</div>'}
+
+    <div class="section-divider"><div class="stl">💧 喝水情况</div></div>
+    ${waterDaysWithData?`<div style="font-size:12px;color:var(--ink2);">平均每天 ${waterAvg}ml，达标 ${waterTargetHitDays}/${waterDaysWithData} 天</div>`:'<div class="empty" data-icon="💧">这段时间没有喝水记录</div>'}
+
+    <div class="section-divider"><div class="stl">😴 睡眠情况</div></div>
+    ${sleepAvgMin?`<div style="font-size:12px;color:var(--ink2);">平均每晚 ${Math.floor(sleepAvgMin/60)}小时${sleepAvgMin%60}分钟（共${sleepInRange.length}条记录）</div>`:'<div class="empty" data-icon="😴">这段时间没有睡眠记录</div>'}
+
+    <div class="section-divider"><div class="stl">⚖️ 体重变化</div></div>
+    ${weightChangeTxt?`<div style="font-size:12px;color:var(--ink2);">${weightChangeTxt}</div>`:'<div class="empty" data-icon="⚖️">这段时间没有体重记录</div>'}
+  `;
+}
 
 // ==================== 笔记板块 ====================
 let currentNoteType='all',noteSearchKeyword='';
