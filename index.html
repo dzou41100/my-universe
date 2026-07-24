@@ -28,63 +28,36 @@
 }
 
 /* ══ 渐变主题 ══ */
-body.t-grad-spring{
-  --g:#d4a843;--g-light:rgba(255,255,255,.5);--g-mid:rgba(255,255,255,.6);--g-dark:#a07820;
+body.t-grad-spring{background:linear-gradient(160deg,#ffd1dc 0%,#f8e16c 50%,#c1e1c1 100%);
+  --g:#8E712D;--g-light:rgba(255,255,255,.5);--g-mid:rgba(255,255,255,.6);--g-dark:#a07820;
   --g-xlight:rgba(255,255,255,.3);--g-border:rgba(255,255,255,.4);
   --bg:#fefae9;--white:rgba(255,255,255,.75);--card:rgba(255,255,255,.7);
   --ink:#3a2d10;--ink2:#5a4820;--ink3:#8a7840;
   --nb-bg:rgba(255,255,255,.6);--nb-line:rgba(212,168,67,.2);--nb-ring:#d4a843;--nb-ink:#3a2d10;--nb-ink2:#5a4820;--nb-ink3:#8a7840;
 }
-body.t-grad-spring::before{
-  content:'';position:fixed;inset:0;z-index:-1;
-  background:linear-gradient(160deg,#ffd1dc 0%,#f8e16c 50%,#c1e1c1 100%);
-}
-body.t-forest-wander{--g:#5C9D7F;--g-light:rgba(255,255,255,.5);--g-mid:rgba(255,255,255,.6);--g-dark:#45765f;--g-xlight:rgba(255,255,255,.3);--g-border:rgba(255,255,255,.4);--bg:#f9f1ea;--white:rgba(255,255,255,.75);--card:rgba(255,255,255,.7);--ink:#192a22;--ink2:#294739;--ink3:#406e59;--nb-bg:rgba(255,255,255,.6);--nb-line:rgba(92,157,127,0.2);--nb-ring:#5C9D7F;--nb-ink:#192a22;--nb-ink2:#294739;--nb-ink3:#406e59;}
-body.t-forest-wander::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#5c9d7f 0%,#d4a373 50%,#f5e769 100%);}
-body.t-tropic-venom{--g:#50C878;--g-light:rgba(255,255,255,.5);--g-mid:rgba(255,255,255,.6);--g-dark:#3c965a;--g-xlight:rgba(255,255,255,.3);--g-border:rgba(255,255,255,.4);--bg:#fffde5;--white:rgba(255,255,255,.75);--card:rgba(255,255,255,.7);--ink:#163620;--ink2:#245a36;--ink3:#388c54;--nb-bg:rgba(255,255,255,.6);--nb-line:rgba(80,200,120,0.2);--nb-ring:#50C878;--nb-ink:#163620;--nb-ink2:#245a36;--nb-ink3:#388c54;}
-body.t-tropic-venom::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#50c878 0%,#fff44f 50%,#e32636 100%);}
-body.t-midnight-garden{--g:#7851A9;--g-light:rgba(255,255,255,.5);--g-mid:rgba(255,255,255,.6);--g-dark:#5a3d7f;--g-xlight:rgba(255,255,255,.3);--g-border:rgba(255,255,255,.4);--bg:#faf4f3;--white:rgba(255,255,255,.75);--card:rgba(255,255,255,.7);--ink:#20162e;--ink2:#36244c;--ink3:#543976;--nb-bg:rgba(255,255,255,.6);--nb-line:rgba(120,81,169,0.2);--nb-ring:#7851A9;--nb-ink:#20162e;--nb-ink2:#36244c;--nb-ink3:#543976;}
-body.t-midnight-garden::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#7851a9 0%,#dbb4ad 50%,#f5f3a5 100%);}
-/* 渐变主题的 body 本身仍要透明，才能看见上面 ::before 的渐变背景；
-   --bg 改成了实色是给输入框/格子等小元素用的，避免它们变隐形导致重叠看不清 */
-body.t-grad-spring,body.t-forest-wander,body.t-tropic-venom,body.t-midnight-garden,body.t-datang2,body.t-mediterranean,body.t-yingying,body.t-xia,body.t-haidi,body.t-mosswood,body.t-applefizz,body.t-bingyin,body.t-summer-bite,body.t-mars-rose,body.t-lotus-mist,body.t-cinnabar-sky,body.t-klein-jade,body.t-ziluobai,body.t-gongqiangliu,body.t-wasongbai,body.t-ouhedailan{background:transparent;}
+body.t-forest-wander{background:linear-gradient(160deg,#5c9d7f 0%,#d4a373 50%,#f5e769 100%);--g:#4B8168;--g-light:rgba(255,255,255,.5);--g-mid:rgba(255,255,255,.6);--g-dark:#45765f;--g-xlight:rgba(255,255,255,.3);--g-border:rgba(255,255,255,.4);--bg:#f9f1ea;--white:rgba(255,255,255,.75);--card:rgba(255,255,255,.7);--ink:#192a22;--ink2:#294739;--ink3:#406e59;--nb-bg:rgba(255,255,255,.6);--nb-line:rgba(92,157,127,0.2);--nb-ring:#5C9D7F;--nb-ink:#192a22;--nb-ink2:#294739;--nb-ink3:#406e59;}
+body.t-tropic-venom{background:linear-gradient(160deg,#50c878 0%,#fff44f 50%,#e32636 100%);--g:#368650;--g-light:rgba(255,255,255,.5);--g-mid:rgba(255,255,255,.6);--g-dark:#3c965a;--g-xlight:rgba(255,255,255,.3);--g-border:rgba(255,255,255,.4);--bg:#fffde5;--white:rgba(255,255,255,.75);--card:rgba(255,255,255,.7);--ink:#163620;--ink2:#245a36;--ink3:#388c54;--nb-bg:rgba(255,255,255,.6);--nb-line:rgba(80,200,120,0.2);--nb-ring:#50C878;--nb-ink:#163620;--nb-ink2:#245a36;--nb-ink3:#388c54;}
+body.t-midnight-garden{background:linear-gradient(160deg,#7851a9 0%,#dbb4ad 50%,#f5f3a5 100%);--g:#7851A9;--g-light:rgba(255,255,255,.5);--g-mid:rgba(255,255,255,.6);--g-dark:#5a3d7f;--g-xlight:rgba(255,255,255,.3);--g-border:rgba(255,255,255,.4);--bg:#faf4f3;--white:rgba(255,255,255,.75);--card:rgba(255,255,255,.7);--ink:#20162e;--ink2:#36244c;--ink3:#543976;--nb-bg:rgba(255,255,255,.6);--nb-line:rgba(120,81,169,0.2);--nb-ring:#7851A9;--nb-ink:#20162e;--nb-ink2:#36244c;--nb-ink3:#543976;}
 
 
 /* ══ 大唐系列（多色） ══ */
-body.t-datang2{--g:#76AEA6;--g-light:#f6eae6;--g-mid:#D79E8F;--g-dark:#c33e5d;--g-xlight:rgba(118,174,166,0.08);--g-border:rgba(222,71,106,0.22);--bg:#d9e8e6;--white:#ffffff;--card:#ffffff;--ink:#151f1e;--ink2:#76AEA6;--ink3:#8fbdb6;--nb-bg:var(--card);--nb-line:rgba(222,71,106,0.18);--nb-ring:#DE476A;--nb-ink:#151f1e;--nb-ink2:#76AEA6;--nb-ink3:#a6cac5;}
-body.t-datang2::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#76AEA6 0%,#D79E8F 50%,#DE476A 100%);}
-body.t-mediterranean{--g:#3D7695;--g-light:#f8eeda;--g-mid:#DDB355;--g-dark:#b05336;--g-xlight:rgba(61,118,149,0.08);--g-border:rgba(200,94,61,0.22);--bg:#c9d9e1;--white:#ffffff;--card:#ffffff;--ink:#0b151b;--ink2:#3D7695;--ink3:#608fa8;--nb-bg:var(--card);--nb-line:rgba(200,94,61,0.18);--nb-ring:#C85E3D;--nb-ink:#0b151b;--nb-ink2:#3D7695;--nb-ink3:#81a6ba;}
-body.t-mediterranean::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#3D7695 0%,#DDB355 50%,#C85E3D 100%);}
-body.t-yingying{--g:#a86585;--g-light:#faddea;--g-mid:#f9d4e5;--g-dark:#c46a83;--g-xlight:rgba(168,101,133,0.08);--g-border:rgba(223,120,149,0.22);--bg:#e7d4dd;--white:#ffffff;--card:#ffffff;--ink:#1e1218;--ink2:#a86585;--ink3:#b8819b;--nb-bg:var(--card);--nb-line:rgba(223,120,149,0.18);--nb-ring:#df7895;--nb-ink:#1e1218;--nb-ink2:#a86585;--nb-ink3:#c69bb0;}
-body.t-yingying::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#a86585 0%,#f9d4e5 50%,#df7895 100%);}
-body.t-xia{--g:#c12d1f;--g-light:#fcece8;--g-mid:#f3a895;--g-dark:#d16c4e;--g-xlight:rgba(193,45,31,0.08);--g-border:rgba(237,123,89,0.22);--bg:#eec4c0;--white:#ffffff;--card:#ffffff;--ink:#230806;--ink2:#c12d1f;--ink3:#cc5347;--nb-bg:var(--card);--nb-line:rgba(237,123,89,0.18);--nb-ring:#ed7b59;--nb-ink:#230806;--nb-ink2:#c12d1f;--nb-ink3:#d7766d;}
-body.t-xia::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#c12d1f 0%,#f3a895 50%,#ed7b59 100%);}
-body.t-haidi{--g:#166DA6;--g-light:#eff6f7;--g-mid:#B5D5DA;--g-dark:#040b10;--g-xlight:rgba(22,109,166,0.08);--g-border:rgba(5,12,18,0.22);--bg:#bed6e6;--white:#ffffff;--card:#ffffff;--ink:#04141e;--ink2:#166DA6;--ink3:#4087b6;--nb-bg:var(--card);--nb-line:rgba(5,12,18,0.18);--nb-ring:#050C12;--nb-ink:#04141e;--nb-ink2:#166DA6;--nb-ink3:#68a0c5;}
-body.t-haidi::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#166DA6 0%,#B5D5DA 50%,#050C12 100%);}
-body.t-mosswood{--g:#386939;--g-light:#f1efe6;--g-mid:#C0B58E;--g-dark:#102e18;--g-xlight:rgba(56,105,57,0.08);--g-border:rgba(18,52,27,0.22);--bg:#c7d5c8;--white:#ffffff;--card:#ffffff;--ink:#0a130a;--ink2:#386939;--ink3:#5c845d;--nb-bg:var(--card);--nb-line:rgba(18,52,27,0.18);--nb-ring:#12341B;--nb-ink:#0a130a;--nb-ink2:#386939;--nb-ink3:#7e9e7e;}
-body.t-mosswood::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#386939 0%,#C0B58E 50%,#12341B 100%);}
-body.t-applefizz{--g:#9ABF17;--g-light:#f5f1c5;--g-mid:#F3EEB6;--g-dark:#c2d0d4;--g-xlight:rgba(154,191,23,0.08);--g-border:rgba(221,236,241,0.22);--bg:#e3edbe;--white:#ffffff;--card:#ffffff;--ink:#1c2204;--ink2:#9ABF17;--ink3:#accb41;--nb-bg:var(--card);--nb-line:rgba(221,236,241,0.18);--nb-ring:#DDECF1;--nb-ink:#1c2204;--nb-ink2:#9ABF17;--nb-ink3:#bdd568;}
-body.t-applefizz::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#9ABF17 0%,#F3EEB6 50%,#DDECF1 100%);}
-body.t-bingyin{--g:#17A1CF;--g-light:#fbe1e1;--g-mid:#FADADA;--g-dark:#c23b46;--g-xlight:rgba(23,161,207,0.08);--g-border:rgba(221,67,80,0.22);--bg:#bee5f2;--white:#ffffff;--card:#ffffff;--ink:#041d25;--ink2:#17A1CF;--ink3:#41b2d8;--nb-bg:var(--card);--nb-line:rgba(221,67,80,0.18);--nb-ring:#DD4350;--nb-ink:#041d25;--nb-ink2:#17A1CF;--nb-ink3:#68c2e0;}
-body.t-bingyin::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#17A1CF 0%,#FADADA 50%,#DD4350 100%);}
-body.t-summer-bite{--g:#e04336;--g-light:#d6f4f5;--g-mid:#59d3d6;--g-dark:#a13027;--g-xlight:rgba(224,67,54,0.08);--g-border:rgba(224,67,54,0.22);--bg:#f6cac7;--white:#ffffff;--card:#ffffff;--ink:#280c0a;--ink2:#e04336;--ink3:#e6655a;--nb-bg:var(--card);--nb-line:rgba(89,211,214,0.4);--nb-ring:#e04336;--nb-ink:#280c0a;--nb-ink2:#a13027;--nb-ink3:#eb857c;}
-body.t-summer-bite::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#e04336 0%,#59d3d6 100%);}
-body.t-mars-rose{--g:#01847F;--g-light:#fadbe9;--g-mid:#F9D2E4;--g-dark:#015f5b;--g-xlight:rgba(1,132,127,0.08);--g-border:rgba(1,132,127,0.22);--bg:#b8dddb;--white:#ffffff;--card:#ffffff;--ink:#001817;--ink2:#01847F;--ink3:#2f9a96;--nb-bg:var(--card);--nb-line:rgba(249,210,228,0.4);--nb-ring:#01847F;--nb-ink:#001817;--nb-ink2:#015f5b;--nb-ink3:#5aafac;}
-body.t-mars-rose::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#01847F 0%,#F9D2E4 100%);}
-body.t-lotus-mist{--g:#99a8b4;--g-light:#f5ebec;--g-mid:#d8afb5;--g-dark:#6e7982;--g-xlight:rgba(153,168,180,0.08);--g-border:rgba(153,168,180,0.22);--bg:#e2e7ea;--white:#ffffff;--card:#ffffff;--ink:#1c1e20;--ink2:#99a8b4;--ink3:#abb8c2;--nb-bg:var(--card);--nb-line:rgba(216,175,181,0.4);--nb-ring:#99a8b4;--nb-ink:#1c1e20;--nb-ink2:#6e7982;--nb-ink3:#bdc6ce;}
-body.t-lotus-mist::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#99a8b4 0%,#d8afb5 100%);}
-body.t-cinnabar-sky{--g:#D30121;--g-light:#cce5ff;--g-mid:#BFDEFF;--g-dark:#980118;--g-xlight:rgba(211,1,33,0.08);--g-border:rgba(211,1,33,0.22);--bg:#f3b8c1;--white:#ffffff;--card:#ffffff;--ink:#260006;--ink2:#D30121;--ink3:#db2f49;--nb-bg:var(--card);--nb-line:rgba(191,222,255,0.4);--nb-ring:#D30121;--nb-ink:#260006;--nb-ink2:#980118;--nb-ink3:#e25a6f;}
-body.t-cinnabar-sky::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#D30121 0%,#BFDEFF 100%);}
-body.t-klein-jade{--g:#012696;--g-light:#e8f8f1;--g-mid:#A4E2C6;--g-dark:#011b6c;--g-xlight:rgba(1,38,150,0.08);--g-border:rgba(1,38,150,0.22);--bg:#b8c2e2;--white:#ffffff;--card:#ffffff;--ink:#00071b;--ink2:#012696;--ink3:#2f4da9;--nb-bg:var(--card);--nb-line:rgba(164,226,198,0.4);--nb-ring:#012696;--nb-ink:#00071b;--nb-ink2:#011b6c;--nb-ink3:#5a72bb;}
-body.t-klein-jade::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#012696 0%,#A4E2C6 100%);}
-body.t-ziluobai{--g:#74759B;--g-light:#e8e7e9;--g-mid:#E2E1E4;--g-dark:#545470;--g-xlight:rgba(116,117,155,0.08);--g-border:rgba(116,117,155,0.22);--bg:#d8d8e3;--white:#ffffff;--card:#ffffff;--ink:#15151c;--ink2:#74759B;--ink3:#8d8ead;--nb-bg:var(--card);--nb-line:rgba(226,225,228,0.4);--nb-ring:#74759B;--nb-ink:#15151c;--nb-ink2:#545470;--nb-ink3:#a5a5be;}
-body.t-ziluobai::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#74759B 0%,#E2E1E4 100%);}
-body.t-gongqiangliu{--g:#689274;--g-light:#eef2ed;--g-mid:#bdccb8;--g-dark:#4b6954;--g-xlight:rgba(104,146,116,0.08);--g-border:rgba(104,146,116,0.22);--bg:#d5e0d8;--white:#ffffff;--card:#ffffff;--ink:#131a15;--ink2:#689274;--ink3:#83a68d;--nb-bg:var(--card);--nb-line:rgba(189,204,184,0.4);--nb-ring:#689274;--nb-ink:#131a15;--nb-ink2:#4b6954;--nb-ink3:#9db8a5;}
-body.t-gongqiangliu::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#689274 0%,#bdccb8 100%);}
-body.t-wasongbai{--g:#6E8B74;--g-light:#f5ebd8;--g-mid:#F2E6CE;--g-dark:#4f6454;--g-xlight:rgba(110,139,116,0.08);--g-border:rgba(110,139,116,0.22);--bg:#d6dfd8;--white:#ffffff;--card:#ffffff;--ink:#141915;--ink2:#6E8B74;--ink3:#88a08d;--nb-bg:var(--card);--nb-line:rgba(242,230,206,0.4);--nb-ring:#6E8B74;--nb-ink:#141915;--nb-ink2:#4f6454;--nb-ink3:#a1b4a5;}
-body.t-wasongbai::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#6E8B74 0%,#F2E6CE 100%);}
-body.t-ouhedailan{--g:#425066;--g-light:#e9d1d9;--g-mid:#E4C6D0;--g-dark:#303a49;--g-xlight:rgba(66,80,102,0.08);--g-border:rgba(66,80,102,0.22);--bg:#caced4;--white:#ffffff;--card:#ffffff;--ink:#0c0e12;--ink2:#425066;--ink3:#647082;--nb-bg:var(--card);--nb-line:rgba(228,198,208,0.4);--nb-ring:#425066;--nb-ink:#0c0e12;--nb-ink2:#303a49;--nb-ink3:#848d9c;}
-body.t-ouhedailan::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#425066 0%,#E4C6D0 100%);}
+body.t-datang2{background:linear-gradient(160deg,#76AEA6 0%,#D79E8F 50%,#DE476A 100%);--g:#567F79;--g-light:#f6eae6;--g-mid:#D79E8F;--g-dark:#c33e5d;--g-xlight:rgba(118,174,166,0.08);--g-border:rgba(222,71,106,0.22);--bg:#d9e8e6;--white:#ffffff;--card:#ffffff;--ink:#151f1e;--ink2:#567F79;--ink3:#6D908A;--nb-bg:var(--card);--nb-line:rgba(222,71,106,0.18);--nb-ring:#DE476A;--nb-ink:#151f1e;--nb-ink2:#76AEA6;--nb-ink3:#748D8A;}
+body.t-mediterranean{background:linear-gradient(160deg,#3D7695 0%,#DDB355 50%,#C85E3D 100%);--g:#3D7695;--g-light:#f8eeda;--g-mid:#DDB355;--g-dark:#b05336;--g-xlight:rgba(61,118,149,0.08);--g-border:rgba(200,94,61,0.22);--bg:#c9d9e1;--white:#ffffff;--card:#ffffff;--ink:#0b151b;--ink2:#3D7695;--ink3:#608fa8;--nb-bg:var(--card);--nb-line:rgba(200,94,61,0.18);--nb-ring:#C85E3D;--nb-ink:#0b151b;--nb-ink2:#3D7695;--nb-ink3:#7292A4;}
+body.t-yingying{background:linear-gradient(160deg,#a86585 0%,#f9d4e5 50%,#df7895 100%);--g:#a86585;--g-light:#faddea;--g-mid:#f9d4e5;--g-dark:#c46a83;--g-xlight:rgba(168,101,133,0.08);--g-border:rgba(223,120,149,0.22);--bg:#e7d4dd;--white:#ffffff;--card:#ffffff;--ink:#1e1218;--ink2:#a86585;--ink3:#b8819b;--nb-bg:var(--card);--nb-line:rgba(223,120,149,0.18);--nb-ring:#df7895;--nb-ink:#1e1218;--nb-ink2:#a86585;--nb-ink3:#A27F90;}
+body.t-xia{background:linear-gradient(160deg,#c12d1f 0%,#f3a895 50%,#ed7b59 100%);--g:#c12d1f;--g-light:#fcece8;--g-mid:#f3a895;--g-dark:#d16c4e;--g-xlight:rgba(193,45,31,0.08);--g-border:rgba(237,123,89,0.22);--bg:#eec4c0;--white:#ffffff;--card:#ffffff;--ink:#230806;--ink2:#c12d1f;--ink3:#cc5347;--nb-bg:var(--card);--nb-line:rgba(237,123,89,0.18);--nb-ring:#ed7b59;--nb-ink:#230806;--nb-ink2:#c12d1f;--nb-ink3:#D1726A;}
+body.t-haidi{background:linear-gradient(160deg,#166DA6 0%,#B5D5DA 50%,#050C12 100%);--g:#166DA6;--g-light:#eff6f7;--g-mid:#B5D5DA;--g-dark:#040b10;--g-xlight:rgba(22,109,166,0.08);--g-border:rgba(5,12,18,0.22);--bg:#bed6e6;--white:#ffffff;--card:#ffffff;--ink:#04141e;--ink2:#166DA6;--ink3:#4087b6;--nb-bg:var(--card);--nb-line:rgba(5,12,18,0.18);--nb-ring:#050C12;--nb-ink:#04141e;--nb-ink2:#166DA6;--nb-ink3:#5F92B3;}
+body.t-mosswood{background:linear-gradient(160deg,#386939 0%,#C0B58E 50%,#12341B 100%);--g:#386939;--g-light:#f1efe6;--g-mid:#C0B58E;--g-dark:#102e18;--g-xlight:rgba(56,105,57,0.08);--g-border:rgba(18,52,27,0.22);--bg:#c7d5c8;--white:#ffffff;--card:#ffffff;--ink:#0a130a;--ink2:#386939;--ink3:#5c845d;--nb-bg:var(--card);--nb-line:rgba(18,52,27,0.18);--nb-ring:#12341B;--nb-ink:#0a130a;--nb-ink2:#386939;--nb-ink3:#769576;}
+body.t-applefizz{background:linear-gradient(160deg,#9ABF17 0%,#F3EEB6 50%,#DDECF1 100%);--g:#67800F;--g-light:#f5f1c5;--g-mid:#F3EEB6;--g-dark:#c2d0d4;--g-xlight:rgba(154,191,23,0.08);--g-border:rgba(221,236,241,0.22);--bg:#e3edbe;--white:#ffffff;--card:#ffffff;--ink:#1c2204;--ink2:#67800F;--ink3:#7E942F;--nb-bg:var(--card);--nb-line:rgba(221,236,241,0.18);--nb-ring:#DDECF1;--nb-ink:#1c2204;--nb-ink2:#9ABF17;--nb-ink3:#7F8F46;}
+body.t-bingyin{background:linear-gradient(160deg,#17A1CF 0%,#FADADA 50%,#DD4350 100%);--g:#127FA4;--g-light:#fbe1e1;--g-mid:#FADADA;--g-dark:#c23b46;--g-xlight:rgba(23,161,207,0.08);--g-border:rgba(221,67,80,0.22);--bg:#bee5f2;--white:#ffffff;--card:#ffffff;--ink:#041d25;--ink2:#127FA4;--ink3:#3797B8;--nb-bg:var(--card);--nb-line:rgba(221,67,80,0.18);--nb-ring:#DD4350;--nb-ink:#041d25;--nb-ink2:#17A1CF;--nb-ink3:#4F93AA;}
+body.t-summer-bite{background:linear-gradient(160deg,#e04336 0%,#F2A488 50%,#59d3d6 100%);--g:#e04336;--g-light:#d6f4f5;--g-mid:#59d3d6;--g-dark:#a13027;--g-xlight:rgba(224,67,54,0.08);--g-border:rgba(224,67,54,0.22);--bg:#f6cac7;--white:#ffffff;--card:#ffffff;--ink:#280c0a;--ink2:#e04336;--ink3:#e6655a;--nb-bg:var(--card);--nb-line:rgba(89,211,214,0.4);--nb-ring:#e04336;--nb-ink:#280c0a;--nb-ink2:#a13027;--nb-ink3:#C87169;}
+body.t-mars-rose{background:linear-gradient(160deg,#01847F 0%,#F9D2E4 100%);--g:#01847F;--g-light:#fadbe9;--g-mid:#F9D2E4;--g-dark:#015f5b;--g-xlight:rgba(1,132,127,0.08);--g-border:rgba(1,132,127,0.22);--bg:#b8dddb;--white:#ffffff;--card:#ffffff;--ink:#001817;--ink2:#01847F;--ink3:#2f9a96;--nb-bg:var(--card);--nb-line:rgba(249,210,228,0.4);--nb-ring:#01847F;--nb-ink:#001817;--nb-ink2:#015f5b;--nb-ink3:#4C9592;}
+body.t-lotus-mist{background:linear-gradient(160deg,#99a8b4 0%,#d8afb5 100%);--g:#707B83;--g-light:#f5ebec;--g-mid:#d8afb5;--g-dark:#6e7982;--g-xlight:rgba(153,168,180,0.08);--g-border:rgba(153,168,180,0.22);--bg:#e2e7ea;--white:#ffffff;--card:#ffffff;--ink:#1c1e20;--ink2:#707B83;--ink3:#828C93;--nb-bg:var(--card);--nb-line:rgba(216,175,181,0.4);--nb-ring:#99a8b4;--nb-ink:#1c1e20;--nb-ink2:#6e7982;--nb-ink3:#848B90;}
+body.t-cinnabar-sky{background:linear-gradient(160deg,#D30121 0%,#D58FA8 50%,#BFDEFF 100%);--g:#D30121;--g-light:#cce5ff;--g-mid:#BFDEFF;--g-dark:#980118;--g-xlight:rgba(211,1,33,0.08);--g-border:rgba(211,1,33,0.22);--bg:#f3b8c1;--white:#ffffff;--card:#ffffff;--ink:#260006;--ink2:#D30121;--ink3:#db2f49;--nb-bg:var(--card);--nb-line:rgba(191,222,255,0.4);--nb-ring:#D30121;--nb-ink:#260006;--nb-ink2:#980118;--nb-ink3:#e25a6f;}
+body.t-klein-jade{background:linear-gradient(160deg,#012696 0%,#789FC0 50%,#A4E2C6 100%);--g:#012696;--g-light:#e8f8f1;--g-mid:#A4E2C6;--g-dark:#011b6c;--g-xlight:rgba(1,38,150,0.08);--g-border:rgba(1,38,150,0.22);--bg:#b8c2e2;--white:#ffffff;--card:#ffffff;--ink:#00071b;--ink2:#012696;--ink3:#2f4da9;--nb-bg:var(--card);--nb-line:rgba(164,226,198,0.4);--nb-ring:#012696;--nb-ink:#00071b;--nb-ink2:#011b6c;--nb-ink3:#5a72bb;}
+body.t-ziluobai{background:linear-gradient(160deg,#74759B 0%,#E2E1E4 100%);--g:#74759B;--g-light:#e8e7e9;--g-mid:#E2E1E4;--g-dark:#545470;--g-xlight:rgba(116,117,155,0.08);--g-border:rgba(116,117,155,0.22);--bg:#d8d8e3;--white:#ffffff;--card:#ffffff;--ink:#15151c;--ink2:#74759B;--ink3:#8d8ead;--nb-bg:var(--card);--nb-line:rgba(226,225,228,0.4);--nb-ring:#74759B;--nb-ink:#15151c;--nb-ink2:#545470;--nb-ink3:#87879C;}
+body.t-gongqiangliu{background:linear-gradient(160deg,#689274 0%,#bdccb8 100%);--g:#5C8066;--g-light:#eef2ed;--g-mid:#bdccb8;--g-dark:#4b6954;--g-xlight:rgba(104,146,116,0.08);--g-border:rgba(104,146,116,0.22);--bg:#d5e0d8;--white:#ffffff;--card:#ffffff;--ink:#131a15;--ink2:#5C8066;--ink3:#73927C;--nb-bg:var(--card);--nb-line:rgba(189,204,184,0.4);--nb-ring:#689274;--nb-ink:#131a15;--nb-ink2:#4b6954;--nb-ink3:#7C9182;}
+body.t-wasongbai{background:linear-gradient(160deg,#6E8B74 0%,#F2E6CE 100%);--g:#647E6A;--g-light:#f5ebd8;--g-mid:#F2E6CE;--g-dark:#4f6454;--g-xlight:rgba(110,139,116,0.08);--g-border:rgba(110,139,116,0.22);--bg:#d6dfd8;--white:#ffffff;--card:#ffffff;--ink:#141915;--ink2:#647E6A;--ink3:#7C9280;--nb-bg:var(--card);--nb-line:rgba(242,230,206,0.4);--nb-ring:#6E8B74;--nb-ink:#141915;--nb-ink2:#4f6454;--nb-ink3:#7F8E82;}
+body.t-ouhedailan{background:linear-gradient(160deg,#425066 0%,#E4C6D0 100%);--g:#425066;--g-light:#e9d1d9;--g-mid:#E4C6D0;--g-dark:#303a49;--g-xlight:rgba(66,80,102,0.08);--g-border:rgba(66,80,102,0.22);--bg:#caced4;--white:#ffffff;--card:#ffffff;--ink:#0c0e12;--ink2:#425066;--ink3:#647082;--nb-bg:var(--card);--nb-line:rgba(228,198,208,0.4);--nb-ring:#425066;--nb-ink:#0c0e12;--nb-ink2:#303a49;--nb-ink3:#848d9c;}
 
 *{box-sizing:border-box;margin:0;padding:0;}
 /* 让页面内容跟随字体大小设置 */
@@ -129,7 +102,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .ti.done{opacity:.55;background:var(--g-light);}
 .chk{width:24px;height:24px;border:2px solid var(--g-mid);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;transition:all .15s;}
 .chk.on{background:var(--g);border-color:var(--g);color:#fff;}
-.tn{flex:1;font-size:14px;font-weight:500;}
+.tn{flex:1;font-size:15px;font-weight:600;}
 .priority-red{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;}
 .priority-orange{width:8px;height:8px;border-radius:50%;background:var(--orange);flex-shrink:0;}
 .priority-green{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
@@ -180,6 +153,12 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .gbtn{background:transparent;border:1px solid var(--g-border);border-radius:var(--radius-sm);padding:5px 12px;cursor:pointer;font-size:12px;}
 .sbtn{padding:4px 11px;background:var(--g-light);color:var(--g);border:none;border-radius:10px;font-size:11px;cursor:pointer;font-weight:500;}
 .delbtn{background:transparent;border:none;color:#c97c5a;font-size:17px;cursor:pointer;padding:4px;}
+/* 树形结构（计划/项目/今日任务）里"加子项/编辑/删除"这类次要操作，
+   刻意做得比正文标题更轻、更淡，视觉重心留给真正重要的条目内容本身 */
+.tree-action-btn{background:transparent;border:none;color:var(--ink3);font-size:11.5px;padding:3px 7px;cursor:pointer;font-weight:400;border-radius:8px;}
+.tree-action-btn:active{background:var(--g-light);}
+.tree-action-btn.danger{color:#c97c5a;}
+.tree-action-btn.accent{color:var(--g);font-weight:500;}
 .empty{text-align:center;padding:28px 12px;color:var(--ink3);font-size:13px;line-height:1.8;}
 .empty::before{display:block;font-size:28px;margin-bottom:8px;content:attr(data-icon);}
 .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--white);padding:7px 20px;border-radius:40px;font-size:12px;opacity:0;transition:opacity .2s;z-index:500;white-space:nowrap;backdrop-filter:blur(8px);}
@@ -354,7 +333,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .nb-check{width:18px;height:18px;border:1.5px solid var(--nb-ring);border-radius:4px;flex-shrink:0;margin-top:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--nb-ink2);background:var(--white);}
 .nb-check.done{background:var(--nb-ring);border-color:var(--nb-ring);color:#fff;}
 .nb-content{flex:1;min-width:0;}
-.nb-item-title{font-size:14px;color:var(--nb-ink);line-height:32px;min-height:32px;}
+.nb-item-title{font-size:15px;font-weight:600;color:var(--nb-ink);line-height:1.5;min-height:auto;padding:4px 0;}
 .nb-item-title.done{text-decoration:line-through;color:var(--nb-ink3);}
 .nb-item-note{font-size:12px;color:var(--nb-ink3);line-height:32px;white-space:pre-wrap;margin:0;padding:0;}
 .nb-item-meta{font-size:10px;color:var(--nb-ink3);line-height:32px;height:32px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -488,11 +467,11 @@ const THEMES={
     {id:'bingyin',name:'冰甜',a:'#17A1CF',b:'#DD4350',mid:'#FADADA'},
   ],
   duo:[
-    {id:'summer-bite',name:'夏日红蓝',a:'#e04336',b:'#59d3d6'},
+    {id:'summer-bite',name:'夏日红蓝',a:'#e04336',mid:'#F2A488',b:'#59d3d6'},
     {id:'mars-rose',name:'粉绿',a:'#01847F',b:'#F9D2E4'},
     {id:'lotus-mist',name:'荷塘烟雨',a:'#99a8b4',b:'#d8afb5'},
-    {id:'cinnabar-sky',name:'冰沁朱砂',a:'#D30121',b:'#BFDEFF'},
-    {id:'klein-jade',name:'艾绿蓝',a:'#012696',b:'#A4E2C6'},
+    {id:'cinnabar-sky',name:'冰沁朱砂',a:'#D30121',mid:'#D58FA8',b:'#BFDEFF'},
+    {id:'klein-jade',name:'艾绿蓝',a:'#012696',mid:'#789FC0',b:'#A4E2C6'},
     {id:'ziluobai',name:'紫萝白',a:'#74759B',b:'#E2E1E4'},
     {id:'gongqiangliu',name:'宫墙柳',a:'#689274',b:'#bdccb8'},
     {id:'wasongbai',name:'瓦松绿白',a:'#6E8B74',b:'#F2E6CE'},
@@ -1480,10 +1459,10 @@ function renderTaskItem(t,level){
       </div>
       <div class="priority-${t.priority||'green'}"></div>
     </div>
-    <div style="display:flex;gap:6px;justify-content:flex-end;">
-      <button class="sbtn" onclick="openAddChildTaskModal('${t.id}')" style="color:var(--g);">➕子任务</button>
-      <button class="sbtn" onclick="editTask('${t.id}')">编辑</button>
-      <button class="delbtn" onclick="delTaskConfirm('${t.id}')">🗑️</button>
+    <div style="display:flex;gap:2px;justify-content:flex-end;">
+      <button class="tree-action-btn" onclick="openAddChildTaskModal('${t.id}')">➕ 子任务</button>
+      <button class="tree-action-btn" onclick="editTask('${t.id}')">✏️ 编辑</button>
+      <button class="tree-action-btn danger" onclick="delTaskConfirm('${t.id}')">🗑️</button>
     </div>
     ${!isCollapsed&&hasChildren?`<div>${t.children.map(c=>renderTaskItem(c,level+1)).join('')}</div>`:(hasChildren?`<div style="font-size:11px;color:var(--ink3);padding:2px 0 2px 22px;">▶ ${t.children.length} 项子任务（已折叠）</div>`:'')}
   </div>`;
@@ -1740,7 +1719,7 @@ function renderJotList(){
           <div class="si-date">${j.date}</div>
         </div>
       </div>
-      <div class="si-acts"><button class="sbtn" onclick="editJotItem('${j.id}')">编辑</button><button class="delbtn" onclick="delJotConfirm('${j.id}')">🗑️</button></div>
+      <div class="si-acts"><button class="tree-action-btn" onclick="editJotItem('${j.id}')">✏️ 编辑</button><button class="tree-action-btn danger" onclick="delJotConfirm('${j.id}')">🗑️</button></div>
     </div>`).join('');
 }
 function addJot(){
@@ -2458,11 +2437,11 @@ function renderNbItem(item,level){
         <div style="background:var(--g-xlight);border-radius:6px;height:6px;margin:4px 0;overflow:hidden;">
           <div style="background:var(--g);height:100%;width:${Math.round(childDone/item.children.length*100)}%;"></div>
         </div>`:''}
-      <div class="nb-item-actions" style="margin:4px 0 2px;flex-wrap:wrap;height:auto;">
-        <button class="sbtn" onclick="openAddChildPlanModal('${item.id}')">➕ 子项</button>
-        <button class="sbtn" onclick="editNbPlan('${item.id}')">✏️ 编辑</button>
-        ${hasChildren&&allChildDone?`<button class="sbtn" onclick="archiveWholePlan('${item.id}')">✓ 全部完成</button>`:''}
-        <button class="delbtn" onclick="deleteNbPlan('${item.id}')">🗑️</button>
+      <div class="nb-item-actions" style="margin:2px 0 2px;flex-wrap:wrap;height:auto;">
+        <button class="tree-action-btn" onclick="openAddChildPlanModal('${item.id}')">➕ 子项</button>
+        <button class="tree-action-btn" onclick="editNbPlan('${item.id}')">✏️ 编辑</button>
+        ${hasChildren&&allChildDone?`<button class="tree-action-btn accent" onclick="archiveWholePlan('${item.id}')">✓ 全部完成</button>`:''}
+        <button class="tree-action-btn danger" onclick="deleteNbPlan('${item.id}')">🗑️</button>
       </div>
       ${!isCollapsed&&hasChildren?item.children.map(c=>renderNbItem(c,level+1)).join(''):(hasChildren?`<div style="font-size:11px;color:var(--nb-ink3);padding:2px 0;">▶ ${item.children.length} 项子任务（已折叠）</div>`:'')}
     </div>
@@ -2815,14 +2794,14 @@ function renderHabits(){
         </span>
         <span style="font-size:20px;" title="连续 ${streak}">${badge}${streak>0?streak:''}</span>
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center;">
         ${doneToday?`<button class="sbtn" onclick="undoHabitCheckinToday('${h.id}')">↩️ 撤销今天</button>`:(restToday?`<span style="font-size:12px;color:var(--ink3);padding:6px;">🌤 今天请假中</span>`:`<button class="sbtn" onclick="checkInHabitToday('${h.id}')">✅ 今天打卡</button>`)}
-        ${(!doneToday&&!restToday)?`<button class="sbtn" onclick="takeRestToday('${h.id}')">🌤 今天请假</button>`:''}
-        <button class="sbtn" onclick="openRestRangeModal('${h.id}')">🗓 请假一段</button>
-        <button class="sbtn" onclick="moveHabitUp(${idx})" ${idx===0?'style="opacity:.3;pointer-events:none;"':''}>↑</button>
-        <button class="sbtn" onclick="moveHabitDown(${idx})" ${idx===S.goodH.length-1?'style="opacity:.3;pointer-events:none;"':''}>↓</button>
-        <button class="sbtn" onclick="editHabit('${h.id}')">编辑</button>
-        <button class="delbtn" onclick="delHabitConfirm('${h.id}')">🗑️</button>
+        ${(!doneToday&&!restToday)?`<button class="tree-action-btn" onclick="takeRestToday('${h.id}')">🌤 今天请假</button>`:''}
+        <button class="tree-action-btn" onclick="openRestRangeModal('${h.id}')">🗓 请假一段</button>
+        <button class="tree-action-btn" onclick="moveHabitUp(${idx})" ${idx===0?'style="opacity:.3;pointer-events:none;"':''}>↑</button>
+        <button class="tree-action-btn" onclick="moveHabitDown(${idx})" ${idx===S.goodH.length-1?'style="opacity:.3;pointer-events:none;"':''}>↓</button>
+        <button class="tree-action-btn" onclick="editHabit('${h.id}')">✏️ 编辑</button>
+        <button class="tree-action-btn danger" onclick="delHabitConfirm('${h.id}')">🗑️</button>
       </div>
     </div>`;
   }).join('');
@@ -2964,24 +2943,24 @@ function renderProjTree(){
     }
 
     const movebtns=siblings>1?`
-      ${idx>1?`<button class="sbtn" style="padding:2px 6px;font-size:12px;" onclick="pinProjToTop('${p.id}')" title="置顶">📌</button>`:''}
-      <button class="sbtn" style="padding:2px 6px;font-size:12px;${idx===0?'opacity:.3;pointer-events:none;':''}" onclick="moveProjNode('${p.id}',-1)">↑</button>
-      <button class="sbtn" style="padding:2px 6px;font-size:12px;${idx===siblings-1?'opacity:.3;pointer-events:none;':''}" onclick="moveProjNode('${p.id}',1)">↓</button>`:'';
+      ${idx>1?`<button class="tree-action-btn" onclick="pinProjToTop('${p.id}')" title="置顶">📌</button>`:''}
+      <button class="tree-action-btn" onclick="moveProjNode('${p.id}',-1)" style="${idx===0?'opacity:.3;pointer-events:none;':''}">↑</button>
+      <button class="tree-action-btn" onclick="moveProjNode('${p.id}',1)" style="${idx===siblings-1?'opacity:.3;pointer-events:none;':''}">↓</button>`:'';
 
     return`<div class="${cardClass} ${colorClass}">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         ${hasChildren?`<span onclick="toggleProjCollapse('${p.id}')" style="font-size:11px;color:var(--ink3);cursor:pointer;width:16px;flex-shrink:0;user-select:none">${toggleIcon}</span>`:'<span style="width:16px;flex-shrink:0"></span>'}
-        <span style="flex:1;font-weight:${level===0?'700':'500'};font-size:${level===0?'15px':'14px'};cursor:${hasChildren?'pointer':'default'}" onclick="${hasChildren?`toggleProjCollapse('${p.id}')`:''}">${level===0?'📁 ':''}${esc(p.name)} <span style="font-size:12px;color:var(--ink3)">${countLabel}</span></span>
-        ${movebtns}
-        <button class="sbtn" onclick="editProjItem('${p.id}')">✏️</button>
-        <button class="delbtn" onclick="delProjConfirm('${p.id}')">🗑️</button>
+        <span style="flex:1;font-weight:${level===0?'700':'600'};font-size:${level===0?'16px':'15px'};cursor:${hasChildren?'pointer':'default'}" onclick="${hasChildren?`toggleProjCollapse('${p.id}')`:''}">${level===0?'📁 ':''}${esc(p.name)} <span style="font-size:12px;font-weight:400;color:var(--ink3)">${countLabel}</span></span>
       </div>
       <div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div><div style="font-size:11px;color:var(--ink3)">完成 ${percent}%</div>
-      <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;">
-        ${hasChildren?'':`<button class="sbtn" onclick="checkInProj('${p.id}')">✅ 打卡</button>`}
-        ${(!hasChildren&&p.done>0)?`<button class="sbtn" onclick="undoCheckInProj('${p.id}')">↩️ 撤销</button>`:''}
-        <button class="sbtn" onclick="openSubProj('${p.id}')">➕ 子项目</button>
-        ${hasNotes?`<button class="sbtn" onclick="viewProjHistory('${p.id}')">📜 历史</button>`:''}
+      <div style="display:flex;gap:2px;margin:6px 0 0;flex-wrap:wrap;align-items:center;">
+        ${movebtns}
+        ${hasChildren?'':`<button class="tree-action-btn accent" onclick="checkInProj('${p.id}')">✅ 打卡</button>`}
+        ${(!hasChildren&&p.done>0)?`<button class="tree-action-btn" onclick="undoCheckInProj('${p.id}')">↩️ 撤销</button>`:''}
+        <button class="tree-action-btn" onclick="openSubProj('${p.id}')">➕ 子项目</button>
+        ${hasNotes?`<button class="tree-action-btn" onclick="viewProjHistory('${p.id}')">📜 历史</button>`:''}
+        <button class="tree-action-btn" onclick="editProjItem('${p.id}')">✏️ 编辑</button>
+        <button class="tree-action-btn danger" onclick="delProjConfirm('${p.id}')">🗑️</button>
       </div>
       ${!isCollapsed&&hasChildren?(()=>{sortChildrenByCompletion(p.children);return`<div>${p.children.map((c,ci)=>renderNode(c,level+1,ci,p.children.length)).join('')}</div>`;})():(hasChildren?`<div style="font-size:11px;color:var(--ink3);padding:4px 0 2px">▶ ${p.children.length} 个子项目（已折叠）</div>`:'')}
     </div>`;
