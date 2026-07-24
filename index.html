@@ -542,6 +542,8 @@ function load(){
   if(!S.quoteIntervalMinutes)S.quoteIntervalMinutes=30;
   // ==== 第一批新功能：数据初始化 ====
   if(!S.memos)S.memos=[]; // 快速备忘（已废弃，仅保留兼容旧备份）：[{id,text,createdAt}]
+  if(S.diaryDraft===undefined)S.diaryDraft='';
+  if(S.noteEditDraft===undefined)S.noteEditDraft=null;
   if(!S.jots){
     // 记一记：由「想法流」+「快速备忘」合并而来，只在第一次升级时迁移一次
     const fromWishes=(S.wishes||[]).map(w=>({id:w.id,t:w.t,done:false,date:w.date||nowStr()}));
@@ -834,6 +836,20 @@ function bindAutoGrow(el){
 }
 function escHtml(s){return esc(s).replace(/\n/g,'<br>');}
 
+// 通用：给输入框绑定"停止输入约1.2秒后自动保存草稿"，避免误退出导致内容丢失。
+// 会叠加在已有的 oninput 处理上（比如自动增高），不会把原有的覆盖掉。
+function bindDraftAutosave(el,onSave,delay){
+  if(!el)return;
+  delay=delay||1200;
+  let timer=null;
+  const existing=el.oninput;
+  el.oninput=(e)=>{
+    if(typeof existing==='function')existing(e);
+    if(timer)clearTimeout(timer);
+    timer=setTimeout(()=>onSave(el.value),delay);
+  };
+}
+
 // ==================== 安装引导（Android Chrome） ====================
 function showInstallBanner(){
   return; // 已按用户要求关闭此提示
@@ -945,11 +961,7 @@ document.getElementById('exportBtn').onclick=()=>{
         <div style="width:25%;padding:0 20px;flex-shrink:0;">
           <div style="text-align:center;font-size:11px;color:var(--ink3);font-weight:600;letter-spacing:.5px;margin-bottom:12px;">🎨 主题</div>
           <div style="font-size:10px;color:var(--ink3);margin-bottom:6px;font-weight:600;">✦ 渐变</div>
-          <div class="th-grid" style="margin-bottom:12px;">${THEMES.grad.map(t=>`<div class="th-item" data-tid="${t.id}"><div class="th-dot${t.id===curTheme?' th-active':''}" style="background:linear-gradient(135deg,${t.a} 0%,${t.mid} 50%,${t.b} 100%)"></div><div class="th-name">${t.name}</div></div>`).join('')}</div>
-          <div style="font-size:10px;color:var(--ink3);margin-bottom:6px;font-weight:600;">✦ 多色</div>
-          <div class="th-grid" style="margin-bottom:12px;">${THEMES.multi.map(t=>`<div class="th-item" data-tid="${t.id}"><div class="th-dot${t.id===curTheme?' th-active':''}" style="background:linear-gradient(135deg,${t.a} 33%,${t.mid} 66%,${t.b} 100%)"></div><div class="th-name">${t.name}</div></div>`).join('')}</div>
-          <div style="font-size:10px;color:var(--ink3);margin-bottom:6px;font-weight:600;">✦ 双色</div>
-          <div class="th-grid">${THEMES.duo.map(t=>`<div class="th-item" data-tid="${t.id}"><div class="th-dot${t.id===curTheme?' th-active':''}" style="background:linear-gradient(135deg,${t.a} 50%,${t.b} 50%)"></div><div class="th-name">${t.name}</div></div>`).join('')}</div>
+          <div class="th-grid">${[...THEMES.grad,...THEMES.multi,...THEMES.duo].map(t=>`<div class="th-item" data-tid="${t.id}"><div class="th-dot${t.id===curTheme?' th-active':''}" style="background:${t.mid?`linear-gradient(135deg,${t.a} 0%,${t.mid} 50%,${t.b} 100%)`:`linear-gradient(135deg,${t.a} 50%,${t.b} 50%)`}"></div><div class="th-name">${t.name}</div></div>`).join('')}</div>
         </div>
         <!-- 板块1：云同步 -->
         <div style="width:25%;padding:0 20px;flex-shrink:0;" id="syncPanelWrap">${syncPanelHtml()}</div>
@@ -1425,23 +1437,81 @@ function renderTasks(){
   const today=td();const tasks=S.tasks.filter(t=>t.date===today);
   const container=document.getElementById('taskList');
   if(!tasks.length){container.innerHTML='<div class="empty" data-icon="✅">今天还没有任务<br>点击下方添加</div>';return;}
-  container.innerHTML=tasks.map(t=>`
-    <div class="ti ${t.done?'done':''}">
-      <div class="chk ${t.done?'on':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
+  container.innerHTML=tasks.map(t=>renderTaskItem(t,0)).join('');
+}
+function isTaskDone(t){
+  if(t.children&&t.children.length)return t.children.every(isTaskDone);
+  return !!t.done;
+}
+let collapsedTasks=new Set();
+function toggleTaskCollapse(id){if(collapsedTasks.has(id))collapsedTasks.delete(id);else collapsedTasks.add(id);renderTasks();}
+function renderTaskItem(t,level){
+  level=level||0;
+  const hasChildren=t.children&&t.children.length>0;
+  const isCollapsed=collapsedTasks.has(t.id);
+  const childDone=hasChildren?t.children.filter(isTaskDone).length:0;
+  const done=hasChildren?(childDone===t.children.length):t.done;
+  return`<div class="ti ${done?'done':''}" style="display:flex;flex-direction:column;align-items:stretch;gap:6px;${level>0?'margin-left:'+Math.min(level,4)*14+'px;':''}">
+    <div style="display:flex;align-items:center;gap:8px;">
+      ${hasChildren?
+        `<span onclick="toggleTaskCollapse('${t.id}')" style="cursor:pointer;font-size:11px;color:var(--ink3);width:14px;flex-shrink:0;user-select:none;">${isCollapsed?'▶':'▼'}</span><div class="chk" style="font-size:9px;">${childDone}/${t.children.length}</div>`
+        :`<span style="width:14px;flex-shrink:0;"></span><div class="chk ${t.done?'on':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>`}
       <div style="flex:1">
-        <div class="tn" style="${t.done?'text-decoration:line-through':''}">${esc(t.name)}</div>
+        <div class="tn" style="${done?'text-decoration:line-through':''}">${esc(t.name)}</div>
         ${t.taskType||t.note?`<div style="font-size:11px;color:var(--ink3);margin-top:2px">${t.taskType?`<span style="background:var(--g-light);color:var(--g);padding:1px 8px;border-radius:10px;margin-right:5px;font-weight:500">${t.taskType}</span>`:''}${t.note?esc(t.note):''}</div>`:''}
+        ${hasChildren?`<div style="background:var(--g-xlight);border-radius:6px;height:5px;margin-top:6px;overflow:hidden;"><div style="background:var(--g);height:100%;width:${Math.round(childDone/t.children.length*100)}%;"></div></div>`:''}
       </div>
       <div class="priority-${t.priority||'green'}"></div>
+    </div>
+    <div style="display:flex;gap:6px;justify-content:flex-end;">
+      <button class="sbtn" onclick="openAddChildTaskModal('${t.id}')" style="color:var(--g);">➕子任务</button>
       <button class="sbtn" onclick="editTask('${t.id}')">编辑</button>
       <button class="delbtn" onclick="delTaskConfirm('${t.id}')">🗑️</button>
-    </div>`).join('');
+    </div>
+    ${!isCollapsed&&hasChildren?`<div>${t.children.map(c=>renderTaskItem(c,level+1)).join('')}</div>`:(hasChildren?`<div style="font-size:11px;color:var(--ink3);padding:2px 0 2px 22px;">▶ ${t.children.length} 项子任务（已折叠）</div>`:'')}
+  </div>`;
+}
+function findTaskItem(id,list){
+  list=list||S.tasks;
+  for(const t of list){
+    if(t.id===id)return t;
+    if(t.children&&t.children.length){
+      const found=findTaskItem(id,t.children);
+      if(found)return found;
+    }
+  }
+  return null;
+}
+function findTaskParentArray(id,list){
+  list=list||S.tasks;
+  for(let i=0;i<list.length;i++){
+    if(list[i].id===id)return list;
+    if(list[i].children&&list[i].children.length){
+      const found=findTaskParentArray(id,list[i].children);
+      if(found)return found;
+    }
+  }
+  return null;
+}
+function openAddChildTaskModal(parentId){
+  const body=`<div class="note-field-group"><div class="note-field-label">子任务名称</div><input id="childTaskName" placeholder="例如：第一步"></div>
+    <div class="note-field-group"><div class="note-field-label">备注（可选）</div><textarea id="childTaskNote" rows="2"></textarea></div>`;
+  showModal('添加子任务',body,()=>{
+    const name=document.getElementById('childTaskName').value.trim();if(!name){toast('请输入名称');return;}
+    const note=document.getElementById('childTaskNote').value.trim();
+    const parent=findTaskItem(parentId);if(!parent)return;
+    if(!parent.children)parent.children=[];
+    parent.children.push({id:uid(),name,note,done:false,children:[]});
+    collapsedTasks.delete(parentId);
+    save();closeModal();renderTasks();toast('已添加子任务 ✓');
+  });
+  setTimeout(()=>{const el=document.getElementById('childTaskName');if(el)el.focus();},100);
 }
 
-function toggleTask(id){const t=S.tasks.find(x=>x.id===id);if(t){t.done=!t.done;t.completedAt=t.done?Date.now():null;save();renderTasks();}}
-function delTaskConfirm(id){confirmDel(()=>{S.tasks=S.tasks.filter(t=>t.id!==id);save();renderTasks();});}
+function toggleTask(id){const t=findTaskItem(id);if(t){if(t.children&&t.children.length)return;t.done=!t.done;t.completedAt=t.done?Date.now():null;save();renderTasks();}}
+function delTaskConfirm(id){confirmDel(()=>{const arr=findTaskParentArray(id);if(arr){const idx=arr.findIndex(t=>t.id===id);if(idx>-1)arr.splice(idx,1);}save();renderTasks();});}
 function editTask(id){
-  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  const t=findTaskItem(id);if(!t)return;
   const body=(container)=>{
     container.innerHTML=`
       <div class="note-field-group"><div class="note-field-label">任务名称</div><input id="editTaskName" value="${esc(t.name)}"></div>
@@ -1480,7 +1550,7 @@ function openAddTaskModal(){
     const priSel=document.querySelector('.priority-option.selected');
     const priority=priSel?priSel.dataset.p:'green';
     const note=document.getElementById('newTaskNote').value.trim();
-    S.tasks.push({id:uid(),date,name,taskType,priority,note,done:false});
+    S.tasks.push({id:uid(),date,name,taskType,priority,note,done:false,children:[]});
     save();closeModal();renderTasks();toast(date===td()?'任务已添加 ✓':`已添加到 ${fmtDateShort(date)} ✓`);
   });
   setTimeout(()=>{const el=document.getElementById('newTaskName');if(el)el.focus();},100);
@@ -1746,8 +1816,9 @@ function renderDiaryNbPage(){
     date.textContent=`${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
 
     // 写入区——本子里只有纯粹的内容
-    body.innerHTML=`<textarea id="diaryInput" class="diary-style-textarea" placeholder="今天的故事…" rows="7"></textarea>`;
+    body.innerHTML=`<textarea id="diaryInput" class="diary-style-textarea" placeholder="今天的故事…" rows="7">${esc(S.diaryDraft||'')}</textarea>`;
     bindAutoGrow(document.getElementById('diaryInput'));
+    bindDraftAutosave(document.getElementById('diaryInput'),(val)=>{S.diaryDraft=val;save();});
     if(actionArea)actionArea.innerHTML=`<button class="nb-add-outer-btn" onclick="saveDiaryNb()">保存日记</button>`;
   } else {
     // 查看历史日记
@@ -1774,6 +1845,7 @@ function saveDiaryNb(){
   const t=document.getElementById('diaryInput').value.trim();
   if(!t){toast('还没写任何内容');return;}
   S.diaries.unshift({id:uid(),t,date:nowStr()});
+  S.diaryDraft='';
   save();_diaryPage=1;renderDiaries();toast('日记已存 ✓');
 }
 
@@ -2332,55 +2404,81 @@ function renderPlan(){
 function renderPlanNbItems(){
   const body=document.getElementById('planNbBody');if(!body)return;
   const items=(S.plans[_planType]||[]);
-  const done=items.filter(i=>i.children&&i.children.length?i.children.every(c=>c.done):i.done).length;
+  const done=items.filter(isPlanItemDone).length;
   body.innerHTML=`
     <div style="font-size:11px;color:var(--nb-ink3);line-height:32px;text-align:right;">完成 ${done}/${items.length}</div>
-    ${items.length?items.map((item)=>renderNbItem(item)).join(''):'<div class="nb-empty">还没有计划，点右上角＋添加</div>'}`;
+    ${items.length?items.map((item)=>renderNbItem(item,0)).join(''):'<div class="nb-empty">还没有计划，点右上角＋添加</div>'}`;
 }
 
-function renderNbItem(item){
+function isPlanItemDone(item){
+  if(item.children&&item.children.length)return item.children.every(isPlanItemDone);
+  return !!item.done;
+}
+
+let collapsedPlans=new Set();
+function togglePlanCollapse(id){if(collapsedPlans.has(id))collapsedPlans.delete(id);else collapsedPlans.add(id);renderPlanNbItems();}
+
+function renderNbItem(item,level){
+  level=level||0;
   const hasChildren=item.children&&item.children.length>0;
   const hasNote=item.note&&item.note.trim();
   const hasDue=item.due;
   const hasDate=item.planDate&&item.planDate!==td();
-  const childDone=hasChildren?item.children.filter(c=>c.done).length:0;
+  const isCollapsed=collapsedPlans.has(item.id);
+  const childDone=hasChildren?item.children.filter(isPlanItemDone).length:0;
   const allChildDone=hasChildren&&childDone===item.children.length;
-  return`<div class="nb-item${(!hasChildren&&item.done)?' done-nb':''}">
-    ${hasChildren?
-      `<div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:10px;" title="有子任务，进度自动计算">${childDone}/${item.children.length}</div>`
-      :`<div class="nb-check${item.done?' done':''}" onclick="toggleNbPlan('${item.id}')">${item.done?'✓':''}</div>`}
-    <div class="nb-content">
-      <div class="nb-item-title${(!hasChildren&&item.done)?' done':''}">${esc(item.title||item.text||'')}</div>
-      ${hasNote?`<div class="nb-item-note">${esc(item.note)}</div>`:''}
-      ${hasDue?`<div class="nb-item-meta">⏰ 截止 ${fmtDateShort(item.due)}</div>`:''}
-      ${hasDate?`<div class="nb-item-meta">📅 计划于 ${fmtDateShort(item.planDate)}</div>`:''}
-      ${hasChildren?`
-        <div style="background:var(--g-xlight);border-radius:6px;height:6px;margin:6px 0;overflow:hidden;">
-          <div style="background:var(--g);height:100%;width:${Math.round(childDone/item.children.length*100)}%;"></div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:2px;">
-          ${item.children.map(c=>`
-            <div style="display:flex;align-items:center;gap:6px;padding:3px 0;">
-              <div class="nb-check${c.done?' done':''}" style="width:14px;height:14px;font-size:9px;" onclick="toggleChildPlan('${item.id}','${c.id}')">${c.done?'✓':''}</div>
-              <span style="flex:1;font-size:12px;${c.done?'text-decoration:line-through;color:var(--nb-ink3);':''}">${esc(c.title)}</span>
-              <span class="ci-del" style="font-size:11px;" onclick="deleteChildPlan('${item.id}','${c.id}')">✕</span>
-            </div>`).join('')}
-        </div>
-        ${allChildDone?`<button class="sbtn" style="margin-top:6px;font-size:11px;padding:3px 10px;" onclick="archiveWholePlan('${item.id}')">✓ 标记整组完成</button>`:''}
-      `:''}
+  const itemDone=hasChildren?allChildDone:item.done;
+  return`<div class="nb-item${itemDone?' done-nb':''}" style="${level>0?'margin-left:'+Math.min(level,4)*14+'px;':''}">
+    <div style="display:flex;align-items:flex-start;gap:8px;">
+      ${hasChildren?
+        `<span onclick="togglePlanCollapse('${item.id}')" style="cursor:pointer;font-size:11px;color:var(--nb-ink3);width:14px;flex-shrink:0;margin-top:2px;user-select:none;">${isCollapsed?'▶':'▼'}</span><div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:10px;" title="有子项，进度自动计算">${childDone}/${item.children.length}</div>`
+        :`<span style="width:14px;flex-shrink:0;"></span><div class="nb-check${item.done?' done':''}" onclick="toggleNbPlan('${item.id}')">${item.done?'✓':''}</div>`}
+      <div class="nb-content" style="flex:1;">
+        <div class="nb-item-title${itemDone?' done':''}">${esc(item.title||item.text||'')}</div>
+        ${hasNote?`<div class="nb-item-note">${esc(item.note)}</div>`:''}
+        ${hasDue?`<div class="nb-item-meta">⏰ 截止 ${fmtDateShort(item.due)}</div>`:''}
+        ${hasDate?`<div class="nb-item-meta">📅 计划于 ${fmtDateShort(item.planDate)}</div>`:''}
+        ${hasChildren?`
+          <div style="background:var(--g-xlight);border-radius:6px;height:6px;margin:6px 0;overflow:hidden;">
+            <div style="background:var(--g);height:100%;width:${Math.round(childDone/item.children.length*100)}%;"></div>
+          </div>`:''}
+      </div>
     </div>
     <div class="nb-item-btns">
-      <button onclick="openAddChildPlanModal('${item.id}')" title="加子任务" style="color:var(--g);">➕子</button>
+      <button onclick="openAddChildPlanModal('${item.id}')" title="加子项" style="color:var(--g);">➕子项</button>
       <button onclick="editNbPlan('${item.id}')" title="编辑">✏️</button>
+      ${hasChildren&&allChildDone?`<button onclick="archiveWholePlan('${item.id}')" style="color:var(--g);">✓ 全部完成</button>`:''}
       <button onclick="deleteNbPlan('${item.id}')" title="删除" style="color:#c04040;">×</button>
     </div>
+    ${!isCollapsed&&hasChildren?`<div>${item.children.map(c=>renderNbItem(c,level+1)).join('')}</div>`:(hasChildren?`<div style="font-size:11px;color:var(--nb-ink3);padding:2px 0 2px 22px;">▶ ${item.children.length} 项子任务（已折叠）</div>`:'')}
   </div>`;
 }
 
-function findPlanItem(id){return (S.plans[_planType]||[]).find(i=>i.id===id);}
+function findPlanItem(id,list){
+  list=list||S.plans[_planType]||[];
+  for(const item of list){
+    if(item.id===id)return item;
+    if(item.children&&item.children.length){
+      const found=findPlanItem(id,item.children);
+      if(found)return found;
+    }
+  }
+  return null;
+}
+function findPlanParentArray(id,list){
+  list=list||S.plans[_planType]||[];
+  for(let i=0;i<list.length;i++){
+    if(list[i].id===id)return list;
+    if(list[i].children&&list[i].children.length){
+      const found=findPlanParentArray(id,list[i].children);
+      if(found)return found;
+    }
+  }
+  return null;
+}
 
-function openNbPlanModal(existingId){
-  const isEdit=existingId!==undefined;
+function openNbPlanModal(existingId,parentId){
+  const isEdit=existingId!==undefined&&existingId!==null;
   const item=isEdit?(findPlanItem(existingId)||{}):{};
   const body=(container)=>{
     container.innerHTML=`
@@ -2397,15 +2495,20 @@ function openNbPlanModal(existingId){
         <input id="nbPlanDue" type="date" value="${item.due||''}">
       </div>`;
   };
-  showModal(isEdit?'编辑计划':'新建计划',body,()=>{
+  showModal(isEdit?'编辑计划':(parentId?'添加子项':'新建计划'),body,()=>{
     const title=document.getElementById('nbPlanTitle').value.trim();
     if(!title){toast('请填写标题');return;}
     const note=document.getElementById('nbPlanNote').value.trim();
     const due=document.getElementById('nbPlanDue').value;
-    if(!S.plans[_planType])S.plans[_planType]=[];
     if(isEdit){
       Object.assign(item,{title,note,due,text:title});
+    }else if(parentId){
+      const parent=findPlanItem(parentId);if(!parent)return;
+      if(!parent.children)parent.children=[];
+      parent.children.push({id:uid(),title,note,due,text:title,done:false,children:[]});
+      collapsedPlans.delete(parentId);
     }else{
+      if(!S.plans[_planType])S.plans[_planType]=[];
       S.plans[_planType].push({id:uid(),title,note,due,text:title,done:false,children:[]});
     }
     save();closeModal();renderPlanNbItems();toast(isEdit?'已更新 ✓':'已添加 ✓');
@@ -2414,45 +2517,27 @@ function openNbPlanModal(existingId){
 
 function addNbPlanItem(){openNbPlanModal();}
 function editNbPlan(id){openNbPlanModal(id);}
+function openAddChildPlanModal(parentId){openNbPlanModal(undefined,parentId);}
 
-function openAddChildPlanModal(parentId){
-  showModal('添加子任务','<div class="note-field-group"><div class="note-field-label">子任务标题</div><input id="childPlanTitle" placeholder="例如：报名"></div>',()=>{
-    const title=document.getElementById('childPlanTitle').value.trim();if(!title){toast('请输入标题');return;}
-    const parent=findPlanItem(parentId);if(!parent)return;
-    if(!parent.children)parent.children=[];
-    parent.children.push({id:uid(),title,done:false});
-    save();closeModal();renderPlanNbItems();toast('已添加子任务 ✓');
-  });
-}
-function toggleChildPlan(parentId,childId){
-  const parent=findPlanItem(parentId);if(!parent)return;
-  const child=(parent.children||[]).find(c=>c.id===childId);if(!child)return;
-  child.done=!child.done;
-  save();renderPlanNbItems();
-}
-function deleteChildPlan(parentId,childId){
-  const parent=findPlanItem(parentId);if(!parent)return;
-  confirmDel(()=>{
-    parent.children=(parent.children||[]).filter(c=>c.id!==childId);
-    save();renderPlanNbItems();
-  });
-}
 function archiveWholePlan(id){
   const item=findPlanItem(id);if(!item)return;
-  item.done=true;
-  (item.children||[]).forEach(c=>c.done=true);
+  (function markAll(n){n.done=true;(n.children||[]).forEach(markAll);})(item);
   save();renderPlanNbItems();toast('✓ 整组已完成');
 }
 
 function toggleNbPlan(id){
   const item=findPlanItem(id);if(!item)return;
-  if(item.children&&item.children.length)return; // 有子任务的，通过子任务勾选/归档按钮处理，不走这里
+  if(item.children&&item.children.length)return; // 有子项的，通过子项勾选或"全部完成"按钮处理
   item.done=!item.done;
   save();renderPlanNbItems();toast(item.done?'✓ 已完成':'已取消完成');
 }
 
 function deleteNbPlan(id){
-  confirmDel(()=>{S.plans[_planType]=S.plans[_planType].filter(i=>i.id!==id);save();renderPlanNbItems();});
+  confirmDel(()=>{
+    const arr=findPlanParentArray(id);
+    if(arr){const idx=arr.findIndex(i=>i.id===id);if(idx>-1)arr.splice(idx,1);}
+    save();renderPlanNbItems();
+  });
 }
 
 // 兼容旧函数名
@@ -3327,6 +3412,26 @@ function removeEditorImg(idx) { currentEditorImages.splice(idx, 1); renderEditor
 function removeEditorFile(idx) { currentEditorFiles.splice(idx, 1); renderEditorAttachments(); }
 
 let _noteDraft=null; // 暂存"基本信息"步骤填的内容：{title,type,fields,tags}
+let _currentEditingNoteId=null;
+let _noteDraftSaveTimer=null;
+function persistNoteDraft(){
+  if(!_noteDraft)return;
+  const mode=_noteDraft.fields?.['_mode']||'text';
+  const fields={...(_noteDraft.fields||{})};
+  if(mode==='quadrant')fields['_quadrant']=_quadState;
+  else if(mode==='checklist')fields['_checklist']=_checklistState;
+  else if(mode==='numlist')fields['_numlist']=_numlistState;
+  else{
+    const bodyEl=document.getElementById('note_body');
+    if(bodyEl)fields['我的笔记']=bodyEl.value;
+  }
+  S.noteEditDraft={noteId:_currentEditingNoteId,title:_noteDraft.title,type:_noteDraft.type,fields,tags:_noteDraft.tags,images:currentEditorImages,files:currentEditorFiles,ts:Date.now()};
+  save();
+}
+function persistNoteDraftDebounced(){
+  if(_noteDraftSaveTimer)clearTimeout(_noteDraftSaveTimer);
+  _noteDraftSaveTimer=setTimeout(persistNoteDraft,1200);
+}
 function getFieldsForType(typeName){
   if(typeName.includes('收藏'))return['来源链接','原文摘要'];
   if(typeName.includes('书影')||typeName.includes('影'))return['名称','作者/导演'];
@@ -3372,12 +3477,30 @@ function openNoteBasicInfoModal(initType,onDone,confirmText,isNewNote){
 function openNoteEditor(noteId=null){
   const note=noteId?S.notes.find(n=>n.id===noteId):null;const isEdit=!!note;
   const type=note?note.type:(currentNoteType==='all'||currentNoteType==='__manage'?(S.noteTypes[S.noteTypes.length-1]||'笔记'):currentNoteType);
-  currentEditorImages=note?[...(note.images||[])]:[];
-  currentEditorFiles=note?[...(note.files||[])]:[];
+  _currentEditingNoteId=noteId;
+  const draft=S.noteEditDraft;
+  const hasNewerDraft=!!(draft&&draft.noteId===(noteId||null)&&draft.ts&&draft.ts>(note?.updatedAt||0)&&draft.title);
   if(isEdit){
-    _noteDraft={title:note.title,type:note.type,fields:{...(note.fields||{})},tags:[...(note.tags||[])]};
+    if(hasNewerDraft){
+      _noteDraft={title:draft.title,type:draft.type,fields:{...draft.fields},tags:[...(draft.tags||[])]};
+      currentEditorImages=[...(draft.images||[])];
+      currentEditorFiles=[...(draft.files||[])];
+    }else{
+      _noteDraft={title:note.title,type:note.type,fields:{...(note.fields||{})},tags:[...(note.tags||[])]};
+      currentEditorImages=[...(note.images||[])];
+      currentEditorFiles=[...(note.files||[])];
+    }
     openNoteContentPage(noteId);
+    if(hasNewerDraft)toast('已恢复上次未保存的内容 ✓');
+  }else if(hasNewerDraft){
+    _noteDraft={title:draft.title,type:draft.type,fields:{...draft.fields},tags:[...(draft.tags||[])]};
+    currentEditorImages=[...(draft.images||[])];
+    currentEditorFiles=[...(draft.files||[])];
+    openNoteContentPage(null);
+    toast('已恢复上次未保存的内容 ✓');
   }else{
+    currentEditorImages=[];
+    currentEditorFiles=[];
     _noteDraft=null;
     openNoteBasicInfoModal(type,()=>openNoteContentPage(null),null,true);
   }
@@ -3408,9 +3531,9 @@ function renderQuadGrid(){
   wrap.innerHTML=quadGridInnerHtml();
   bindQuadGridEvents();
 }
-function addQuadItem(k){const inp=document.getElementById('quadInput_'+k);const v=inp.value.trim();if(!v)return;if(!_quadState[k])_quadState[k]=[];_quadState[k].push({text:v,done:false});renderQuadGrid();}
-function toggleQuadItem(k,i){_quadState[k][i].done=!_quadState[k][i].done;renderQuadGrid();}
-function delQuadItem(k,i){_quadState[k].splice(i,1);renderQuadGrid();}
+function addQuadItem(k){const inp=document.getElementById('quadInput_'+k);const v=inp.value.trim();if(!v)return;if(!_quadState[k])_quadState[k]=[];_quadState[k].push({text:v,done:false});renderQuadGrid();persistNoteDraft();}
+function toggleQuadItem(k,i){_quadState[k][i].done=!_quadState[k][i].done;renderQuadGrid();persistNoteDraft();}
+function delQuadItem(k,i){_quadState[k].splice(i,1);renderQuadGrid();persistNoteDraft();}
 
 function checklistInnerHtml(){
   return `<div>${_checklistState.map((it,i)=>`
@@ -3430,9 +3553,9 @@ function renderChecklist(){
   wrap.innerHTML=checklistInnerHtml();
   bindChecklistEvents();
 }
-function addChecklistItem(){const inp=document.getElementById('checklistInput');const v=inp.value.trim();if(!v)return;_checklistState.push({text:v,done:false});renderChecklist();document.getElementById('checklistInput')?.focus();}
-function toggleChecklistItem(i){_checklistState[i].done=!_checklistState[i].done;renderChecklist();}
-function delChecklistItem(i){_checklistState.splice(i,1);renderChecklist();}
+function addChecklistItem(){const inp=document.getElementById('checklistInput');const v=inp.value.trim();if(!v)return;_checklistState.push({text:v,done:false});renderChecklist();document.getElementById('checklistInput')?.focus();persistNoteDraft();}
+function toggleChecklistItem(i){_checklistState[i].done=!_checklistState[i].done;renderChecklist();persistNoteDraft();}
+function delChecklistItem(i){_checklistState.splice(i,1);renderChecklist();persistNoteDraft();}
 
 const NUMLIST_STYLES={
   arabic:{label:'1. 2. 3.',fn:i=>(i+1)+'.'},
@@ -3456,8 +3579,8 @@ function bindNumListEvents(){
   const st=_numlistState;
   wrap.querySelectorAll('[data-nstyle]').forEach(btn=>{btn.onclick=()=>{st.style=btn.dataset.nstyle;renderNumList();};});
   wrap.querySelectorAll('.numlist-input').forEach(ta=>{
-    autoGrow(ta);
-    ta.oninput=()=>{st.items[parseInt(ta.dataset.nidx)].text=ta.value;autoGrow(ta);};
+    bindAutoGrow(ta);
+    ta.oninput=()=>{st.items[parseInt(ta.dataset.nidx)].text=ta.value;autoGrow(ta);persistNoteDraftDebounced();};
     ta.onkeydown=(e)=>{
       // 正常打字换行（文字太长自动折行）不会走到这里；只有真正按下回车键才会触发——
       // 拦截默认的换行行为，改成"新增一条编号"
@@ -3480,8 +3603,8 @@ function renderNumList(){
   bindNumListEvents();
 }
 function delNumListItem(i){
-  if(_numlistState.items.length<=1){_numlistState.items[0].text='';renderNumList();return;}
-  _numlistState.items.splice(i,1);renderNumList();
+  if(_numlistState.items.length<=1){_numlistState.items[0].text='';renderNumList();persistNoteDraft();return;}
+  _numlistState.items.splice(i,1);renderNumList();persistNoteDraft();
 }
 
 function openNoteContentPage(noteId){
@@ -3525,10 +3648,12 @@ function openNoteContentPage(noteId){
       <div class="image-preview" id="editorImgPreview"></div>
       <div id="editorFilePreview"></div>
     </div>`;
+  editorPage.classList.add('active');
   if(mode==='quadrant')bindQuadGridEvents();
   else if(mode==='checklist')bindChecklistEvents();
   else if(mode==='numlist')bindNumListEvents();
   else bindAutoGrow(document.getElementById('note_body'));
+  if(mode==='text'||!mode)bindDraftAutosave(document.getElementById('note_body'),()=>persistNoteDraft());
 
   document.getElementById('note_img_input').onchange=(e)=>{
     Array.from(e.target.files).forEach(file=>{const r=new FileReader();r.onload=(ev)=>{currentEditorImages.push(ev.target.result);renderEditorAttachments();};r.readAsDataURL(file);});
@@ -3544,7 +3669,6 @@ function openNoteContentPage(noteId){
     },'保存',false);
   };
 
-  editorPage.classList.add('active');
   document.getElementById('editorCloseBtn').onclick=()=>{editorPage.classList.remove('active');renderNoteList();};
 
   document.getElementById('editorSaveBtn').onclick=()=>{
