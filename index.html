@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -304,32 +304,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .backup-reminder{background:linear-gradient(135deg,#fff8f0,#ffeedd);border:1.5px solid #f0c080;border-radius:var(--radius-md);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;}
 .backup-reminder-text{flex:1;font-size:13px;color:#7a4a10;}
 .backup-now-btn{background:#e8a030;border:none;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap;}
-/* ===== 番茄钟 ===== */
-.pomodoro-trigger{background:linear-gradient(135deg,var(--g-light),var(--g-xlight));border-radius:var(--radius-md);padding:16px;margin-top:14px;border:1.5px solid var(--g-mid);box-shadow:var(--shadow-sm);}
-.pomodoro-trigger-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
-.pomodoro-trigger-title{font-size:14px;font-weight:700;color:var(--g-dark);letter-spacing:1px;}
-.pomodoro-settings-btn{background:var(--white);border:1px solid var(--g-mid);color:var(--g);padding:4px 12px;border-radius:16px;font-size:11px;cursor:pointer;}
-.pomodoro-info{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-.pomo-stat{flex:1;min-width:60px;background:var(--g-xlight);border-radius:10px;padding:8px;text-align:center;}
-.pomo-stat-num{font-size:18px;font-weight:700;color:var(--g);}
-.pomo-stat-lbl{font-size:10px;color:var(--ink2);margin-top:2px;}
-.pomodoro-start-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--g),var(--g-dark));border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:1px;box-shadow:0 3px 12px var(--g-border);}
-.pomodoro-fullscreen{position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(160deg,var(--bg),var(--g-light),var(--g-xlight));z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;visibility:hidden;opacity:0;transition:opacity .3s;}
-.pomodoro-fullscreen.active{visibility:visible;opacity:1;}
-.pomo-phase-label{font-size:13px;color:var(--g-dark);letter-spacing:4px;margin-bottom:16px;font-weight:700;opacity:.8;}
-.pomo-time-display{font-size:80px;font-weight:900;color:var(--g-dark);letter-spacing:-4px;line-height:1;}
-.pomo-cycle-info{font-size:13px;color:var(--ink3);margin-top:12px;letter-spacing:1px;}
-.pomo-controls{display:flex;gap:16px;margin-top:32px;}
-.pomo-ctrl-btn{padding:12px 28px;border-radius:30px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:1px;border:none;transition:transform .1s;}
-.pomo-ctrl-btn:active{transform:scale(.95);}
-.pomo-btn-pause{background:linear-gradient(135deg,var(--g),var(--g-dark));color:#fff;}
-.pomo-btn-stop{background:var(--g-xlight);color:var(--g-dark);border:1px solid var(--g-border)!important;}
-.pomo-blink-toggle{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:20px;}
-.pomo-blink-label{font-size:12px;color:var(--ink3);letter-spacing:1px;}
-.pomo-blink-icon{font-size:20px;transition:transform .15s;}
-.pomo-blink-icon.blinking{animation:blinkPulse .3s ease;}
-@keyframes blinkPulse{0%{transform:scale(1);}50%{transform:scale(1.4);}100%{transform:scale(1);}}
-
 /* ===== 日记条目样式 ===== */
 .new-tag-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
 .new-tag-opt{padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1.5px solid var(--g-mid);background:var(--bg);color:var(--ink2);transition:all .15s;}
@@ -420,25 +394,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
   </div>
 </div>
 
-<div class="pomodoro-fullscreen" id="pomodoroFullscreen">
-  <div class="pomo-phase-label" id="pomoPhaseLabel">FOCUS</div>
-  <div class="pomo-time-display" id="pomoTimeDisplay">25:00</div>
-  <div class="pomo-cycle-info" id="pomoCycleInfo">第 1 轮 · 第 1 个番茄</div>
-  <div class="pomo-blink-toggle"><span class="pomo-blink-icon" id="pomoBlinkIcon">👁️</span><span class="pomo-blink-label" id="pomoBlinkLabel">护眼提醒：开</span></div>
-  <div class="pomo-controls">
-    <button class="pomo-ctrl-btn pomo-btn-pause" id="pomoPauseBtn" onclick="togglePomoPause()">暂停</button>
-    <button class="pomo-ctrl-btn pomo-btn-stop" onclick="stopPomodoro()">结束</button>
-  </div>
-</div>
-<div class="toast" id="toast"></div>
-<div id="globalModal" class="modal-mask">
-  <div class="modal-container">
-    <div class="modal-title" id="modalTitle"></div>
-    <div id="modalBody"></div>
-    <div class="modal-buttons" id="modalButtons"></div>
-  </div>
-</div>
-
 <div class="bnav">
   <div class="ni on" data-page="today"><span class="ico">🌤</span><span class="lbl">今日</span></div>
   <div class="ni" data-page="record"><span class="ico">📝</span><span class="lbl">记录</span></div>
@@ -447,11 +402,21 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
   <div class="ni" data-page="note"><span class="ico">📔</span><span class="lbl">笔记</span></div>
 </div>
 
+<div class="toast" id="toast"></div>
+
+<div class="modal-mask" id="globalModal">
+  <div class="modal-container">
+    <div class="modal-title" id="modalTitle"></div>
+    <div id="modalBody"></div>
+    <div class="modal-buttons" id="modalButtons"></div>
+  </div>
+</div>
+
 <script>
 // ==================== 数据存储 ====================
 let collapsedProjs = new Set();
 let S = {
-  tasks:[],wishes:[],diaries:[],goodH:[],projs:[],
+  tasks:[],wishes:[],jots:[],diaries:[],goodH:[],projs:[],
   whois:[],selfNotes:[],emotions:[],achievements:[],
   userQuotes:[],defaultQuotes:['这是我的课题，那是别人的课题。'],
   userClarityQs:[],defaultClarityQs:['这是我的课题，那是别人的课题。'],
@@ -462,7 +427,6 @@ let S = {
   taskTypes:['📚 学习','💼 工作','🎨 爱好','🏠 家务','💬 交际','💭 其他'],
   noteTypes:['📌 收藏','🎬 书影','✍️ 素材','📝 通用'],
   selfNoteCats:['性格','情绪','习惯','价值观'],
-  pomodoroSettings:{work:25,rest:5,longRest:15,pomosBeforeLong:4,enabled:true,blinkEnabled:true,blinkInterval:5},
   lastBackupReminder: 0,
   quoteIntervalMinutes: 30,
   installBannerDismissed: false
@@ -556,7 +520,6 @@ function load(){
   if(!S.taskTypes||!Array.isArray(S.taskTypes)||!S.taskTypes.length)S.taskTypes=['📚 学习','💼 工作','🎨 爱好','🏠 家务','💬 交际','💭 其他'];
   if(!S.noteTypes||!Array.isArray(S.noteTypes)||!S.noteTypes.length)S.noteTypes=['📌 收藏','🎬 书影','✍️ 素材','📝 通用'];
   if(!S.selfNoteCats||!Array.isArray(S.selfNoteCats)||!S.selfNoteCats.length)S.selfNoteCats=['性格','情绪','习惯','价值观'];
-  if(!S.pomodoroSettings)S.pomodoroSettings={work:25,rest:5,longRest:15,pomosBeforeLong:4,enabled:true,blinkEnabled:true,blinkInterval:5};
   if(!S.tasks)S.tasks=[];
   if(!S.plans||typeof S.plans!=='object'||Array.isArray(S.plans)){
     S.plans={day:[],week:[],month:[],year:[]};
@@ -578,7 +541,13 @@ function load(){
   if(S.installBannerDismissed===undefined)S.installBannerDismissed=false;
   if(!S.quoteIntervalMinutes)S.quoteIntervalMinutes=30;
   // ==== 第一批新功能：数据初始化 ====
-  if(!S.memos)S.memos=[]; // 快速备忘：[{id,text,createdAt}]
+  if(!S.memos)S.memos=[]; // 快速备忘（已废弃，仅保留兼容旧备份）：[{id,text,createdAt}]
+  if(!S.jots){
+    // 记一记：由「想法流」+「快速备忘」合并而来，只在第一次升级时迁移一次
+    const fromWishes=(S.wishes||[]).map(w=>({id:w.id,t:w.t,done:false,date:w.date||nowStr()}));
+    const fromMemos=(S.memos||[]).map(m=>({id:m.id,t:m.text,done:false,date:m.createdAt?new Date(m.createdAt).toLocaleString('zh-CN'):nowStr()}));
+    S.jots=[...fromWishes,...fromMemos];
+  }
   if(!S.waterTarget)S.waterTarget=2000; // 每日喝水目标，单位ml
   if(!S.waterLog)S.waterLog={}; // {'2026-07-13':[{id,amount,time}]}
   if(!S.countdowns)S.countdowns=[]; // 倒数日：[{id,title,date,isMain}]
@@ -955,17 +924,6 @@ document.getElementById('globalModal').onclick=(e)=>{
   }
 };
 
-// ==================== 修复计划数据 ====================
-function fixPlansData(){
-  try{
-    let raw=localStorage.getItem('myu_final_v10');let d=raw?JSON.parse(raw):{};
-    if(!d.plans||typeof d.plans!=='object'||Array.isArray(d.plans)){d.plans={day:[],week:[],month:[],year:[]};}
-    else{['day','week','month','year'].forEach(k=>{if(!Array.isArray(d.plans[k]))d.plans[k]=[];});}
-    localStorage.setItem('myu_final_v10',JSON.stringify(d));Object.assign(S,d);
-    closeModal();toast('修复完成！正在刷新…');setTimeout(()=>location.reload(),1500);
-  }catch(e){toast('修复失败：'+e.message);}
-}
-
 // ==================== 备份 ====================
 document.getElementById('exportBtn').onclick=()=>{
   const oldExists=!!localStorage.getItem('myu6');
@@ -993,20 +951,21 @@ document.getElementById('exportBtn').onclick=()=>{
           <div style="font-size:10px;color:var(--ink3);margin-bottom:6px;font-weight:600;">✦ 双色</div>
           <div class="th-grid">${THEMES.duo.map(t=>`<div class="th-item" data-tid="${t.id}"><div class="th-dot${t.id===curTheme?' th-active':''}" style="background:linear-gradient(135deg,${t.a} 50%,${t.b} 50%)"></div><div class="th-name">${t.name}</div></div>`).join('')}</div>
         </div>
-        <!-- 板块1：备份 -->
+        <!-- 板块1：云同步 -->
+        <div style="width:25%;padding:0 20px;flex-shrink:0;" id="syncPanelWrap">${syncPanelHtml()}</div>
+        <!-- 板块2：备份 -->
         <div style="width:25%;padding:0 20px;flex-shrink:0;">
           <div style="text-align:center;font-size:11px;color:var(--ink3);font-weight:600;letter-spacing:.5px;margin-bottom:12px;">📦 备份与恢复</div>
           <div style="display:flex;flex-direction:column;gap:10px;">
             <button class="pbtn" id="exportDataBtn">📤 导出备份</button>
             <label class="pbtn" style="text-align:center;cursor:pointer;">📥 导入备份<input type="file" accept=".json" style="display:none" id="importFileInput"></label>
-            <button class="pbtn" id="fixPlansBtn">🔧 修复计划数据</button>
             ${oldExists?`<button class="pbtn" style="background:var(--sky);" id="migrateOldBtn">🔄 读取旧版数据</button>`:''}
             <div style="background:var(--g-light);border-radius:10px;padding:10px;font-size:11px;color:var(--ink2);line-height:1.8;">
               💡 定期导出备份存到手机<br>数据存在本地不依赖网络
             </div>
           </div>
         </div>
-        <!-- 板块2：字体 -->
+        <!-- 板块3：字体 -->
         <div style="width:25%;padding:0 20px;flex-shrink:0;">
           <div style="text-align:center;font-size:11px;color:var(--ink3);font-weight:600;letter-spacing:.5px;margin-bottom:16px;">🔤 字体大小</div>
           <div style="display:flex;gap:8px;margin-bottom:16px;">
@@ -1022,8 +981,6 @@ document.getElementById('exportBtn').onclick=()=>{
             这是预览文字，调整上方滑块可以看到字体大小变化效果。
           </div>
         </div>
-        <!-- 板块3：云同步 -->
-        <div style="width:25%;padding:0 20px;flex-shrink:0;" id="syncPanelWrap">${syncPanelHtml()}</div>
       </div>
     </div>
   </div>`;
@@ -1083,7 +1040,6 @@ document.getElementById('exportBtn').onclick=()=>{
     });
 
     // 备份按钮
-    const fixBtn=document.getElementById('fixPlansBtn');if(fixBtn)fixBtn.onclick=()=>fixPlansData();
     const migrateBtn=document.getElementById('migrateOldBtn');
     if(migrateBtn)migrateBtn.onclick=()=>{if(confirm('将把旧版数据迁移到新版？')){migrateOldData();closeModal();}};
     const expBtn=document.getElementById('exportDataBtn');
@@ -1284,14 +1240,6 @@ function renderToday(){
       <div class="section-divider"><div class="stl">📅 今天该做的（阶段日程）</div></div>
       <div id="todayHabitsList"></div>
     </div>
-    <div class="timer-section">
-      <div class="section-divider"><div class="stl">🚀 启动</div></div>
-      <div class="timer-btns">
-        <button class="timer-btn timer-btn-1" onclick="selectTaskForTimer(60)">1 分钟</button>
-        <button class="timer-btn timer-btn-3" onclick="selectTaskForTimer(180)">3 分钟</button>
-        <button class="timer-btn timer-btn-5" onclick="selectTaskForTimer(300)">5 分钟</button>
-      </div>
-    </div>
     <div style="position:relative;margin-top:4px;">
       <div class="fortune-trigger">
         <div class="fortune-trigger-title">✨ 天意卡牌 ✨</div>
@@ -1299,13 +1247,11 @@ function renderToday(){
         <button class="fortune-trigger-btn" style="background:transparent;border:1px solid rgba(232,201,64,.5);color:#e8c940;box-shadow:none;margin-left:8px" onclick="showOracleRecords()">📜 查看记录</button>
         <div class="fortune-edit-icon" onclick="editFortuneMessages()">✏️</div>
       </div>
-    </div>
-    <div id="pomodoroSection"></div>`;
+    </div>`;
   document.getElementById('addTaskBtn').onclick=openAddTaskModal;
   renderTasks();
   renderTodayHabitsSection();
   renderCountdownSection();
-  renderPomodoroTrigger();
   if(getDisplayQuotes().length>=2)startQuoteRotate();
   setTimeout(()=>{showInstallBanner();checkBackupReminder();checkPhaseEndingReminder();},300);
 }
@@ -1639,170 +1585,6 @@ function startTimer(secs,taskName,taskId){
     }
   },1000);
 }
-// ==================== 番茄钟 ====================
-let pomoState={running:false,paused:false,phase:'work',workLeft:0,restLeft:0,longRestLeft:0,currentPomo:1,currentRound:1,interval:null,blinkInterval:null};
-
-function renderPomodoroTrigger(){
-  const el=document.getElementById('pomodoroSection');if(!el)return;
-  const ps=S.pomodoroSettings;
-  el.innerHTML=`
-    <div class="section-divider" style="margin-top:18px"><div class="stl">🍅 循环番茄钟</div></div>
-    <div class="pomodoro-trigger">
-      <div class="pomodoro-trigger-header">
-        <span class="pomodoro-trigger-title">✦ POMODORO ✦</span>
-        <button class="pomodoro-settings-btn" onclick="openPomodoroSettings()">⚙️ 设置</button>
-      </div>
-      <div class="pomodoro-info">
-        <div class="pomo-stat"><div class="pomo-stat-num">${ps.work}</div><div class="pomo-stat-lbl">专注（分）</div></div>
-        <div class="pomo-stat"><div class="pomo-stat-num">${ps.rest}</div><div class="pomo-stat-lbl">休息（分）</div></div>
-        <div class="pomo-stat"><div class="pomo-stat-num">${ps.enabled?ps.longRest:'—'}</div><div class="pomo-stat-lbl">大课间（分）</div></div>
-        <div class="pomo-stat"><div class="pomo-stat-num">${ps.enabled?ps.pomosBeforeLong:'—'}</div><div class="pomo-stat-lbl">番茄数</div></div>
-      </div>
-      <button class="pomodoro-start-btn" onclick="startPomodoro()">▶ 开始循环</button>
-    </div>`;
-}
-
-function openPomodoroSettings(){
-  const ps=S.pomodoroSettings;
-  const body=`
-    <div class="note-field-group"><div class="note-field-label">专注时长（分钟）</div><input type="number" id="ps_work" value="${ps.work}" min="1" max="120"></div>
-    <div class="note-field-group"><div class="note-field-label">休息时长（分钟）</div><input type="number" id="ps_rest" value="${ps.rest}" min="1" max="60"></div>
-    <div class="note-field-group"><div class="note-field-label">大课间时长（分钟）</div><input type="number" id="ps_long" value="${ps.longRest}" min="1" max="60"></div>
-    <div class="note-field-group"><div class="note-field-label">每几个番茄后大课间</div><input type="number" id="ps_before" value="${ps.pomosBeforeLong}" min="1" max="20"></div>
-    <div style="display:flex;align-items:center;gap:10px;margin-top:4px"><label style="font-size:14px;color:var(--ink2)">启用大课间</label><input type="checkbox" id="ps_enabled" ${ps.enabled?'checked':''} style="width:auto;transform:scale(1.3)"></div>
-    <div style="display:flex;align-items:center;gap:10px;margin-top:14px"><label style="font-size:14px;color:var(--ink2)">护眼眨眼提醒</label><input type="checkbox" id="ps_blink" ${ps.blinkEnabled?'checked':''} style="width:auto;transform:scale(1.3)"></div>
-    <div class="note-field-group" style="margin-top:10px"><div class="note-field-label">眨眼提醒间隔（秒）</div><input type="number" id="ps_blink_interval" value="${ps.blinkInterval}" min="3" max="120"></div>`;
-  showModal('⚙️ 番茄钟设置',body,()=>{
-    S.pomodoroSettings.work=parseInt(document.getElementById('ps_work').value)||25;
-    S.pomodoroSettings.rest=parseInt(document.getElementById('ps_rest').value)||5;
-    S.pomodoroSettings.longRest=parseInt(document.getElementById('ps_long').value)||15;
-    S.pomodoroSettings.pomosBeforeLong=parseInt(document.getElementById('ps_before').value)||4;
-    S.pomodoroSettings.enabled=document.getElementById('ps_enabled').checked;
-    S.pomodoroSettings.blinkEnabled=document.getElementById('ps_blink').checked;
-    S.pomodoroSettings.blinkInterval=parseInt(document.getElementById('ps_blink_interval').value)||5;
-    save();closeModal();renderPomodoroTrigger();toast('设置已保存 ✓');
-  },{confirmText:'保存'});
-}
-
-function playBell(type){
-  try{
-    const ctx=new (window.AudioContext||window.webkitAudioContext)();
-    const osc=ctx.createOscillator();const gain=ctx.createGain();
-    osc.connect(gain);gain.connect(ctx.destination);
-    if(type==='end'){
-      osc.frequency.setValueAtTime(523,ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(392,ctx.currentTime+.5);
-      gain.gain.setValueAtTime(.4,ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+1.5);
-      osc.start();osc.stop(ctx.currentTime+1.5);
-    }else{
-      osc.frequency.setValueAtTime(784,ctx.currentTime);
-      osc.frequency.setValueAtTime(880,ctx.currentTime+.15);
-      osc.frequency.setValueAtTime(988,ctx.currentTime+.3);
-      gain.gain.setValueAtTime(.35,ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+1);
-      osc.start();osc.stop(ctx.currentTime+1);
-    }
-  }catch(e){}
-}
-
-function startPomodoro(){
-  const ps=S.pomodoroSettings;
-  pomoState={running:true,paused:false,phase:'work',workLeft:ps.work*60,restLeft:ps.rest*60,longRestLeft:ps.longRest*60,currentPomo:1,currentRound:1,interval:null,blinkInterval:null};
-  document.getElementById('pomodoroFullscreen').classList.add('active');
-  updatePomodoroDisplay();
-  updateBlinkLabel();
-  pomoState.interval=setInterval(pomoTick,1000);
-  startBlinkReminder();
-}
-
-function updateBlinkLabel(){
-  const lbl=document.getElementById('pomoBlinkLabel');
-  if(lbl)lbl.innerText=`护眼提醒：${S.pomodoroSettings.blinkEnabled?'开':'关'}`;
-}
-
-function startBlinkReminder(){
-  if(pomoState.blinkInterval)clearInterval(pomoState.blinkInterval);
-  const ps=S.pomodoroSettings;
-  if(!ps.blinkEnabled)return;
-  pomoState.blinkInterval=setInterval(()=>{
-    if(pomoState.paused)return;
-    if(pomoState.phase!=='work')return;
-    triggerBlinkPulse();
-  },(ps.blinkInterval||5)*1000);
-}
-
-function triggerBlinkPulse(){
-  if(navigator.vibrate)navigator.vibrate(150);
-  playBlinkSound();
-  const icon=document.getElementById('pomoBlinkIcon');
-  if(icon){icon.classList.remove('blinking');void icon.offsetWidth;icon.classList.add('blinking');}
-}
-
-function playBlinkSound(){
-  try{
-    const ctx=new (window.AudioContext||window.webkitAudioContext)();
-    const osc=ctx.createOscillator();const gain=ctx.createGain();
-    osc.connect(gain);gain.connect(ctx.destination);
-    osc.frequency.setValueAtTime(1200,ctx.currentTime);
-    gain.gain.setValueAtTime(.25,ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.25);
-    osc.start();osc.stop(ctx.currentTime+.25);
-  }catch(e){}
-}
-
-function pomoTick(){
-  if(pomoState.paused)return;
-  const ps=S.pomodoroSettings;
-  if(pomoState.phase==='work'){
-    pomoState.workLeft--;
-    if(pomoState.workLeft<=0){
-      playBell('end');
-      const isLongBreak=ps.enabled&&(pomoState.currentPomo%ps.pomosBeforeLong===0);
-      if(isLongBreak){pomoState.phase='longrest';pomoState.longRestLeft=ps.longRest*60;}
-      else{pomoState.phase='rest';pomoState.restLeft=ps.rest*60;}
-    }
-  }else if(pomoState.phase==='rest'){
-    pomoState.restLeft--;
-    if(pomoState.restLeft<=0){
-      playBell('start');
-      pomoState.currentPomo++;pomoState.phase='work';pomoState.workLeft=ps.work*60;
-    }
-  }else if(pomoState.phase==='longrest'){
-    pomoState.longRestLeft--;
-    if(pomoState.longRestLeft<=0){
-      playBell('start');
-      pomoState.currentPomo++;pomoState.currentRound++;pomoState.phase='work';pomoState.workLeft=ps.work*60;
-    }
-  }
-  updatePomodoroDisplay();
-}
-
-function updatePomodoroDisplay(){
-  const phaseMap={work:'✦ FOCUS ✦',rest:'✦ REST ✦',longrest:'✦ LONG BREAK ✦'};
-  const phaseZh={work:'专注中',rest:'休息中',longrest:'大课间'};
-  let secs=pomoState.phase==='work'?pomoState.workLeft:(pomoState.phase==='rest'?pomoState.restLeft:pomoState.longRestLeft);
-  const label=document.getElementById('pomoPhaseLabel');
-  const disp=document.getElementById('pomoTimeDisplay');
-  const info=document.getElementById('pomoCycleInfo');
-  if(label)label.innerText=phaseMap[pomoState.phase]||'FOCUS';
-  if(disp)disp.innerText=`${String(Math.floor(secs/60)).padStart(2,'0')}:${String(secs%60).padStart(2,'0')}`;
-  if(info)info.innerText=`第 ${pomoState.currentRound} 轮 · 第 ${pomoState.currentPomo} 个番茄 · ${phaseZh[pomoState.phase]}`;
-}
-
-function togglePomoPause(){
-  pomoState.paused=!pomoState.paused;
-  const btn=document.getElementById('pomoPauseBtn');
-  if(btn)btn.innerText=pomoState.paused?'继续':'暂停';
-}
-
-function stopPomodoro(){
-  if(pomoState.interval)clearInterval(pomoState.interval);
-  if(pomoState.blinkInterval)clearInterval(pomoState.blinkInterval);
-  pomoState.running=false;
-  document.getElementById('pomodoroFullscreen').classList.remove('active');
-}
-
 
 // ==================== 记录页面 ====================
 function renderRecord(){
@@ -1810,8 +1592,7 @@ function renderRecord(){
   rc.innerHTML=`
     <div class="rec-group-label">日常</div>
     <div class="top-tabs" id="recTabsA">
-      <button class="tab-main on" data-rec="wish">💭 想法流</button>
-      <button class="tab-main" data-rec="memo">📌 快速备忘</button>
+      <button class="tab-main on" data-rec="jot">📝 记一记</button>
       <button class="tab-main" data-rec="diary">📔 日记</button>
       <button class="tab-main" data-rec="timeline">🕐 时间线</button>
     </div>
@@ -1822,18 +1603,22 @@ function renderRecord(){
       <button class="tab-main" data-rec="period">🩸 生理期</button>
       <button class="tab-main" data-rec="body">📏 身体数据</button>
     </div>
-    <div id="recWish"></div>
+    <div class="rec-group-label">统计</div>
+    <div class="top-tabs" id="recTabsC">
+      <button class="tab-main" data-rec="stats">📊 统计</button>
+    </div>
+    <div id="recJot"></div>
     <div id="recDiary" style="display:none"></div>
-    <div id="recMemo" style="display:none"></div>
     <div id="recTimeline" style="display:none"></div>
     <div id="recWater" style="display:none"></div>
     <div id="recSleep" style="display:none"></div>
     <div id="recBody" style="display:none"></div>
-    <div id="recPeriod" style="display:none"></div>`;
-  renderWishes();renderDiaries();renderMemos();renderWater();renderSleep();renderBodyData();renderPeriod();renderTimeline();
-  const allRecPages=['wish','diary','memo','timeline','water','sleep','body','period'];
+    <div id="recPeriod" style="display:none"></div>
+    <div id="recStats" style="display:none"></div>`;
+  renderJot();renderDiaries();renderWater();renderSleep();renderBodyData();renderPeriod();renderTimeline();renderStats();
+  const allRecPages=['jot','diary','timeline','water','sleep','body','period','stats'];
   const switchRecTab=(key)=>{
-    document.querySelectorAll('#recTabsA [data-rec],#recTabsB [data-rec]').forEach(b=>b.classList.toggle('on',b.dataset.rec===key));
+    document.querySelectorAll('#recTabsA [data-rec],#recTabsB [data-rec],#recTabsC [data-rec]').forEach(b=>b.classList.toggle('on',b.dataset.rec===key));
     allRecPages.forEach(k=>{
       const el=document.getElementById('rec'+k.charAt(0).toUpperCase()+k.slice(1));
       if(el)el.style.display=(k===key)?'':'none';
@@ -1841,18 +1626,45 @@ function renderRecord(){
   };
   document.getElementById('recTabsA').addEventListener('click',(e)=>{const btn=e.target.closest('[data-rec]');if(btn)switchRecTab(btn.dataset.rec);});
   document.getElementById('recTabsB').addEventListener('click',(e)=>{const btn=e.target.closest('[data-rec]');if(btn)switchRecTab(btn.dataset.rec);});
+  document.getElementById('recTabsC').addEventListener('click',(e)=>{const btn=e.target.closest('[data-rec]');if(btn)switchRecTab(btn.dataset.rec);});
 }
 
-function renderWishes(){
-  const el=document.getElementById('recWish');
-  el.innerHTML=`<textarea id="wishInput" rows="3" placeholder="此刻的想法…" style="margin-bottom:8px"></textarea><div class="right-btn"><button class="pbtn" id="wishSendBtn">发送</button></div><div id="wishList" style="margin-top:12px"></div>`;
-  document.getElementById('wishSendBtn').onclick=()=>{const t=document.getElementById('wishInput').value.trim();if(t){S.wishes.unshift({id:uid(),t,date:nowStr()});save();renderWishes();toast('已记录');}};
-  const list=document.getElementById('wishList');
-  if(!S.wishes.length){list.innerHTML='<div class="empty" data-icon="💭">还没有想法流</div>';return;}
-  list.innerHTML=S.wishes.map(w=>`<div class="si"><div class="si-text">${esc(w.t)}</div><div class="si-date">${w.date}</div><div class="si-acts"><button class="sbtn" onclick="editWish('${w.id}')">编辑</button><button class="delbtn" onclick="delWishConfirm('${w.id}')">🗑️</button></div></div>`).join('');
+// ==================== 记一记（想法流 + 快速备忘 合并） ====================
+function renderJot(){
+  const el=document.getElementById('recJot');if(!el)return;
+  el.innerHTML=`
+    <div class="checklist-add-row" style="margin-top:0;margin-bottom:14px;">
+      <input type="text" id="jotInput" placeholder="随手记点什么，回车快速添加">
+      <button onclick="addJot()">添加</button>
+    </div>
+    <div id="jotListWrap"></div>`;
+  document.getElementById('jotInput').onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();addJot();}};
+  renderJotList();
 }
-function editWish(id){const w=S.wishes.find(x=>x.id===id);if(!w)return;showModal('编辑想法',`<textarea id="editWishTA" rows="4">${esc(w.t)}</textarea>`,()=>{const val=document.getElementById('editWishTA').value.trim();if(val){w.t=val;save();closeModal();renderWishes();}});}
-function delWishConfirm(id){confirmDel(()=>{S.wishes=S.wishes.filter(w=>w.id!==id);save();renderWishes();});}
+function renderJotList(){
+  const wrap=document.getElementById('jotListWrap');if(!wrap)return;
+  if(!S.jots.length){wrap.innerHTML='<div class="empty" data-icon="📝">还没有记录，随手记点什么吧</div>';return;}
+  wrap.innerHTML=S.jots.map(j=>`
+    <div class="si">
+      <div style="display:flex;align-items:flex-start;gap:8px;">
+        <input type="checkbox" ${j.done?'checked':''} style="margin-top:3px;width:18px;height:18px;flex-shrink:0;accent-color:var(--g);" onchange="toggleJot('${j.id}')">
+        <div style="flex:1;">
+          <div class="si-text" style="${j.done?'text-decoration:line-through;opacity:.5;':''}">${esc(j.t)}</div>
+          <div class="si-date">${j.date}</div>
+        </div>
+      </div>
+      <div class="si-acts"><button class="sbtn" onclick="editJotItem('${j.id}')">编辑</button><button class="delbtn" onclick="delJotConfirm('${j.id}')">🗑️</button></div>
+    </div>`).join('');
+}
+function addJot(){
+  const inp=document.getElementById('jotInput');
+  const v=inp.value.trim();if(!v)return;
+  S.jots.unshift({id:uid(),t:v,done:false,date:nowStr()});
+  save();inp.value='';renderJotList();
+}
+function toggleJot(id){const j=S.jots.find(x=>x.id===id);if(!j)return;j.done=!j.done;save();renderJotList();}
+function editJotItem(id){const j=S.jots.find(x=>x.id===id);if(!j)return;showModal('编辑',`<textarea id="editJotTA" rows="4">${esc(j.t)}</textarea>`,()=>{const val=document.getElementById('editJotTA').value.trim();if(val){j.t=val;save();closeModal();renderJotList();}});}
+function delJotConfirm(id){confirmDel(()=>{S.jots=S.jots.filter(j=>j.id!==id);save();renderJotList();});}
 
 // ==================== 日记（本子版） ====================
 let _diaryPage=0; // 0=写新日记, 1=最新一篇, 2=更早...
@@ -2003,43 +1815,6 @@ function renderDumpHistory(){
 function editDump(id){const e=S.emotions.find(x=>x.id===id);if(!e)return;showModal('编辑记录',`<textarea id="editDumpTA" rows="4">${esc(e.t)}</textarea>`,()=>{const val=document.getElementById('editDumpTA').value.trim();if(val){e.t=val;save();closeModal();renderDumpHistory();}});}
 function delDumpConfirm(id){confirmDel(()=>{S.emotions=S.emotions.filter(e=>e.id!==id);save();renderDumpHistory();});}
 
-// ==================== 快速备忘（真正不能忘的小事，不会被顶走） ====================
-function renderMemos(){
-  const el=document.getElementById('recMemo');if(!el)return;
-  el.innerHTML=`
-    <div class="checklist-add-row" style="margin-top:0;margin-bottom:14px;">
-      <input type="text" id="memoInput" placeholder="真正不能忘的事，回车快速添加">
-      <button onclick="addMemo()">添加</button>
-    </div>
-    <div id="memoListWrap"></div>`;
-  document.getElementById('memoInput').onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();addMemo();}};
-  renderMemoList();
-}
-function renderMemoList(){
-  const wrap=document.getElementById('memoListWrap');if(!wrap)return;
-  if(!S.memos.length){wrap.innerHTML='<div class="empty" data-icon="📌">还没有备忘，写点不能忘的事吧</div>';return;}
-  wrap.innerHTML=[...S.memos].reverse().map(m=>`
-    <div class="checklist-item">
-      <input type="checkbox" onchange="finishMemo('${m.id}')">
-      <span class="ci-text">${esc(m.text)}</span>
-      <span class="ci-del" onclick="delMemoConfirm('${m.id}')">🗑️</span>
-    </div>`).join('');
-}
-function addMemo(){
-  const inp=document.getElementById('memoInput');
-  const v=inp.value.trim();if(!v)return;
-  S.memos.push({id:uid(),text:v,createdAt:Date.now()});
-  save();inp.value='';renderMemoList();
-}
-function finishMemo(id){
-  // 划掉 = 处理完了，直接从列表里消失（不留"已完成"的历史，快速备忘只关心"还没做的"）
-  S.memos=S.memos.filter(m=>m.id!==id);
-  save();renderMemoList();toast('已完成 ✓');
-}
-function delMemoConfirm(id){
-  confirmDel(()=>{S.memos=S.memos.filter(m=>m.id!==id);save();renderMemoList();});
-}
-
 // ==================== 喝水打卡 ====================
 function renderWater(){
   const el=document.getElementById('recWater');if(!el)return;
@@ -2129,7 +1904,7 @@ function renderSleepList(){
         </div>
       </div>
       <div style="font-size:12px;color:var(--ink3);margin-bottom:4px;">🛏 ${s.bedTime||'--'} → ⏰ ${s.wakeTime||'--'} ${totalTxt?'· '+totalTxt:''}</div>
-      ${total?`<div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">深睡 ${s.deepMin||0}分钟 · 浅睡 ${s.lightMin||0}分钟</div>`:''}
+      ${total?`<div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">深睡 ${Math.floor((s.deepMin||0)/60)}小时${(s.deepMin||0)%60}分钟 · 浅睡 ${Math.floor((s.lightMin||0)/60)}小时${(s.lightMin||0)%60}分钟</div>`:''}
       ${s.mood?`<div style="font-size:12px;margin-bottom:4px;">感觉：${esc(s.mood)}</div>`:''}
       ${s.beforeBed?`<div style="font-size:12px;color:var(--ink2);margin-bottom:4px;">睡前：${esc(s.beforeBed)}</div>`:''}
       ${s.note?`<div style="font-size:12px;color:var(--ink3);">${esc(s.note)}</div>`:''}
@@ -2141,12 +1916,22 @@ function openSleepModal(existingId){
   const body=`
     <div class="note-field-group"><div class="note-field-label">日期（醒来的这天）</div><input type="date" id="sleepDate" value="${s?s.date:td()}"></div>
     <div style="display:flex;gap:10px;">
-      <div class="note-field-group" style="flex:1;"><div class="note-field-label">上床时间</div><input type="time" id="sleepBedTime" value="${s?.bedTime||''}"></div>
-      <div class="note-field-group" style="flex:1;"><div class="note-field-label">起床时间</div><input type="time" id="sleepWakeTime" value="${s?.wakeTime||''}"></div>
+      <div class="note-field-group" style="flex:1;"><div class="note-field-label">入睡时间</div><input type="time" id="sleepBedTime" value="${s?.bedTime||''}"></div>
+      <div class="note-field-group" style="flex:1;"><div class="note-field-label">醒来时间</div><input type="time" id="sleepWakeTime" value="${s?.wakeTime||''}"></div>
     </div>
-    <div style="display:flex;gap:10px;">
-      <div class="note-field-group" style="flex:1;"><div class="note-field-label">深睡（分钟）</div><input type="number" id="sleepDeepMin" min="0" value="${s?.deepMin||''}"></div>
-      <div class="note-field-group" style="flex:1;"><div class="note-field-label">浅睡（分钟）</div><input type="number" id="sleepLightMin" min="0" value="${s?.lightMin||''}"></div>
+    <div class="note-field-group">
+      <div class="note-field-label">深睡</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" id="sleepDeepH" min="0" style="flex:1;" placeholder="小时" value="${s?Math.floor((s.deepMin||0)/60):''}"><span style="font-size:12px;color:var(--ink3);">小时</span>
+        <input type="number" id="sleepDeepM" min="0" max="59" style="flex:1;" placeholder="分钟" value="${s?((s.deepMin||0)%60):''}"><span style="font-size:12px;color:var(--ink3);">分钟</span>
+      </div>
+    </div>
+    <div class="note-field-group">
+      <div class="note-field-label">浅睡</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" id="sleepLightH" min="0" style="flex:1;" placeholder="小时" value="${s?Math.floor((s.lightMin||0)/60):''}"><span style="font-size:12px;color:var(--ink3);">小时</span>
+        <input type="number" id="sleepLightM" min="0" max="59" style="flex:1;" placeholder="分钟" value="${s?((s.lightMin||0)%60):''}"><span style="font-size:12px;color:var(--ink3);">分钟</span>
+      </div>
     </div>
     <div class="note-field-group"><div class="note-field-label">睡眠感觉如何</div><input id="sleepMood" placeholder="例如：还行/很浅/容易醒" value="${esc(s?.mood||'')}"></div>
     <div class="note-field-group"><div class="note-field-label">睡前做了什么 / 可能影响睡眠的事</div><textarea id="sleepBeforeBed" rows="2">${esc(s?.beforeBed||'')}</textarea></div>
@@ -2157,8 +1942,8 @@ function openSleepModal(existingId){
       date,
       bedTime:document.getElementById('sleepBedTime').value,
       wakeTime:document.getElementById('sleepWakeTime').value,
-      deepMin:parseInt(document.getElementById('sleepDeepMin').value)||0,
-      lightMin:parseInt(document.getElementById('sleepLightMin').value)||0,
+      deepMin:(parseInt(document.getElementById('sleepDeepH').value)||0)*60+(parseInt(document.getElementById('sleepDeepM').value)||0),
+      lightMin:(parseInt(document.getElementById('sleepLightH').value)||0)*60+(parseInt(document.getElementById('sleepLightM').value)||0),
       mood:document.getElementById('sleepMood').value.trim(),
       beforeBed:document.getElementById('sleepBeforeBed').value.trim(),
       note:document.getElementById('sleepNote').value.trim(),
@@ -2508,7 +2293,6 @@ const PLAN_TABS=[
   {key:'week',label:'本周',icon:'📅'},
   {key:'month',label:'本月',icon:'🗓'},
   {key:'year',label:'今年',icon:'🎯'},
-  {key:'archive',label:'存档',icon:'📁'},
 ];
 
 function renderPlan(){
@@ -2538,10 +2322,7 @@ function renderPlan(){
       _planType=tab.dataset.pt;
       const found=PLAN_TABS.find(t=>t.key===_planType);
       document.getElementById('planNbTitle').textContent=`${found.icon} ${found.label}`;
-      const addBtn=document.getElementById('planFixedAddBtn');
-      if(addBtn)addBtn.style.opacity=_planType==='archive'?'0.4':'1';
-      if(_planType==='archive')renderPlanArchive();
-      else renderPlanNbItems();
+      renderPlanNbItems();
     });
   });
 
@@ -2585,7 +2366,7 @@ function renderNbItem(item){
               <span class="ci-del" style="font-size:11px;" onclick="deleteChildPlan('${item.id}','${c.id}')">✕</span>
             </div>`).join('')}
         </div>
-        ${allChildDone?`<button class="sbtn" style="margin-top:6px;font-size:11px;padding:3px 10px;" onclick="archiveWholePlan('${item.id}')">📁 全部完成，归档整组</button>`:''}
+        ${allChildDone?`<button class="sbtn" style="margin-top:6px;font-size:11px;padding:3px 10px;" onclick="archiveWholePlan('${item.id}')">✓ 标记整组完成</button>`:''}
       `:''}
     </div>
     <div class="nb-item-btns">
@@ -2658,48 +2439,20 @@ function deleteChildPlan(parentId,childId){
 }
 function archiveWholePlan(id){
   const item=findPlanItem(id);if(!item)return;
-  const childSummary=(item.children||[]).map(c=>'· '+c.title).join('\n');
-  S.planArchives.unshift({id:uid(),type:_planType,content:item.title||item.text||'',note:(item.note?item.note+'\n\n':'')+childSummary,date:nowStr()});
-  S.plans[_planType]=S.plans[_planType].filter(i=>i.id!==id);
-  save();renderPlanNbItems();toast('✓ 整组已存档');
+  item.done=true;
+  (item.children||[]).forEach(c=>c.done=true);
+  save();renderPlanNbItems();toast('✓ 整组已完成');
 }
 
 function toggleNbPlan(id){
   const item=findPlanItem(id);if(!item)return;
   if(item.children&&item.children.length)return; // 有子任务的，通过子任务勾选/归档按钮处理，不走这里
-  if(!item.done){
-    item.done=true;
-    S.planArchives.unshift({id:uid(),type:_planType,content:item.title||item.text||'',note:item.note||'',date:nowStr()});
-    S.plans[_planType]=S.plans[_planType].filter(i=>i.id!==id);
-    save();renderPlanNbItems();toast('✓ 已存档');
-  }
+  item.done=!item.done;
+  save();renderPlanNbItems();toast(item.done?'✓ 已完成':'已取消完成');
 }
 
 function deleteNbPlan(id){
   confirmDel(()=>{S.plans[_planType]=S.plans[_planType].filter(i=>i.id!==id);save();renderPlanNbItems();});
-}
-
-function renderPlanArchive(){
-  const el=document.getElementById('planNbBody');if(!el)return;
-  const archives=S.planArchives.slice(0,50);
-  if(!archives.length){el.innerHTML='<div class="nb-empty">📭 还没有完成记录</div>';return;}
-  el.innerHTML=`<div style="font-size:11px;color:#b0a070;margin-bottom:10px;">共 ${archives.length} 条完成记录</div>`+
-    archives.map((a,i)=>`
-    <div class="nb-item">
-      <div style="font-size:16px;margin-top:2px;">✅</div>
-      <div class="nb-content">
-        <div class="nb-item-title">${esc((a.content||''))}</div>
-        ${a.note?`<div class="nb-item-note">${esc(a.note)}</div>`:''}
-        <div class="nb-item-meta">${fmtDateShort(a.date)} · ${{day:'今日',week:'本周',month:'本月',year:'今年'}[a.type]||a.type}</div>
-        <div class="nb-item-actions">
-          <button class="sbtn" style="font-size:10px;padding:2px 8px;background:rgba(200,80,80,.1);color:#c04040;" onclick="delPlanArchive(${i})">删除</button>
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-function delPlanArchive(idx){
-  confirmDel(()=>{S.planArchives.splice(idx,1);save();renderPlanArchive();});
 }
 
 // 兼容旧函数名
@@ -2709,14 +2462,14 @@ function deletePlanItem(type,idx){_planType=type;deleteNbPlan(idx);}
 
 // ==================== 成长页面 ====================
 function showGrowTab(tab){
-  const tabs=['habit','proj','self','ach','stats'];
+  const tabs=['habit','proj','ach'];
   tabs.forEach(t=>{const el=document.getElementById('grow'+t.charAt(0).toUpperCase()+t.slice(1));if(el)el.style.display=t===tab?'':'none';});
   document.querySelectorAll('#growTabs [data-grow]').forEach(b=>{b.classList.toggle('on',b.dataset.grow===tab);});
 }
 function renderGrow(){
   const gc=document.getElementById('growContent');
-  gc.innerHTML=`<div class="top-tabs" id="growTabs"><button class="tab-main on" data-grow="habit">📅 阶段日程</button><button class="tab-main" data-grow="proj">📂 项目</button><button class="tab-main" data-grow="stats">📊 统计</button><button class="tab-main" data-grow="ach">🏆 成就</button><button class="tab-main" data-grow="self">🪞 认识我</button></div><div id="growHabit"></div><div id="growProj" style="display:none"></div><div id="growStats" style="display:none"></div><div id="growAch" style="display:none"></div><div id="growSelf" style="display:none"></div>`;
-  renderHabits();renderProjects();renderSelf();renderAchievements();renderStats();
+  gc.innerHTML=`<div class="top-tabs" id="growTabs"><button class="tab-main on" data-grow="habit">📅 阶段日程</button><button class="tab-main" data-grow="proj">📂 项目</button><button class="tab-main" data-grow="ach">🏆 成就</button></div><div id="growHabit"></div><div id="growProj" style="display:none"></div><div id="growAch" style="display:none"></div>`;
+  renderHabits();renderProjects();renderAchievements();
   document.getElementById('growTabs').addEventListener('click',(e)=>{const btn=e.target.closest('[data-grow]');if(btn)showGrowTab(btn.dataset.grow);});
 }
 
@@ -3251,97 +3004,6 @@ function editProjItem(id){
 }
 function delProjConfirm(id){confirmDel(()=>{function remove(list){for(let i=0;i<list.length;i++){if(list[i].id===id){list.splice(i,1);return true;}if(list[i].children&&remove(list[i].children))return true;}return false;}remove(S.projs);save();renderProjects();});}
 
-function renderSelf(){
-  const el=document.getElementById('growSelf');if(!el)return;
-  el.innerHTML=`<div class="top-tabs" id="selfTabs"><button class="tab-main on" data-self="whois">我是谁</button><button class="tab-main" data-self="note">💡 新发现</button></div><div id="selfWhois"></div><div id="selfNote" style="width:100%; display:none"></div>`;
-  renderWhois();renderNotes();
-  document.getElementById('selfTabs').addEventListener('click',(e)=>{const btn=e.target.closest('[data-self]');if(btn){document.querySelectorAll('#selfTabs [data-self]').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.getElementById('selfWhois').style.display=btn.dataset.self==='whois'?'':'none';document.getElementById('selfNote').style.display=btn.dataset.self==='note'?'':'none';}});
-}
-function renderWhois(){
-  const el=document.getElementById('selfWhois');if(!el)return;
-  el.innerHTML=`<textarea id="whoisInput" rows="3" placeholder="关于我自己…" style="margin-bottom:8px"></textarea><div class="right-btn"><button class="pbtn" id="whoisSaveBtn">记下来</button></div><div id="whoisList" style="margin-top:12px"></div>`;
-  document.getElementById('whoisSaveBtn').onclick=addWhois;
-  const list=document.getElementById('whoisList');
-  if(!S.whois.length){list.innerHTML='<div class="empty" data-icon="🪞">还没有记录</div>';return;}
-  list.innerHTML=S.whois.map(w=>`<div class="si"><div class="si-text">${esc(w.t)}</div><div class="si-date">${w.date}</div><div class="si-acts"><button class="sbtn" onclick="editWhoisItem('${w.id}')">编辑</button><button class="delbtn" onclick="delWhoisConfirm('${w.id}')">🗑️</button></div></div>`).join('');
-}
-function addWhois(){const t=document.getElementById('whoisInput').value.trim();if(t){S.whois.unshift({id:uid(),t,date:nowStr()});save();renderWhois();document.getElementById('whoisInput').value='';toast('已记录');}}
-function editWhoisItem(id){const w=S.whois.find(x=>x.id===id);if(!w)return;showModal('编辑',`<textarea id="editWhoisTA" rows="4">${esc(w.t)}</textarea>`,()=>{const val=document.getElementById('editWhoisTA').value.trim();if(val){w.t=val;save();closeModal();renderWhois();}});}
-function delWhoisConfirm(id){confirmDel(()=>{S.whois=S.whois.filter(w=>w.id!==id);save();renderWhois();});}
-
-let selfNoteCat='';
-function renderNotes(){
-  const el=document.getElementById('selfNote');if(!el)return;
-  if(!selfNoteCat||!S.selfNoteCats.includes(selfNoteCat))selfNoteCat=S.selfNoteCats[0]||'';
-  const catHtml=S.selfNoteCats.length?S.selfNoteCats.map(c=>`<div class="new-tag-opt${selfNoteCat===c?' on':''}" data-selfcat="${esc(c)}">${esc(c)}</div>`).join(''):'<div style="color:var(--ink3);font-size:12px">还没有分类，请先添加一个</div>';
-  el.innerHTML=`
-    <div class="note-field-group">
-      <div class="note-field-label">分类</div>
-      <div class="new-tag-row" id="selfCatRow">${catHtml}<div class="sbtn" style="border:1px dashed var(--g-mid);background:transparent" onclick="manageSelfNoteCats()">⚙️ 管理</div></div>
-    </div>
-    <textarea id="noteInput" rows="3" placeholder="新发现…" style="margin-bottom:8px"></textarea>
-    <div class="right-btn"><button class="pbtn" id="noteSaveBtn">记录</button></div>
-    <div id="noteList" style="margin-top:12px"></div>`;
-  document.getElementById('noteSaveBtn').onclick=addNote;
-  el.querySelectorAll('#selfCatRow .new-tag-opt').forEach(opt=>{
-    opt.onclick=()=>{
-      selfNoteCat=opt.dataset.selfcat;
-      el.querySelectorAll('#selfCatRow .new-tag-opt').forEach(o=>o.classList.remove('on'));
-      opt.classList.add('on');
-    };
-  });
-  const list=document.getElementById('noteList');
-  if(!S.selfNotes.length){list.innerHTML='<div class="empty" data-icon="💡">还没有新发现</div>';return;}
-  list.innerHTML=S.selfNotes.map(n=>`<div class="si" style="border-left-color:#9b87d4"><div style="font-size:10px;color:var(--ink3);margin-bottom:2px">${esc(n.cat||'未分类')} · ${n.date}</div><div class="si-text">${esc(n.t)}</div><div class="si-acts"><button class="sbtn" onclick="editNoteItem('${n.id}')">编辑</button><button class="delbtn" onclick="delNoteConfirm('${n.id}')">🗑️</button></div></div>`).join('');
-}
-function addNote(){const t=document.getElementById('noteInput').value.trim();if(!t)return;S.selfNotes.unshift({id:uid(),t,cat:selfNoteCat||'未分类',date:nowStr()});save();renderNotes();document.getElementById('noteInput').value='';toast('已记录');}
-function editNoteItem(id){const n=S.selfNotes.find(x=>x.id===id);if(!n)return;showModal('编辑',`<textarea id="editNoteTA" rows="4">${esc(n.t)}</textarea>`,()=>{const val=document.getElementById('editNoteTA').value.trim();if(val){n.t=val;save();closeModal();renderNotes();}});}
-function delNoteConfirm(id){confirmDel(()=>{S.selfNotes=S.selfNotes.filter(n=>n.id!==id);save();renderNotes();});}
-
-function manageSelfNoteCats(){
-  const body=(container)=>{
-    const render=()=>{
-      container.innerHTML=`
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <input id="newSelfCatInput" placeholder="新分类名称" style="flex:1">
-          <button class="pbtn" id="addSelfCatBtn">添加</button>
-        </div>
-        <div id="selfCatManageList"></div>`;
-      let html='';
-      S.selfNoteCats.forEach((c,i)=>{
-        html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(61,139,94,.06)">
-          <span style="font-size:13px">${esc(c)}</span>
-          <div style="display:flex;gap:6px"><button class="sbtn" data-edsc="${i}">✏️</button><button class="delbtn" data-dsc="${i}">🗑️</button></div>
-        </div>`;
-      });
-      if(!html)html='<div style="color:var(--ink3);font-size:12px;padding:4px 0">还没有分类</div>';
-      container.querySelector('#selfCatManageList').innerHTML=html;
-      container.querySelector('#addSelfCatBtn').onclick=()=>{
-        const v=container.querySelector('#newSelfCatInput').value.trim();
-        if(!v)return;
-        if(S.selfNoteCats.includes(v)){toast('该分类已存在');return;}
-        S.selfNoteCats.push(v);save();toast('已添加');render();
-      };
-      container.querySelectorAll('[data-dsc]').forEach(btn=>{
-        btn.onclick=()=>{const i=parseInt(btn.dataset.dsc);confirmDel(()=>{S.selfNoteCats.splice(i,1);save();render();});};
-      });
-      container.querySelectorAll('[data-edsc]').forEach(btn=>{
-        btn.onclick=()=>{
-          const i=parseInt(btn.dataset.edsc);
-          prompt1('编辑分类','分类名称',S.selfNoteCats[i],(val)=>{
-            const oldCat=S.selfNoteCats[i];
-            S.selfNoteCats[i]=val;
-            S.selfNotes.forEach(n=>{if(n.cat===oldCat)n.cat=val;});
-            save();render();
-          });
-        };
-      });
-    };
-    render();
-  };
-  showModal('管理新发现分类',body,null,null,{hideConfirm:true});
-}
-
 function renderAchievements(){
   const el=document.getElementById('growAch');if(!el)return;
   el.innerHTML=`<div class="ach-header"><div class="ach-icon">🏆</div><div class="ach-slogan" id="achSlogan" onclick="editAchieveSlogan()">你做到的，都算数</div></div><div class="top-tabs" id="achTabs"><button class="tab-main on" data-ach="all">全部</button><button class="tab-main" data-ach="first">🎯 第一次</button><button class="tab-main" data-ach="done">✅ 完成了</button></div><div id="achListGrow"></div><button class="fab-btn" id="addAchBtn">➕ 记录成就</button>`;
@@ -3382,7 +3044,7 @@ function delAchConfirm(id){confirmDel(()=>{S.achievements=S.achievements.filter(
 // ==================== 大统计 ====================
 let _statsRange='week'; // 'week'=近7天, 'month'=近30天
 function renderStats(){
-  const el=document.getElementById('growStats');if(!el)return;
+  const el=document.getElementById('recStats');if(!el)return;
   el.innerHTML=`
     <div style="display:flex;gap:8px;margin-bottom:16px;">
       <div class="plan-outer-tab${_statsRange==='week'?' on':''}" data-sr="week" style="flex:1;text-align:center;">近7天</div>
