@@ -80,7 +80,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .pg{display:none;padding:16px;}
 .pg.active{display:block;}
 .top-tabs{display:flex;justify-content:flex-start;gap:6px;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid var(--g-border);overflow-x:auto;scrollbar-width:none;}
-.rec-group-label{font-size:11px;color:var(--ink3);font-weight:600;letter-spacing:.5px;margin:0 0 6px 2px;}
+.rec-group-label{font-size:11px;color:var(--ink2);font-weight:700;letter-spacing:.5px;margin:0 0 6px 2px;text-shadow:0 1px 3px rgba(255,255,255,.6);}
 .countdown-wrap{margin-bottom:16px;}
 .countdown-carousel{display:flex;align-items:center;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:16px 42vw;margin:0 -20px 4px;scrollbar-width:none;}
 .countdown-card{flex-shrink:0;scroll-snap-align:center;background:var(--card);border:1px solid var(--g-border);border-radius:var(--radius-md);padding:14px 18px;text-align:center;width:140px;transition:transform .25s,opacity .25s;opacity:.55;transform:scale(.8);cursor:pointer;}
@@ -92,7 +92,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .countdown-card.active .cd-num{font-size:32px;}
 .lifebuoy-btn{display:block;margin:0 auto 16px;background:none;border:1px dashed var(--g-mid);color:var(--g-dark);border-radius:20px;padding:6px 16px;font-size:12px;cursor:pointer;}
 .top-tabs::-webkit-scrollbar{display:none;}
-.tab-main{background:none;border:none;font-size:14px;font-family:inherit;cursor:pointer;padding:7px 14px;border-radius:30px;color:var(--ink3);display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s;font-weight:500;}
+.tab-main{background:rgba(255,255,255,.65);border:none;font-size:14px;font-family:inherit;cursor:pointer;padding:7px 14px;border-radius:30px;color:var(--ink2);display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s;font-weight:500;}
 .tab-main.on{color:var(--g);font-weight:600;background:var(--g-light);}
 .quote-box{background:linear-gradient(135deg,var(--nb-bg) 0%,var(--card) 100%);border-radius:var(--radius-md);padding:16px 18px;margin-bottom:18px;box-shadow:var(--shadow-md);border:1px solid var(--nb-line);position:relative;overflow:hidden;}
 .quote-box::before{content:'"';position:absolute;top:-10px;left:10px;font-size:72px;color:var(--nb-line);font-family:serif;line-height:1;pointer-events:none;}
@@ -159,7 +159,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .tree-action-btn:active{background:var(--g-light);}
 .tree-action-btn.danger{color:#c97c5a;}
 .tree-action-btn.accent{color:var(--g);font-weight:500;}
-.empty{text-align:center;padding:28px 12px;color:var(--ink3);font-size:13px;line-height:1.8;}
+.empty{text-align:center;padding:28px 12px;color:var(--ink2);font-size:13px;line-height:1.8;text-shadow:0 1px 3px rgba(255,255,255,.5);}
 .empty::before{display:block;font-size:28px;margin-bottom:8px;content:attr(data-icon);}
 .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--white);padding:7px 20px;border-radius:40px;font-size:12px;opacity:0;transition:opacity .2s;z-index:500;white-space:nowrap;backdrop-filter:blur(8px);}
 .toast.on{opacity:1;}
@@ -557,6 +557,7 @@ function load(){
   if(!S.periodLogs)S.periodLogs=[]; // 生理期：[{id,startDate,duration,flow,note}]
   if(!S.periodTips)S.periodTips=[]; // 经期自我关怀小贴士：字符串数组
   if(!S.timelineEvents)S.timelineEvents=[]; // 手动补充的时间线事件：[{id,date,time,text,icon}]
+  if(!S.timelineOverrides)S.timelineOverrides={}; // 对自动生成的时间线事件的编辑覆盖：{eventId:{time,text}}
   // ==== 阶段日程：数据迁移 ====
   if(!S.phases)S.phases=[];
   if(!S.lastPhaseReminderShown)S.lastPhaseReminderShown='';
@@ -1437,6 +1438,7 @@ function renderTasks(){
 }
 function isTaskDone(t){
   if(t.children&&t.children.length)return t.children.every(isTaskDone);
+  if(t.total>0)return (t.doneCount||0)>=t.total;
   return !!t.done;
 }
 let collapsedTasks=new Set();
@@ -1446,26 +1448,44 @@ function renderTaskItem(t,level){
   const hasChildren=t.children&&t.children.length>0;
   const isCollapsed=collapsedTasks.has(t.id);
   const childDone=hasChildren?t.children.filter(isTaskDone).length:0;
-  const done=hasChildren?(childDone===t.children.length):t.done;
+  const isCounter=!hasChildren&&t.total>0;
+  const done=hasChildren?(childDone===t.children.length):(isCounter?(t.doneCount||0)>=t.total:t.done);
   return`<div class="ti ${done?'done':''}" style="display:flex;flex-direction:column;align-items:stretch;gap:6px;${level>0?'margin-left:'+Math.min(level,4)*14+'px;':''}">
     <div style="display:flex;align-items:center;gap:8px;">
       ${hasChildren?
         `<span onclick="toggleTaskCollapse('${t.id}')" style="cursor:pointer;font-size:11px;color:var(--ink3);width:14px;flex-shrink:0;user-select:none;">${isCollapsed?'▶':'▼'}</span><div class="chk" style="font-size:9px;">${childDone}/${t.children.length}</div>`
+        :isCounter?
+        `<span style="width:14px;flex-shrink:0;"></span><div class="chk" style="font-size:9px;${done?'background:var(--g);color:#fff;':''}">${t.doneCount||0}/${t.total}</div>`
         :`<span style="width:14px;flex-shrink:0;"></span><div class="chk ${t.done?'on':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>`}
       <div style="flex:1">
         <div class="tn" style="${done?'text-decoration:line-through':''}">${esc(t.name)}</div>
         ${t.taskType||t.note?`<div style="font-size:11px;color:var(--ink3);margin-top:2px">${t.taskType?`<span style="background:var(--g-light);color:var(--g);padding:1px 8px;border-radius:10px;margin-right:5px;font-weight:500">${t.taskType}</span>`:''}${t.note?esc(t.note):''}</div>`:''}
         ${hasChildren?`<div style="background:var(--g-xlight);border-radius:6px;height:5px;margin-top:6px;overflow:hidden;"><div style="background:var(--g);height:100%;width:${Math.round(childDone/t.children.length*100)}%;"></div></div>`:''}
+        ${isCounter?`<div style="background:var(--g-xlight);border-radius:6px;height:5px;margin-top:6px;overflow:hidden;"><div style="background:var(--g);height:100%;width:${Math.min(100,Math.round((t.doneCount||0)/t.total*100))}%;"></div></div>`:''}
       </div>
       <div class="priority-${t.priority||'green'}"></div>
     </div>
-    <div style="display:flex;gap:2px;justify-content:flex-end;">
+    <div style="display:flex;gap:2px;justify-content:flex-end;flex-wrap:wrap;">
+      ${isCounter?`<button class="tree-action-btn accent" onclick="checkInTask('${t.id}')" ${done?'style="opacity:.4;pointer-events:none;"':''}>✅ 打卡 +1</button>${(t.doneCount||0)>0?`<button class="tree-action-btn" onclick="undoCheckInTask('${t.id}')">↩️ 撤销</button>`:''}`:''}
       <button class="tree-action-btn" onclick="openAddChildTaskModal('${t.id}')">➕ 子任务</button>
       <button class="tree-action-btn" onclick="editTask('${t.id}')">✏️ 编辑</button>
       <button class="tree-action-btn danger" onclick="delTaskConfirm('${t.id}')">🗑️</button>
     </div>
     ${!isCollapsed&&hasChildren?`<div>${t.children.map(c=>renderTaskItem(c,level+1)).join('')}</div>`:(hasChildren?`<div style="font-size:11px;color:var(--ink3);padding:2px 0 2px 22px;">▶ ${t.children.length} 项子任务（已折叠）</div>`:'')}
   </div>`;
+}
+function checkInTask(id){
+  const t=findTaskItem(id);if(!t)return;
+  if(t.children&&t.children.length)return;
+  if(t.total>0&&(t.doneCount||0)>=t.total){toast('已完成全部目标！');return;}
+  t.doneCount=(t.doneCount||0)+1;
+  save();renderTasks();toast(`+1 ${t.name}`);
+}
+function undoCheckInTask(id){
+  const t=findTaskItem(id);if(!t)return;
+  if(!t.doneCount||t.doneCount<=0)return;
+  t.doneCount--;
+  save();renderTasks();toast('已撤销');
 }
 function findTaskItem(id,list){
   list=list||S.tasks;
@@ -1514,6 +1534,7 @@ function editTask(id){
       <div class="note-field-group"><div class="note-field-label">日期</div><input type="date" id="editTaskDate" value="${t.date||td()}"></div>
       <div class="note-field-group"><div class="note-field-label">类型</div><div style="display:flex;flex-wrap:wrap;gap:6px" id="editTaskTypeSelector">${S.taskTypes.map(tp=>`<div class="sbtn edit-task-type-opt${t.taskType===tp?' selected':''}" data-type="${tp}" style="${t.taskType===tp?'background:var(--g);color:#fff':''}">${tp}</div>`).join('')}<div class="sbtn" style="border:1px dashed var(--g-mid);background:transparent" onclick="manageTaskTypes()">⚙️ 管理</div></div></div>
       <div class="note-field-group"><div class="note-field-label">优先级</div><div class="priority-selector"><div class="priority-option p-red ${t.priority==='red'?'selected':''}" data-p="red">🔴 高</div><div class="priority-option p-orange ${t.priority==='orange'?'selected':''}" data-p="orange">🟠 中</div><div class="priority-option p-green ${t.priority==='green'||!t.priority?'selected':''}" data-p="green">🟢 低</div></div></div>
+      <div class="note-field-group"><div class="note-field-label">目标次数（0表示普通打勾任务，不填数量）</div><input id="editTaskTotal" type="number" min="0" value="${t.total||0}"></div>
       <div class="note-field-group"><div class="note-field-label">备注</div><textarea id="editTaskNote" rows="3">${esc(t.note||'')}</textarea></div>`;
     container.querySelectorAll('.edit-task-type-opt').forEach(opt=>{opt.onclick=()=>{container.querySelectorAll('.edit-task-type-opt').forEach(o=>{o.classList.remove('selected');o.style.background='';o.style.color='';});opt.classList.add('selected');opt.style.background='var(--g)';opt.style.color='#fff';};});
     container.querySelectorAll('.priority-option').forEach(opt=>{opt.onclick=()=>{container.querySelectorAll('.priority-option').forEach(o=>o.classList.remove('selected'));opt.classList.add('selected');};});
@@ -1522,7 +1543,9 @@ function editTask(id){
     const name=document.getElementById('editTaskName').value.trim();if(!name)return;
     const typeSel=document.querySelector('.edit-task-type-opt.selected');
     const priSel=document.querySelector('.priority-option.selected');
+    const total=parseInt(document.getElementById('editTaskTotal').value)||0;
     t.name=name;t.date=document.getElementById('editTaskDate').value||t.date||td();t.taskType=typeSel?typeSel.dataset.type:(S.taskTypes[S.taskTypes.length-1]||'其他');t.priority=priSel?priSel.dataset.p:'green';t.note=document.getElementById('editTaskNote').value.trim();
+    t.total=total;if(t.doneCount===undefined)t.doneCount=0;
     save();closeModal();renderTasks();toast('已保存');
   });
 }
@@ -1534,6 +1557,7 @@ function openAddTaskModal(){
       <div class="note-field-group"><div class="note-field-label">日期</div><input type="date" id="newTaskDate" value="${td()}"></div>
       <div class="note-field-group"><div class="note-field-label">类型</div><div style="display:flex;flex-wrap:wrap;gap:6px" id="taskTypeSelector">${S.taskTypes.map((t,i)=>`<div class="sbtn task-type-opt${i===S.taskTypes.length-1?' selected':''}" data-type="${t}" style="${i===S.taskTypes.length-1?'background:var(--g);color:#fff':''}">${t}</div>`).join('')}<div class="sbtn" style="border:1px dashed var(--g-mid);background:transparent" onclick="manageTaskTypes()">⚙️ 管理</div></div></div>
       <div class="note-field-group"><div class="note-field-label">优先级</div><div class="priority-selector"><div class="priority-option p-red" data-p="red">🔴 高</div><div class="priority-option p-orange" data-p="orange">🟠 中</div><div class="priority-option p-green selected" data-p="green">🟢 低</div></div></div>
+      <div class="note-field-group"><div class="note-field-label">目标次数（0表示普通打勾任务，不填数量）</div><input id="newTaskTotal" type="number" min="0" placeholder="例如：10"></div>
       <div class="note-field-group"><div class="note-field-label">备注</div><textarea id="newTaskNote" rows="3" placeholder="可选备注…"></textarea></div>`;
     container.querySelectorAll('.task-type-opt').forEach(opt=>{opt.onclick=()=>{container.querySelectorAll('.task-type-opt').forEach(o=>{o.classList.remove('selected');o.style.background='';o.style.color='';});opt.classList.add('selected');opt.style.background='var(--g)';opt.style.color='#fff';};});
     container.querySelectorAll('.priority-option').forEach(opt=>{opt.onclick=()=>{container.querySelectorAll('.priority-option').forEach(o=>o.classList.remove('selected'));opt.classList.add('selected');};});
@@ -1546,7 +1570,8 @@ function openAddTaskModal(){
     const priSel=document.querySelector('.priority-option.selected');
     const priority=priSel?priSel.dataset.p:'green';
     const note=document.getElementById('newTaskNote').value.trim();
-    S.tasks.push({id:uid(),date,name,taskType,priority,note,done:false,children:[]});
+    const total=parseInt(document.getElementById('newTaskTotal').value)||0;
+    S.tasks.push({id:uid(),date,name,taskType,priority,note,done:false,total,doneCount:0,children:[]});
     save();closeModal();renderTasks();toast(date===td()?'任务已添加 ✓':`已添加到 ${fmtDateShort(date)} ✓`);
   });
   setTimeout(()=>{const el=document.getElementById('newTaskName');if(el)el.focus();},100);
@@ -1658,33 +1683,22 @@ function renderRecord(){
   rc.innerHTML=`
     <div class="rec-group-label">日常</div>
     <div class="top-tabs" id="recTabsA">
-      <button class="tab-main on" data-rec="jot">📝 记一记</button>
-      <button class="tab-main" data-rec="diary">📔 日记</button>
+      <button class="tab-main on" data-rec="diary">📔 日记</button>
       <button class="tab-main" data-rec="timeline">🕐 时间线</button>
     </div>
     <div class="rec-group-label">健康</div>
     <div class="top-tabs" id="recTabsB">
       <button class="tab-main" data-rec="water">💧 喝水</button>
       <button class="tab-main" data-rec="sleep">😴 睡眠</button>
-      <button class="tab-main" data-rec="period">🩸 生理期</button>
-      <button class="tab-main" data-rec="body">📏 身体数据</button>
     </div>
-    <div class="rec-group-label">统计</div>
-    <div class="top-tabs" id="recTabsC">
-      <button class="tab-main" data-rec="stats">📊 统计</button>
-    </div>
-    <div id="recJot"></div>
-    <div id="recDiary" style="display:none"></div>
+    <div id="recDiary"></div>
     <div id="recTimeline" style="display:none"></div>
     <div id="recWater" style="display:none"></div>
-    <div id="recSleep" style="display:none"></div>
-    <div id="recBody" style="display:none"></div>
-    <div id="recPeriod" style="display:none"></div>
-    <div id="recStats" style="display:none"></div>`;
-  renderJot();renderDiaries();renderWater();renderSleep();renderBodyData();renderPeriod();renderTimeline();renderStats();
-  const allRecPages=['jot','diary','timeline','water','sleep','body','period','stats'];
+    <div id="recSleep" style="display:none"></div>`;
+  renderDiaries();renderWater();renderSleep();renderTimeline();
+  const allRecPages=['diary','timeline','water','sleep'];
   const switchRecTab=(key)=>{
-    document.querySelectorAll('#recTabsA [data-rec],#recTabsB [data-rec],#recTabsC [data-rec]').forEach(b=>b.classList.toggle('on',b.dataset.rec===key));
+    document.querySelectorAll('#recTabsA [data-rec],#recTabsB [data-rec]').forEach(b=>b.classList.toggle('on',b.dataset.rec===key));
     allRecPages.forEach(k=>{
       const el=document.getElementById('rec'+k.charAt(0).toUpperCase()+k.slice(1));
       if(el)el.style.display=(k===key)?'':'none';
@@ -1692,7 +1706,6 @@ function renderRecord(){
   };
   document.getElementById('recTabsA').addEventListener('click',(e)=>{const btn=e.target.closest('[data-rec]');if(btn)switchRecTab(btn.dataset.rec);});
   document.getElementById('recTabsB').addEventListener('click',(e)=>{const btn=e.target.closest('[data-rec]');if(btn)switchRecTab(btn.dataset.rec);});
-  document.getElementById('recTabsC').addEventListener('click',(e)=>{const btn=e.target.closest('[data-rec]');if(btn)switchRecTab(btn.dataset.rec);});
 }
 
 // ==================== 记一记（想法流 + 快速备忘 合并） ====================
@@ -2253,64 +2266,88 @@ function parseNowStr(s){
   if(!m)return null;
   return{dateKey:`${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`,time:m[4]};
 }
-function collectAllProjNotesForDate(list,dateKey,out){
+function collectAllProjNotesForDate(list,dateKey,out,push){
   (list||[]).forEach(p=>{
     (p.notes||[]).forEach(n=>{
       const parsed=parseNowStr(n.date);
       if(parsed&&parsed.dateKey===dateKey){
-        out.push({time:parsed.time,icon:'✅',text:`打卡：${p.name}${n.note?'（'+n.note+'）':''}`});
+        if(push)push('proj:'+n.id,parsed.time,'✅',`打卡：${p.name}${n.note?'（'+n.note+'）':''}`);
+        else out.push({time:parsed.time,icon:'✅',text:`打卡：${p.name}${n.note?'（'+n.note+'）':''}`});
       }
     });
-    if(p.children&&p.children.length)collectAllProjNotesForDate(p.children,dateKey,out);
+    if(p.children&&p.children.length)collectAllProjNotesForDate(p.children,dateKey,out,push);
   });
 }
 function getTimelineEvents(dateKey){
   const events=[];
+  const ov=S.timelineOverrides||{};
+  const push=(id,time,icon,text)=>{
+    const o=ov[id];
+    events.push({id,time:o&&o.time?o.time:time,icon,text:o&&o.text?o.text:text,edited:!!o});
+  };
   // 1. 阶段日程习惯打卡
   (S.goodH||[]).forEach(h=>{
     const entry=h.log&&h.log[dateKey];
     if(entry&&entry.status==='done'&&entry.doneAt){
       const d=new Date(entry.doneAt);
-      events.push({time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),icon:h.emoji||'✅',text:`完成习惯：${h.name}`});
+      push('habit:'+h.id+':'+dateKey,String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),h.emoji||'✅',`完成习惯：${h.name}`);
     }
   });
   // 2. 项目打卡（递归整棵树）
-  collectAllProjNotesForDate(S.projs,dateKey,events);
+  collectAllProjNotesForDate(S.projs,dateKey,events,push);
   // 3. 今日任务完成
   (S.tasks||[]).forEach(t=>{
     if(t.done&&t.completedAt){
       const d=new Date(t.completedAt);
       const dk=formatDate(d);
-      if(dk===dateKey)events.push({time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),icon:'☑️',text:`完成任务：${t.name}`});
+      if(dk===dateKey)push('task:'+t.id,String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),'☑️',`完成任务：${t.name}`);
     }
   });
   // 4. 喝水
-  (S.waterLog[dateKey]||[]).forEach(w=>{
-    events.push({time:w.time,icon:'💧',text:`喝水 ${w.amount}ml`});
+  (S.waterLog[dateKey]||[]).forEach((w,i)=>{
+    push('water:'+dateKey+':'+(w.id||i),w.time,'💧',`喝水 ${w.amount}ml`);
   });
   // 5. 日记
   (S.diaries||[]).forEach(d=>{
     const parsed=parseNowStr(d.date);
-    if(parsed&&parsed.dateKey===dateKey)events.push({time:parsed.time,icon:'📔',text:'写了日记'});
+    if(parsed&&parsed.dateKey===dateKey)push('diary:'+d.id,parsed.time,'📔','写了日记');
   });
-  // 6. 快速备忘（创建时间）
-  (S.memos||[]).forEach(m=>{
-    const d=new Date(m.createdAt);
-    if(formatDate(d)===dateKey)events.push({time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),icon:'📌',text:`记下：${m.text}`});
-  });
-  // 7. 手动补充的事件
+  // 6. 手动补充的事件
   (S.timelineEvents||[]).forEach(e=>{
-    if(e.date===dateKey)events.push({id:e.id,time:e.time,icon:e.icon||'📍',text:e.text,manual:true});
+    if(e.date===dateKey)push('manual:'+e.id,e.time,e.icon||'📍',e.text);
   });
+  events.forEach(e=>{if(e.id&&e.id.startsWith('manual:'))e.manual=true;});
   // 按时间排序
   events.sort((a,b)=>a.time.localeCompare(b.time));
   return events;
+}
+let _timelineEventsCache=[];
+function editTimelineEvent(id){
+  const e=(_timelineEventsCache||[]).find(x=>x.id===id);if(!e)return;
+  const curTime=e.time,curText=e.text;
+  const body=`
+    <div class="note-field-group"><div class="note-field-label">时间</div><input type="time" id="tlEditTime" value="${curTime}"></div>
+    <div class="note-field-group"><div class="note-field-label">内容</div><input id="tlEditText" value="${esc(curText)}"></div>`;
+  showModal('编辑这条记录',body,()=>{
+    const time=document.getElementById('tlEditTime').value;if(!time){toast('请选择时间');return;}
+    const text=document.getElementById('tlEditText').value.trim();if(!text){toast('请输入内容');return;}
+    if(id.startsWith('manual:')){
+      const realId=id.slice(7);
+      const ev=(S.timelineEvents||[]).find(x=>x.id===realId);
+      if(ev){ev.time=time;ev.text=text;}
+    }else{
+      if(!S.timelineOverrides)S.timelineOverrides={};
+      S.timelineOverrides[id]={time,text};
+    }
+    save();closeModal();renderTimeline();toast('已保存 ✓');
+  });
 }
 function renderTimeline(){
   const el=document.getElementById('recTimeline');if(!el)return;
   if(!_timelineDate)_timelineDate=td();
   const dateKey=_timelineDate;
   const events=getTimelineEvents(dateKey);
+  _timelineEventsCache=events;
   const isToday=dateKey===td();
   el.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -2329,8 +2366,12 @@ function renderTimeline(){
     ${events.map(e=>`
       <div style="position:relative;padding:8px 0 8px 14px;">
         <div style="position:absolute;left:-13px;top:12px;width:8px;height:8px;border-radius:50%;background:var(--g);"></div>
-        <div style="font-size:11px;color:var(--ink3);margin-bottom:2px;">${e.time}</div>
-        <div style="font-size:13px;">${e.icon} ${esc(e.text)}${e.manual?` <span class="ci-del" style="font-size:11px;" onclick="delTimelineEvent('${e.id}')">🗑️</span>`:''}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:2px;">${e.time}${e.edited?' · 已编辑':''}</div>
+        <div style="font-size:13px;display:flex;align-items:center;gap:6px;">
+          <span style="flex:1;">${e.icon} ${esc(e.text)}</span>
+          <button class="tree-action-btn" style="padding:2px 6px;" onclick="editTimelineEvent('${e.id}')">✏️</button>
+          ${e.manual?`<button class="tree-action-btn danger" style="padding:2px 6px;" onclick="delTimelineEvent('${e.id.slice(7)}')">🗑️</button>`:''}
+        </div>
       </div>`).join('')}
   </div>`;
 }
@@ -2541,14 +2582,14 @@ function deletePlanItem(type,idx){_planType=type;deleteNbPlan(idx);}
 
 // ==================== 成长页面 ====================
 function showGrowTab(tab){
-  const tabs=['habit','proj','ach'];
+  const tabs=['habit','stats','proj','ach'];
   tabs.forEach(t=>{const el=document.getElementById('grow'+t.charAt(0).toUpperCase()+t.slice(1));if(el)el.style.display=t===tab?'':'none';});
   document.querySelectorAll('#growTabs [data-grow]').forEach(b=>{b.classList.toggle('on',b.dataset.grow===tab);});
 }
 function renderGrow(){
   const gc=document.getElementById('growContent');
-  gc.innerHTML=`<div class="top-tabs" id="growTabs"><button class="tab-main on" data-grow="habit">📅 阶段日程</button><button class="tab-main" data-grow="proj">📂 项目</button><button class="tab-main" data-grow="ach">🏆 成就</button></div><div id="growHabit"></div><div id="growProj" style="display:none"></div><div id="growAch" style="display:none"></div>`;
-  renderHabits();renderProjects();renderAchievements();
+  gc.innerHTML=`<div class="top-tabs" id="growTabs"><button class="tab-main on" data-grow="habit">📅 阶段日程</button><button class="tab-main" data-grow="stats">📊 统计</button><button class="tab-main" data-grow="proj">📂 项目</button><button class="tab-main" data-grow="ach">🏆 成就</button></div><div id="growHabit"></div><div id="growStats" style="display:none"></div><div id="growProj" style="display:none"></div><div id="growAch" style="display:none"></div>`;
+  renderHabits();renderStats();renderProjects();renderAchievements();
   document.getElementById('growTabs').addEventListener('click',(e)=>{const btn=e.target.closest('[data-grow]');if(btn)showGrowTab(btn.dataset.grow);});
 }
 
@@ -3123,7 +3164,7 @@ function delAchConfirm(id){confirmDel(()=>{S.achievements=S.achievements.filter(
 // ==================== 大统计 ====================
 let _statsRange='week'; // 'week'=近7天, 'month'=近30天
 function renderStats(){
-  const el=document.getElementById('recStats');if(!el)return;
+  const el=document.getElementById('growStats');if(!el)return;
   el.innerHTML=`
     <div style="display:flex;gap:8px;margin-bottom:16px;">
       <div class="plan-outer-tab${_statsRange==='week'?' on':''}" data-sr="week" style="flex:1;text-align:center;">近7天</div>
@@ -3141,12 +3182,9 @@ function renderStatsBody(){
   for(let i=0;i<days;i++)dateKeys.push(addDaysStr(today,-i));
   const dateSet=new Set(dateKeys);
 
-  // ---- 任务统计：按类型分组 ----
+  // ---- 任务完成情况：只看总数，不分类型 ----
   const doneTasks=(S.tasks||[]).filter(t=>t.done&&t.completedAt&&dateSet.has(formatDate(new Date(t.completedAt))));
-  const byType={};
-  doneTasks.forEach(t=>{const type=t.taskType||'其他';byType[type]=(byType[type]||0)+1;});
-  const typeSorted=Object.entries(byType).sort((a,b)=>b[1]-a[1]);
-  const maxTypeCount=typeSorted.length?typeSorted[0][1]:1;
+  const taskCountByDay=dateKeys.map(dk=>(S.tasks||[]).filter(t=>t.done&&t.completedAt&&formatDate(new Date(t.completedAt))===dk).length);
 
   // ---- 习惯打卡率 ----
   const habitStats=(S.goodH||[]).map(h=>{
@@ -3190,28 +3228,24 @@ function renderStatsBody(){
   wrap.innerHTML=`
     <div class="section-divider"><div class="stl">☑️ 任务完成情况</div></div>
     ${doneTasks.length?`
-      <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;">共完成 ${doneTasks.length} 个任务</div>
-      ${typeSorted.map(([type,cnt])=>`
-        <div style="margin-bottom:6px;">
-          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px;"><span>${esc(type)}</span><span>${cnt}个</span></div>
-          <div style="background:var(--g-xlight);border-radius:6px;height:6px;overflow:hidden;"><div style="background:var(--g);height:100%;width:${Math.round(cnt/maxTypeCount*100)}%;"></div></div>
-        </div>`).join('')}
+      <div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">这段时间共完成 <b style="font-size:15px;color:var(--g)">${doneTasks.length}</b> 个任务</div>
+      <div style="position:relative;height:160px;margin-bottom:8px;"><canvas id="chartTask"></canvas></div>
     `:'<div class="empty" data-icon="☑️">这段时间还没有完成的任务</div>'}
 
     <div class="section-divider"><div class="stl">📅 习惯打卡率</div></div>
     ${habitStats.length?`<div style="position:relative;height:${Math.max(120,habitStats.length*36)}px;margin-bottom:8px;"><canvas id="chartHabit"></canvas></div>`:'<div class="empty" data-icon="📅">还没有习惯</div>'}
-
-    <div class="section-divider"><div class="stl">📂 项目打卡</div></div>
-    ${projStats.length?`<div style="position:relative;height:${Math.max(120,projStats.length*36)}px;margin-bottom:8px;"><canvas id="chartProj"></canvas></div>`:'<div class="empty" data-icon="📂">这段时间没有项目打卡</div>'}
 
     <div class="section-divider"><div class="stl">💧 喝水情况</div></div>
     ${waterDaysWithData?`<div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">平均每天 ${waterAvg}ml，达标 ${waterTargetHitDays}/${waterDaysWithData} 天</div><div style="position:relative;height:160px;margin-bottom:8px;"><canvas id="chartWater"></canvas></div>`:'<div class="empty" data-icon="💧">这段时间没有喝水记录</div>'}
 
     <div class="section-divider"><div class="stl">😴 睡眠情况</div></div>
     ${sleepInRange.length?`<div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">平均每晚 ${Math.floor(sleepAvgMin/60)}小时${sleepAvgMin%60}分钟（共${sleepInRange.length}条记录）</div><div style="position:relative;height:160px;margin-bottom:8px;"><canvas id="chartSleep"></canvas></div>`:'<div class="empty" data-icon="😴">这段时间没有睡眠记录</div>'}
+
+    <div class="section-divider"><div class="stl">📂 项目打卡</div></div>
+    ${projStats.length?`<div style="position:relative;height:${Math.max(120,projStats.length*36)}px;margin-bottom:8px;"><canvas id="chartProj"></canvas></div>`:'<div class="empty" data-icon="📂">这段时间没有项目打卡</div>'}
   `;
 
-  renderStatsCharts({habitStats,projStats,dateKeys,sleepInRange});
+  renderStatsCharts({habitStats,projStats,dateKeys,sleepInRange,taskCountByDay});
 }
 
 // Chart.js 是从 CDN 异步加载的（加了 defer，避免像之前 Firebase 那次一样卡住整个页面）。
@@ -3221,12 +3255,24 @@ function destroyStatsCharts(){
   Object.values(_statsCharts).forEach(c=>{if(c)c.destroy();});
   _statsCharts={};
 }
-function renderStatsCharts({habitStats,projStats,dateKeys,sleepInRange}){
+function renderStatsCharts({habitStats,projStats,dateKeys,sleepInRange,taskCountByDay}){
   destroyStatsCharts();
   if(typeof Chart==='undefined')return; // 图表库没加载成功，静默跳过
 
   const gColor=getComputedStyle(document.body).getPropertyValue('--g').trim()||'#3d8b5e';
   const inkColor=getComputedStyle(document.body).getPropertyValue('--ink3').trim()||'#888';
+
+  // 任务完成数：按天条形图（正序，从早到近）
+  const taskCanvas=document.getElementById('chartTask');
+  if(taskCanvas&&taskCountByDay){
+    const ordered=[...dateKeys].reverse();
+    const counts=[...taskCountByDay].reverse();
+    _statsCharts.task=new Chart(taskCanvas,{
+      type:'bar',
+      data:{labels:ordered.map(dk=>dk.slice(5)),datasets:[{label:'完成任务数',data:counts,backgroundColor:gColor,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:inkColor,maxRotation:0}},y:{ticks:{color:inkColor,stepSize:1}}}}
+    });
+  }
 
   // 习惯打卡率：横向条形图
   const habitCanvas=document.getElementById('chartHabit');
@@ -3260,17 +3306,17 @@ function renderStatsCharts({habitStats,projStats,dateKeys,sleepInRange}){
     });
   }
 
-  // 睡眠：折线图（深睡+浅睡）
+  // 睡眠：折线图（深睡+浅睡，单位：小时，保留1位小数）
   const sleepCanvas=document.getElementById('chartSleep');
   if(sleepCanvas&&sleepInRange.length){
     const sorted=[...sleepInRange].sort((a,b)=>a.date.localeCompare(b.date));
     _statsCharts.sleep=new Chart(sleepCanvas,{
       type:'line',
       data:{labels:sorted.map(s=>s.date.slice(5)),datasets:[
-        {label:'深睡(分钟)',data:sorted.map(s=>s.deepMin||0),borderColor:gColor,backgroundColor:gColor,tension:.3},
-        {label:'浅睡(分钟)',data:sorted.map(s=>s.lightMin||0),borderColor:inkColor,backgroundColor:inkColor,tension:.3}
+        {label:'深睡(小时)',data:sorted.map(s=>Math.round((s.deepMin||0)/6)/10),borderColor:gColor,backgroundColor:gColor,tension:.3},
+        {label:'浅睡(小时)',data:sorted.map(s=>Math.round((s.lightMin||0)/6)/10),borderColor:inkColor,backgroundColor:inkColor,tension:.3}
       ]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:inkColor,boxWidth:12,font:{size:11}}}},scales:{x:{ticks:{color:inkColor,maxRotation:0}},y:{ticks:{color:inkColor}}}}
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:inkColor,boxWidth:12,font:{size:11}}}},scales:{x:{ticks:{color:inkColor,maxRotation:0}},y:{ticks:{color:inkColor,callback:(v)=>v+'h'}}}}
     });
   }
 }
