@@ -566,6 +566,28 @@ function load(){
     if(!h.weekOverrides)h.weekOverrides={};
     if(!h.restRanges)h.restRanges=[];
   });
+  pruneExpiredPlans();
+}
+// 周/月/年计划：截止日期一过，自动清除（不再需要手动删除）
+function pruneExpiredPlans(){
+  if(!S.plans)return;
+  const t=td();
+  let changed=false;
+  const prune=(list)=>{
+    return list.filter(item=>{
+      if(item.children&&item.children.length){
+        const before=item.children.length;
+        item.children=prune(item.children);
+        if(item.children.length!==before)changed=true;
+      }
+      if(item.due&&item.due<t){changed=true;return false;}
+      return true;
+    });
+  };
+  ['week','month','year'].forEach(type=>{
+    if(Array.isArray(S.plans[type]))S.plans[type]=prune(S.plans[type]);
+  });
+  if(changed)save();
 }
 function save(){
   try{
@@ -2421,6 +2443,7 @@ const PLAN_TABS=[
 ];
 
 function renderPlan(){
+  pruneExpiredPlans();
   _planType='week';
   const pc=document.getElementById('planContent');
   const now=new Date();
@@ -2611,8 +2634,27 @@ function renderGrow(){
 }
 
 // ==================== 阶段日程系统 ====================
-const STAGE_BADGES=[{min:0,emoji:'✨'},{min:3,emoji:'⭐'},{min:7,emoji:'🍀'},{min:14,emoji:'🌸'},{min:30,emoji:'🎁'},{min:60,emoji:'🌈'},{min:100,emoji:'🏅'}];
+const STAGE_BADGES=[
+  {min:0,emoji:'✨'},
+  {min:1,emoji:'🔥'},
+  {min:8,emoji:'🌾'},
+  {min:21,emoji:'💎'},
+  {min:51,emoji:'🍀'},
+  {min:101,emoji:'🌠'},
+  {min:201,emoji:'3⃣️'},
+  {min:251,emoji:'🐎'},
+  {min:301,emoji:'🇨🇳'},
+  {min:401,emoji:'🎂'},
+  {min:501,emoji:'🚖'},
+  {min:701,emoji:'🏠'},
+  {min:1001,emoji:'🌎'},
+  {min:2001,emoji:'🌅'}
+];
 function getBadgeForCount(n){let b=STAGE_BADGES[0];STAGE_BADGES.forEach(item=>{if(n>=item.min)b=item;});return b.emoji;}
+// 累计打卡次数（不看是否连续，断了也不清零）
+function getHabitTotalCount(h){
+  return Object.keys(h.log||{}).filter(dt=>h.log[dt].status==='done').length;
+}
 function getISOWeekKey(dateStr){
   const d=new Date(dateStr+'T00:00:00');
   const day=(d.getDay()+6)%7;
@@ -2694,7 +2736,7 @@ function checkInHabitToday(id){
   h.log[t]={status:'done',note:'',tag:'',priority:'orange',doneAt:Date.now()};
   save();renderHabits();
   if(document.getElementById('todayHabitsList'))renderTodayHabitsSection();
-  toast('打卡成功 ✓ '+getBadgeForCount(getHabitStreak(h)));
+  toast('打卡成功 ✓ '+getBadgeForCount(getHabitTotalCount(h)));
   openHabitCheckinDetailPopup(id,t);
 }
 function undoHabitCheckinToday(id){
@@ -2836,8 +2878,8 @@ function renderHabits(){
   if(!S.goodH.length){goodDiv.innerHTML='<div class="empty" data-icon="🌿">还没有习惯，点右下角添加一个吧</div>';return;}
   const REPEAT_LABEL={daily:'每天',everyNDays:'隔N天',weeklyRotation:'每周轮值'};
   goodDiv.innerHTML=S.goodH.map((h,idx)=>{
-    const streak=getHabitStreak(h);
-    const badge=getBadgeForCount(streak);
+    const totalCount=getHabitTotalCount(h);
+    const badge=getBadgeForCount(totalCount);
     const doneToday=isDateDoneForHabit(h,td());
     const restToday=isDateRestForHabit(h,td())&&!doneToday;
     let repeatDesc=REPEAT_LABEL[h.repeatType]||'每天';
@@ -2850,7 +2892,7 @@ function renderHabits(){
           <div style="font-weight:600;font-size:15px;">${esc(h.name)}</div>
           <div style="font-size:10px;color:var(--ink3);">${repeatDesc}</div>
         </span>
-        <span style="font-size:20px;" title="连续 ${streak}">${badge}${streak>0?streak:''}</span>
+        <span style="font-size:20px;" title="累计打卡 ${totalCount} 次">${badge}${totalCount>0?totalCount:''}</span>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center;">
         ${doneToday?`<button class="sbtn" onclick="undoHabitCheckinToday('${h.id}')">↩️ 撤销今天</button>`:(restToday?`<span style="font-size:12px;color:var(--ink3);padding:6px;">🌤 今天请假中</span>`:`<button class="sbtn" onclick="checkInHabitToday('${h.id}')">✅ 今天打卡</button>`)}
