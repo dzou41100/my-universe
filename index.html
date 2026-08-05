@@ -519,14 +519,7 @@ function load(){
     if(!Array.isArray(S.plans.month))S.plans.month=[];
     if(!Array.isArray(S.plans.year))S.plans.year=[];
   }
-  // "日计划"标签已下线，把里面还没做完的条目自动搬进"今日任务"，避免数据丢失
-  if(S.plans.day&&S.plans.day.length){
-    S.plans.day.forEach(item=>{
-      if(item.done)return;
-      S.tasks.push({id:uid(),date:td(),name:item.title||item.text||'未命名任务',taskType:'💭 其他',priority:'orange',note:item.note||'',done:false});
-    });
-    S.plans.day=[];
-  }
+  // 日计划恢复为独立计划类型，不再自动搬进"今日任务"
   if(!S.lastBackupReminder)S.lastBackupReminder=0;
   if(S.installBannerDismissed===undefined)S.installBannerDismissed=false;
   if(!S.quoteIntervalMinutes)S.quoteIntervalMinutes=30;
@@ -1527,13 +1520,15 @@ function findTaskParentArray(id,list){
 }
 function openAddChildTaskModal(parentId){
   const body=`<div class="note-field-group"><div class="note-field-label">子任务名称</div><input id="childTaskName" placeholder="例如：第一步"></div>
+    <div class="note-field-group"><div class="note-field-label">目标次数（0表示普通打勾任务，不填数量）</div><input id="childTaskTotal" type="number" min="0" placeholder="例如：10"></div>
     <div class="note-field-group"><div class="note-field-label">备注（可选）</div><textarea id="childTaskNote" rows="2"></textarea></div>`;
   showModal('添加子任务',body,()=>{
     const name=document.getElementById('childTaskName').value.trim();if(!name){toast('请输入名称');return;}
     const note=document.getElementById('childTaskNote').value.trim();
+    const total=parseInt(document.getElementById('childTaskTotal').value)||0;
     const parent=findTaskItem(parentId);if(!parent)return;
     if(!parent.children)parent.children=[];
-    parent.children.push({id:uid(),name,note,done:false,children:[]});
+    parent.children.push({id:uid(),name,note,done:false,children:[],total,doneCount:0});
     collapsedTasks.delete(parentId);
     save();closeModal();renderTasks();toast('已添加子任务 ✓');
   });
@@ -1699,16 +1694,12 @@ function renderRecord(){
   rc.innerHTML=`
     <div class="top-tabs" id="recTabsA">
       <button class="tab-main on" data-rec="diary">📔 日记</button>
-      <button class="tab-main" data-rec="timeline">🕐 时间线</button>
-      <button class="tab-main" data-rec="water">💧 喝水</button>
-      <button class="tab-main" data-rec="sleep">😴 睡眠</button>
+      <button class="tab-main" data-rec="stats">📊 统计</button>
     </div>
     <div id="recDiary"></div>
-    <div id="recTimeline" style="display:none"></div>
-    <div id="recWater" style="display:none"></div>
-    <div id="recSleep" style="display:none"></div>`;
-  renderDiaries();renderWater();renderSleep();renderTimeline();
-  const allRecPages=['diary','timeline','water','sleep'];
+    <div id="recStats" style="display:none"></div>`;
+  renderDiaries();renderStats();
+  const allRecPages=['diary','stats'];
   const switchRecTab=(key)=>{
     document.querySelectorAll('#recTabsA [data-rec]').forEach(b=>b.classList.toggle('on',b.dataset.rec===key));
     allRecPages.forEach(k=>{
@@ -2437,6 +2428,7 @@ function delTimelineEvent(id){
 // ==================== 计划页面（本子版） ====================
 let _planType='day';
 const PLAN_TABS=[
+  {key:'day',label:'日计划',icon:'📝'},
   {key:'week',label:'本周',icon:'📅'},
   {key:'month',label:'本月',icon:'🗓'},
   {key:'year',label:'今年',icon:'🎯'},
@@ -2444,18 +2436,18 @@ const PLAN_TABS=[
 
 function renderPlan(){
   pruneExpiredPlans();
-  _planType='week';
+  _planType='day';
   const pc=document.getElementById('planContent');
   const now=new Date();
   pc.innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;">
-      ${PLAN_TABS.map(t=>`<div class="plan-outer-tab${t.key==='week'?' on':''}" data-pt="${t.key}" style="text-align:center;">${t.icon} ${t.label}</div>`).join('')}
-      <button id="planFixedAddBtn" class="plan-outer-tab" style="text-align:center;background:var(--g);color:#fff;border-color:var(--g);cursor:pointer;">＋ 添加</button>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;">
+      ${PLAN_TABS.map(t=>`<div class="plan-outer-tab${t.key==='day'?' on':''}" data-pt="${t.key}" style="text-align:center;">${t.icon} ${t.label}</div>`).join('')}
     </div>
+    <button id="planFixedAddBtn" class="plan-outer-tab" style="width:100%;text-align:center;background:var(--g);color:#fff;border-color:var(--g);cursor:pointer;margin-bottom:12px;">＋ 添加</button>
     <div class="notebook-wrap" id="planNotebook">
       <div class="notebook-rings">${Array(6).fill('<div class="notebook-ring"></div>').join('')}</div>
       <div class="notebook-header">
-        <div class="notebook-title" id="planNbTitle">📅 本周计划</div>
+        <div class="notebook-title" id="planNbTitle">📝 日计划</div>
         <div class="notebook-date" id="planNbDate">${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日</div>
       </div>
       <div class="notebook-body" id="planNbBody"></div>
@@ -2488,6 +2480,7 @@ function renderPlanNbItems(){
 
 function isPlanItemDone(item){
   if(item.children&&item.children.length)return item.children.every(isPlanItemDone);
+  if(item.total>0)return (item.doneCount||0)>=item.total;
   return !!item.done;
 }
 
@@ -2503,10 +2496,13 @@ function renderNbItem(item,level){
   const isCollapsed=collapsedPlans.has(item.id);
   const childDone=hasChildren?item.children.filter(isPlanItemDone).length:0;
   const allChildDone=hasChildren&&childDone===item.children.length;
-  const itemDone=hasChildren?allChildDone:item.done;
+  const isCounter=!hasChildren&&item.total>0;
+  const itemDone=hasChildren?allChildDone:(isCounter?(item.doneCount||0)>=item.total:item.done);
   return`<div class="nb-item${itemDone?' done-nb':''}" style="${level>0?'margin-left:'+Math.min(level,4)*14+'px;':''}">
     ${hasChildren?
       `<div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;cursor:pointer;" onclick="togglePlanCollapse('${item.id}')" title="${isCollapsed?'展开':'收起'}子项">${isCollapsed?'▶':childDone+'/'+item.children.length}</div>`
+      :isCounter?
+      `<div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;">${item.doneCount||0}/${item.total}</div>`
       :`<div class="nb-check${item.done?' done':''}" onclick="toggleNbPlan('${item.id}')">${item.done?'✓':''}</div>`}
     <div class="nb-content">
       <div class="nb-item-title${itemDone?' done':''}">${esc(item.title||item.text||'')}</div>
@@ -2517,8 +2513,12 @@ function renderNbItem(item,level){
         <div style="background:var(--g-xlight);border-radius:6px;height:6px;margin:4px 0;overflow:hidden;">
           <div style="background:var(--g);height:100%;width:${Math.round(childDone/item.children.length*100)}%;"></div>
         </div>`:''}
+      ${isCounter?`
+        <div style="background:var(--g-xlight);border-radius:6px;height:5px;margin:6px 0;overflow:hidden;"><div style="background:var(--g);height:100%;width:${Math.min(100,Math.round((item.doneCount||0)/item.total*100))}%;"></div></div>`:''}
       <div class="nb-item-actions" style="margin:2px 0 2px;flex-wrap:wrap;height:auto;">
+        ${isCounter?`<button class="tree-action-btn accent" onclick="checkInPlanItem('${item.id}')" ${itemDone?'style="opacity:.4;pointer-events:none;"':''}>✅ 打卡 +1</button>${(item.doneCount||0)>0?`<button class="tree-action-btn" onclick="undoCheckInPlanItem('${item.id}')">↩️ 撤销</button>`:''}`:''}
         <button class="tree-action-btn" onclick="openAddChildPlanModal('${item.id}')">➕ 子项</button>
+        ${_planType==='day'?`<button class="tree-action-btn" onclick="movePlanItemToToday('${item.id}')" title="挪到今日任务">↗️今日</button>`:''}
         <button class="tree-action-btn" onclick="editNbPlan('${item.id}')">✏️ 编辑</button>
         ${hasChildren&&allChildDone?`<button class="tree-action-btn accent" onclick="archiveWholePlan('${item.id}')">✓ 全部完成</button>`:''}
         <button class="tree-action-btn danger" onclick="deleteNbPlan('${item.id}')">🗑️</button>
@@ -2564,6 +2564,10 @@ function openNbPlanModal(existingId,parentId){
         <div style="font-size:12px;color:var(--ink3);margin-bottom:4px;">详细内容 / 备注</div>
         <textarea id="nbPlanNote" rows="5" placeholder="可以写很具体的内容，比如：\n- 第一步做什么\n- 需要准备什么\n- 注意事项…" style="resize:vertical;">${esc(item.note||'')}</textarea>
       </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:4px;">目标次数（0表示普通打勾，不计数量）</div>
+        <input id="nbPlanTotal" type="number" min="0" value="${item.total||0}" placeholder="例如：10">
+      </div>
       <div>
         <div style="font-size:12px;color:var(--ink3);margin-bottom:4px;">截止日期（可选）</div>
         <input id="nbPlanDue" type="date" value="${item.due||''}">
@@ -2574,16 +2578,18 @@ function openNbPlanModal(existingId,parentId){
     if(!title){toast('请填写标题');return;}
     const note=document.getElementById('nbPlanNote').value.trim();
     const due=document.getElementById('nbPlanDue').value;
+    const total=parseInt(document.getElementById('nbPlanTotal').value)||0;
     if(isEdit){
-      Object.assign(item,{title,note,due,text:title});
+      Object.assign(item,{title,note,due,text:title,total});
+      if(item.doneCount===undefined)item.doneCount=0;
     }else if(parentId){
       const parent=findPlanItem(parentId);if(!parent)return;
       if(!parent.children)parent.children=[];
-      parent.children.push({id:uid(),title,note,due,text:title,done:false,children:[]});
+      parent.children.push({id:uid(),title,note,due,text:title,done:false,children:[],total,doneCount:0});
       collapsedPlans.delete(parentId);
     }else{
       if(!S.plans[_planType])S.plans[_planType]=[];
-      S.plans[_planType].push({id:uid(),title,note,due,text:title,done:false,children:[]});
+      S.plans[_planType].push({id:uid(),title,note,due,text:title,done:false,children:[],total,doneCount:0});
     }
     save();closeModal();renderPlanNbItems();toast(isEdit?'已更新 ✓':'已添加 ✓');
   });
@@ -2595,16 +2601,57 @@ function openAddChildPlanModal(parentId){openNbPlanModal(undefined,parentId);}
 
 function archiveWholePlan(id){
   const item=findPlanItem(id);if(!item)return;
-  (function markAll(n){n.done=true;n.completedAt=Date.now();(n.children||[]).forEach(markAll);})(item);
+  (function markAll(n){n.done=true;n.completedAt=Date.now();if(n.total>0)n.doneCount=n.total;(n.children||[]).forEach(markAll);})(item);
   save();renderPlanNbItems();toast('✓ 整组已完成');
 }
 
 function toggleNbPlan(id){
   const item=findPlanItem(id);if(!item)return;
   if(item.children&&item.children.length)return; // 有子项的，通过子项勾选或"全部完成"按钮处理
+  if(item.total>0)return; // 有数量目标的，通过打卡按钮处理
   item.done=!item.done;
   item.completedAt=item.done?Date.now():null;
   save();renderPlanNbItems();toast(item.done?'✓ 已完成':'已取消完成');
+}
+
+function checkInPlanItem(id){
+  const item=findPlanItem(id);if(!item)return;
+  if(item.children&&item.children.length)return;
+  if(!(item.total>0))return;
+  if((item.doneCount||0)>=item.total){toast('已完成全部目标！');return;}
+  item.doneCount=(item.doneCount||0)+1;
+  if(item.doneCount>=item.total){item.done=true;item.completedAt=Date.now();}
+  save();renderPlanNbItems();toast(`+1 ${item.title||item.text||''}`);
+}
+function undoCheckInPlanItem(id){
+  const item=findPlanItem(id);if(!item)return;
+  if(!item.doneCount||item.doneCount<=0)return;
+  item.doneCount--;
+  if(item.doneCount<item.total){item.done=false;item.completedAt=null;}
+  save();renderPlanNbItems();toast('已撤销');
+}
+
+// 把日计划里的一项（含子项）挪到"今日任务"，不用重新手动录入一遍
+function convertPlanItemToTaskShape(item){
+  return{
+    id:uid(),
+    name:item.title||item.text||'未命名任务',
+    note:item.note||'',
+    date:td(),
+    taskType:S.taskTypes[S.taskTypes.length-1]||'💭 其他',
+    priority:'orange',
+    done:false,
+    total:item.total||0,
+    doneCount:0,
+    children:(item.children||[]).map(convertPlanItemToTaskShape)
+  };
+}
+function movePlanItemToToday(id){
+  const item=findPlanItem(id);if(!item)return;
+  const arr=findPlanParentArray(id);
+  S.tasks.push(convertPlanItemToTaskShape(item));
+  if(arr){const idx=arr.findIndex(i=>i.id===id);if(idx>-1)arr.splice(idx,1);}
+  save();renderPlanNbItems();toast('已挪到今日任务 ✓');
 }
 
 function deleteNbPlan(id){
@@ -2622,14 +2669,14 @@ function deletePlanItem(type,idx){_planType=type;deleteNbPlan(idx);}
 
 // ==================== 成长页面 ====================
 function showGrowTab(tab){
-  const tabs=['habit','stats','proj','ach'];
+  const tabs=['habit','proj','ach'];
   tabs.forEach(t=>{const el=document.getElementById('grow'+t.charAt(0).toUpperCase()+t.slice(1));if(el)el.style.display=t===tab?'':'none';});
   document.querySelectorAll('#growTabs [data-grow]').forEach(b=>{b.classList.toggle('on',b.dataset.grow===tab);});
 }
 function renderGrow(){
   const gc=document.getElementById('growContent');
-  gc.innerHTML=`<div class="top-tabs" id="growTabs"><button class="tab-main on" data-grow="habit">📅 阶段日程</button><button class="tab-main" data-grow="stats">📊 统计</button><button class="tab-main" data-grow="proj">📂 项目</button><button class="tab-main" data-grow="ach">🏆 成就</button></div><div id="growHabit"></div><div id="growStats" style="display:none"></div><div id="growProj" style="display:none"></div><div id="growAch" style="display:none"></div>`;
-  renderHabits();renderStats();renderProjects();renderAchievements();
+  gc.innerHTML=`<div class="top-tabs" id="growTabs"><button class="tab-main on" data-grow="habit">📅 阶段日程</button><button class="tab-main" data-grow="proj">📂 项目</button><button class="tab-main" data-grow="ach">🏆 成就</button></div><div id="growHabit"></div><div id="growProj" style="display:none"></div><div id="growAch" style="display:none"></div>`;
+  renderHabits();renderProjects();renderAchievements();
   document.getElementById('growTabs').addEventListener('click',(e)=>{const btn=e.target.closest('[data-grow]');if(btn)showGrowTab(btn.dataset.grow);});
 }
 
@@ -2863,9 +2910,21 @@ function renderTodayHabitsSection(){
 function renderHabits(){
   const el=document.getElementById('growHabit');if(!el)return;
   const phase=getActivePhase();
+  let phaseTimeText='';
+  if(phase){
+    phaseTimeText=`${phase.startDate} ~ ${phase.endDate||'不限'}`;
+    if(phase.endDate){
+      const dl=Math.round((new Date(phase.endDate+'T00:00:00')-new Date(td()+'T00:00:00'))/86400000);
+      phaseTimeText+=dl>=0?` · 还剩${dl}天`:' · 已超期';
+    }
+  }
   el.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
-      <div style="font-size:13px;color:var(--ink2);">${phase?`🟢 当前阶段：<b>${esc(phase.name)}</b>`:'尚未设置阶段（不影响习惯正常使用）'}</div>
+      ${phase?`
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--ink);">🟢 当前阶段：${esc(phase.name)}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--g);margin-top:2px;">📆 ${phaseTimeText}</div>
+        </div>`:'<div style="font-size:13px;color:var(--ink2);">尚未设置阶段（不影响习惯正常使用）</div>'}
       <div style="display:flex;gap:6px;">
         <button class="sbtn" onclick="openCreatePhaseModal()">➕ 新阶段</button>
         <button class="sbtn" onclick="viewPhaseHistory()">📜 历史</button>
@@ -3224,7 +3283,7 @@ function delAchConfirm(id){confirmDel(()=>{S.achievements=S.achievements.filter(
 // ==================== 大统计 ====================
 let _statsRange='week'; // 'week'=近7天, 'month'=近30天
 function renderStats(){
-  const el=document.getElementById('growStats');if(!el)return;
+  const el=document.getElementById('recStats');if(!el)return;
   el.innerHTML=`
     <div style="display:flex;gap:8px;margin-bottom:16px;">
       <div class="plan-outer-tab${_statsRange==='week'?' on':''}" data-sr="week" style="flex:1;text-align:center;">近7天</div>
@@ -3234,6 +3293,18 @@ function renderStats(){
   el.querySelectorAll('[data-sr]').forEach(t=>{t.onclick=()=>{_statsRange=t.dataset.sr;renderStats();};});
   renderStatsBody();
 }
+// 递归统计"日计划"里已完成条目（按完成日期）
+function countDonePlanItemsForDate(list,dateKey){
+  let c=0;
+  (list||[]).forEach(item=>{
+    if(item.children&&item.children.length){
+      c+=countDonePlanItemsForDate(item.children,dateKey);
+    }else if(item.done&&item.completedAt&&formatDate(new Date(item.completedAt))===dateKey){
+      c++;
+    }
+  });
+  return c;
+}
 function renderStatsBody(){
   const wrap=document.getElementById('statsBody');if(!wrap)return;
   const days=_statsRange==='week'?7:30;
@@ -3242,11 +3313,18 @@ function renderStatsBody(){
   for(let i=0;i<days;i++)dateKeys.push(addDaysStr(today,-i));
   const dateSet=new Set(dateKeys);
 
-  // ---- 任务完成情况：只看总数，不分类型 ----
-  const doneTasks=(S.tasks||[]).filter(t=>t.done&&t.completedAt&&dateSet.has(formatDate(new Date(t.completedAt))));
-  const taskCountByDay=dateKeys.map(dk=>(S.tasks||[]).filter(t=>t.done&&t.completedAt&&formatDate(new Date(t.completedAt))===dk).length);
+  // ---- 今日任务 / 日计划完成情况（合并统计） ----
+  const taskCountByDay=dateKeys.map(dk=>
+    (S.tasks||[]).filter(t=>t.done&&t.completedAt&&formatDate(new Date(t.completedAt))===dk).length
+    +countDonePlanItemsForDate(S.plans&&S.plans.day,dk)
+  );
+  const taskTotal=taskCountByDay.reduce((a,b)=>a+b,0);
 
-  // ---- 习惯打卡率 ----
+  // ---- 写日记 ----
+  const diaryCountByDay=dateKeys.map(dk=>(S.diaries||[]).filter(d=>{const p=parseNowStr(d.date);return p&&p.dateKey===dk;}).length);
+  const diaryTotal=diaryCountByDay.reduce((a,b)=>a+b,0);
+
+  // ---- 阶段日程打卡率 ----
   const habitStats=(S.goodH||[]).map(h=>{
     const doneCount=dateKeys.filter(dk=>h.log&&h.log[dk]&&h.log[dk].status==='done').length;
     return{name:h.name,emoji:h.emoji,doneCount,rate:Math.round(doneCount/days*100)};
@@ -3264,48 +3342,37 @@ function renderStatsBody(){
   walkProj(S.projs);
   projStats.sort((a,b)=>b.cnt-a.cnt);
 
-  // ---- 喝水 ----
-  let waterDaysWithData=0,waterTotal=0,waterTargetHitDays=0;
-  dateKeys.forEach(dk=>{
-    const log=S.waterLog[dk];
-    if(log&&log.length){
-      waterDaysWithData++;
-      const sum=log.reduce((s,i)=>s+i.amount,0);
-      waterTotal+=sum;
-      if(sum>=(S.waterTarget||2000))waterTargetHitDays++;
-    }
-  });
-  const waterAvg=waterDaysWithData?Math.round(waterTotal/waterDaysWithData):0;
-
-  // ---- 睡眠 ----
-  const sleepInRange=(S.sleepLogs||[]).filter(s=>dateSet.has(s.date));
-  let sleepAvgMin=0;
-  if(sleepInRange.length){
-    const totalMin=sleepInRange.reduce((s,x)=>s+(x.deepMin||0)+(x.lightMin||0),0);
-    sleepAvgMin=Math.round(totalMin/sleepInRange.length);
-  }
+  // ---- 笔记 ----
+  const noteCountByDay=dateKeys.map(dk=>(S.notes||[]).filter(n=>n.createdAt&&formatDate(new Date(n.createdAt))===dk).length);
+  const noteTotal=noteCountByDay.reduce((a,b)=>a+b,0);
 
   wrap.innerHTML=`
-    <div class="section-divider"><div class="stl">☑️ 任务完成情况</div></div>
-    ${doneTasks.length?`
-      <div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">这段时间共完成 <b style="font-size:15px;color:var(--g)">${doneTasks.length}</b> 个任务</div>
+    <div class="section-divider"><div class="stl">☑️ 今日任务 / 日计划</div></div>
+    ${taskTotal?`
+      <div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">这段时间共完成 <b style="font-size:15px;color:var(--g)">${taskTotal}</b> 项</div>
       <div style="position:relative;height:160px;margin-bottom:8px;"><canvas id="chartTask"></canvas></div>
     `:'<div class="empty" data-icon="☑️">这段时间还没有完成的任务</div>'}
 
-    <div class="section-divider"><div class="stl">📅 习惯打卡率</div></div>
+    <div class="section-divider"><div class="stl">📔 写日记</div></div>
+    ${diaryTotal?`
+      <div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">这段时间共写了 <b style="font-size:15px;color:var(--g)">${diaryTotal}</b> 篇日记</div>
+      <div style="position:relative;height:160px;margin-bottom:8px;"><canvas id="chartDiary"></canvas></div>
+    `:'<div class="empty" data-icon="📔">这段时间还没有写日记</div>'}
+
+    <div class="section-divider"><div class="stl">📅 阶段日程打卡</div></div>
     ${habitStats.length?`<div style="position:relative;height:${Math.max(120,habitStats.length*36)}px;margin-bottom:8px;"><canvas id="chartHabit"></canvas></div>`:'<div class="empty" data-icon="📅">还没有习惯</div>'}
-
-    <div class="section-divider"><div class="stl">💧 喝水情况</div></div>
-    ${waterDaysWithData?`<div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">平均每天 ${waterAvg}ml，达标 ${waterTargetHitDays}/${waterDaysWithData} 天</div><div style="position:relative;height:160px;margin-bottom:8px;"><canvas id="chartWater"></canvas></div>`:'<div class="empty" data-icon="💧">这段时间没有喝水记录</div>'}
-
-    <div class="section-divider"><div class="stl">😴 睡眠情况</div></div>
-    ${sleepInRange.length?`<div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">平均每晚 ${Math.floor(sleepAvgMin/60)}小时${sleepAvgMin%60}分钟（共${sleepInRange.length}条记录）</div><div style="position:relative;height:160px;margin-bottom:8px;"><canvas id="chartSleep"></canvas></div>`:'<div class="empty" data-icon="😴">这段时间没有睡眠记录</div>'}
 
     <div class="section-divider"><div class="stl">📂 项目打卡</div></div>
     ${projStats.length?`<div style="position:relative;height:${Math.max(120,projStats.length*36)}px;margin-bottom:8px;"><canvas id="chartProj"></canvas></div>`:'<div class="empty" data-icon="📂">这段时间没有项目打卡</div>'}
+
+    <div class="section-divider"><div class="stl">📝 笔记</div></div>
+    ${noteTotal?`
+      <div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">这段时间新建了 <b style="font-size:15px;color:var(--g)">${noteTotal}</b> 条笔记</div>
+      <div style="position:relative;height:160px;margin-bottom:8px;"><canvas id="chartNote"></canvas></div>
+    `:'<div class="empty" data-icon="📝">这段时间还没有新笔记</div>'}
   `;
 
-  renderStatsCharts({habitStats,projStats,dateKeys,sleepInRange,taskCountByDay});
+  renderStatsCharts({habitStats,projStats,dateKeys,taskCountByDay,diaryCountByDay,noteCountByDay});
 }
 
 // Chart.js 是从 CDN 异步加载的（加了 defer，避免像之前 Firebase 那次一样卡住整个页面）。
@@ -3315,21 +3382,33 @@ function destroyStatsCharts(){
   Object.values(_statsCharts).forEach(c=>{if(c)c.destroy();});
   _statsCharts={};
 }
-function renderStatsCharts({habitStats,projStats,dateKeys,sleepInRange,taskCountByDay}){
+function renderStatsCharts({habitStats,projStats,dateKeys,taskCountByDay,diaryCountByDay,noteCountByDay}){
   destroyStatsCharts();
   if(typeof Chart==='undefined')return; // 图表库没加载成功，静默跳过
 
   const gColor=getComputedStyle(document.body).getPropertyValue('--g').trim()||'#3d8b5e';
   const inkColor=getComputedStyle(document.body).getPropertyValue('--ink3').trim()||'#888';
 
-  // 任务完成数：按天条形图（正序，从早到近）
+  // 任务/日计划完成数：按天条形图（正序，从早到近）
   const taskCanvas=document.getElementById('chartTask');
   if(taskCanvas&&taskCountByDay){
     const ordered=[...dateKeys].reverse();
     const counts=[...taskCountByDay].reverse();
     _statsCharts.task=new Chart(taskCanvas,{
       type:'bar',
-      data:{labels:ordered.map(dk=>dk.slice(5)),datasets:[{label:'完成任务数',data:counts,backgroundColor:gColor,borderRadius:4}]},
+      data:{labels:ordered.map(dk=>dk.slice(5)),datasets:[{label:'完成数',data:counts,backgroundColor:gColor,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:inkColor,maxRotation:0}},y:{ticks:{color:inkColor,stepSize:1}}}}
+    });
+  }
+
+  // 日记：按天条形图
+  const diaryCanvas=document.getElementById('chartDiary');
+  if(diaryCanvas&&diaryCountByDay){
+    const ordered=[...dateKeys].reverse();
+    const counts=[...diaryCountByDay].reverse();
+    _statsCharts.diary=new Chart(diaryCanvas,{
+      type:'bar',
+      data:{labels:ordered.map(dk=>dk.slice(5)),datasets:[{label:'日记篇数',data:counts,backgroundColor:gColor,borderRadius:4}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:inkColor,maxRotation:0}},y:{ticks:{color:inkColor,stepSize:1}}}}
     });
   }
@@ -3354,29 +3433,15 @@ function renderStatsCharts({habitStats,projStats,dateKeys,sleepInRange,taskCount
     });
   }
 
-  // 喝水：按天条形图（正序，从早到近）
-  const waterCanvas=document.getElementById('chartWater');
-  if(waterCanvas){
+  // 笔记：按天条形图
+  const noteCanvas=document.getElementById('chartNote');
+  if(noteCanvas&&noteCountByDay){
     const ordered=[...dateKeys].reverse();
-    const amounts=ordered.map(dk=>(S.waterLog[dk]||[]).reduce((s,i)=>s+i.amount,0));
-    _statsCharts.water=new Chart(waterCanvas,{
+    const counts=[...noteCountByDay].reverse();
+    _statsCharts.note=new Chart(noteCanvas,{
       type:'bar',
-      data:{labels:ordered.map(dk=>dk.slice(5)),datasets:[{label:'喝水ml',data:amounts,backgroundColor:gColor,borderRadius:4}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:inkColor,maxRotation:0}},y:{ticks:{color:inkColor}}}}
-    });
-  }
-
-  // 睡眠：折线图（深睡+浅睡，单位：小时，保留1位小数）
-  const sleepCanvas=document.getElementById('chartSleep');
-  if(sleepCanvas&&sleepInRange.length){
-    const sorted=[...sleepInRange].sort((a,b)=>a.date.localeCompare(b.date));
-    _statsCharts.sleep=new Chart(sleepCanvas,{
-      type:'line',
-      data:{labels:sorted.map(s=>s.date.slice(5)),datasets:[
-        {label:'深睡(小时)',data:sorted.map(s=>Math.round((s.deepMin||0)/6)/10),borderColor:gColor,backgroundColor:gColor,tension:.3},
-        {label:'浅睡(小时)',data:sorted.map(s=>Math.round((s.lightMin||0)/6)/10),borderColor:inkColor,backgroundColor:inkColor,tension:.3}
-      ]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:inkColor,boxWidth:12,font:{size:11}}}},scales:{x:{ticks:{color:inkColor,maxRotation:0}},y:{ticks:{color:inkColor,callback:(v)=>v+'h'}}}}
+      data:{labels:ordered.map(dk=>dk.slice(5)),datasets:[{label:'新建笔记数',data:counts,backgroundColor:gColor,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:inkColor,maxRotation:0}},y:{ticks:{color:inkColor,stepSize:1}}}}
     });
   }
 }
