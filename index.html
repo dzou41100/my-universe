@@ -325,7 +325,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .nb-tab-row{display:flex;gap:0;padding:0 0 0 28px;background:var(--nb-bg);border-bottom:1px solid var(--nb-line);overflow-x:auto;}
 .nb-tab{padding:8px 12px;font-size:12px;font-weight:600;color:var(--nb-ink3);cursor:pointer;border-bottom:2.5px solid transparent;transition:all .15s;white-space:nowrap;flex-shrink:0;}
 .nb-tab.on{color:var(--nb-ink2);border-bottom-color:var(--nb-ring);}
-.nb-item{padding:0;border:none;display:flex;align-items:flex-start;gap:8px;}
+.nb-item{padding:0;border:none;display:flex;align-items:flex-start;gap:8px;margin-bottom:2px;}
+.nb-item-child{margin-left:13px;padding-left:11px;border-left:2px solid var(--nb-line);margin-top:2px;}
 .nb-check{width:18px;height:18px;border:1.5px solid var(--nb-ring);border-radius:4px;flex-shrink:0;margin-top:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--nb-ink2);background:var(--white);}
 .nb-check.done{background:var(--nb-ring);border-color:var(--nb-ring);color:#fff;}
 .nb-content{flex:1;min-width:0;}
@@ -2469,12 +2470,40 @@ function renderPlan(){
   renderPlanNbItems();
 }
 
+// 递归统计完成进度，精确到最底层子项/数量打卡，而不是笼统按顶层条目算
+function calcPlanProgress(items){
+  let total=0,done=0;
+  const walk=(list)=>{
+    (list||[]).forEach(item=>{
+      if(item.children&&item.children.length){
+        walk(item.children);
+      }else if(item.total>0){
+        total+=1;
+        done+=Math.min(1,(item.doneCount||0)/item.total);
+      }else{
+        total+=1;
+        if(item.done)done+=1;
+      }
+    });
+  };
+  walk(items);
+  return{total,done,percent:total?Math.round(done/total*100):0};
+}
 function renderPlanNbItems(){
   const body=document.getElementById('planNbBody');if(!body)return;
   const items=(S.plans[_planType]||[]);
-  const done=items.filter(isPlanItemDone).length;
+  const topDone=items.filter(isPlanItemDone).length;
+  const progress=calcPlanProgress(items);
   body.innerHTML=`
-    <div style="font-size:11px;color:var(--nb-ink3);line-height:32px;text-align:right;">完成 ${done}/${items.length}</div>
+    <div style="padding:8px 0 6px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:11px;color:var(--nb-ink3);margin-bottom:5px;">
+        <span>完成 ${topDone}/${items.length} 项</span>
+        <span style="font-weight:700;color:var(--g);font-size:15px;">${progress.percent}%</span>
+      </div>
+      <div style="background:var(--g-xlight);border-radius:6px;height:7px;overflow:hidden;">
+        <div style="background:var(--g);height:100%;width:${progress.percent}%;transition:width .2s;"></div>
+      </div>
+    </div>
     ${items.length?items.map((item)=>renderNbItem(item,0)).join(''):'<div class="nb-empty">还没有计划，点右上角＋添加</div>'}`;
 }
 
@@ -2498,14 +2527,18 @@ function renderNbItem(item,level){
   const allChildDone=hasChildren&&childDone===item.children.length;
   const isCounter=!hasChildren&&item.total>0;
   const itemDone=hasChildren?allChildDone:(isCounter?(item.doneCount||0)>=item.total:item.done);
-  return`<div class="nb-item${itemDone?' done-nb':''}" style="${level>0?'margin-left:'+Math.min(level,4)*14+'px;':''}">
+  const isChild=level>0;
+  const titleSize=isChild?(level===1?13:12):15;
+  const checkSize=isChild?14:18;
+  const checkStyle=`width:${checkSize}px;height:${checkSize}px;${isChild?'margin-top:5px;':''}`;
+  return`<div class="nb-item${itemDone?' done-nb':''}${isChild?' nb-item-child':''}">
     ${hasChildren?
-      `<div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;cursor:pointer;" onclick="togglePlanCollapse('${item.id}')" title="${isCollapsed?'展开':'收起'}子项">${isCollapsed?'▶':childDone+'/'+item.children.length}</div>`
+      `<div class="nb-check" style="${checkStyle}border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;cursor:pointer;" onclick="togglePlanCollapse('${item.id}')" title="${isCollapsed?'展开':'收起'}子项">${isCollapsed?'▶':childDone+'/'+item.children.length}</div>`
       :isCounter?
-      `<div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;">${item.doneCount||0}/${item.total}</div>`
-      :`<div class="nb-check${item.done?' done':''}" onclick="toggleNbPlan('${item.id}')">${item.done?'✓':''}</div>`}
+      `<div class="nb-check" style="${checkStyle}border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;">${item.doneCount||0}/${item.total}</div>`
+      :`<div class="nb-check${item.done?' done':''}" style="${checkStyle}" onclick="toggleNbPlan('${item.id}')">${item.done?'✓':''}</div>`}
     <div class="nb-content">
-      <div class="nb-item-title${itemDone?' done':''}">${esc(item.title||item.text||'')}</div>
+      <div class="nb-item-title${itemDone?' done':''}" style="font-size:${titleSize}px;${isChild?'font-weight:500;color:var(--nb-ink2);':''}">${isChild?'· ':''}${esc(item.title||item.text||'')}</div>
       ${hasNote?`<div class="nb-item-note">${esc(item.note)}</div>`:''}
       ${hasDue?`<div class="nb-item-meta">⏰ 截止 ${fmtDateShort(item.due)}</div>`:''}
       ${hasDate?`<div class="nb-item-meta">📅 计划于 ${fmtDateShort(item.planDate)}</div>`:''}
@@ -3644,7 +3677,7 @@ function openNoteEditor(noteId=null){
   const type=note?note.type:(currentNoteType==='all'||currentNoteType==='__manage'?(S.noteTypes[S.noteTypes.length-1]||'笔记'):currentNoteType);
   _currentEditingNoteId=noteId;
   const draft=S.noteEditDraft;
-  const hasNewerDraft=!!(draft&&draft.noteId===(noteId||null)&&draft.ts&&draft.ts>(note?.updatedAt||0)&&draft.title);
+  const hasNewerDraft=!!(draft&&draft.noteId===(noteId||null)&&draft.ts&&draft.ts>(note?.updatedAt||0)&&draft.ts>Date.now()-24*60*60*1000&&draft.title);
   if(isEdit){
     if(hasNewerDraft){
       _noteDraft={title:draft.title,type:draft.type,fields:{...draft.fields},tags:[...(draft.tags||[])]};
@@ -3834,7 +3867,7 @@ function openNoteContentPage(noteId){
     },'保存',false);
   };
 
-  document.getElementById('editorCloseBtn').onclick=()=>{editorPage.classList.remove('active');renderNoteList();};
+  document.getElementById('editorCloseBtn').onclick=()=>{S.noteEditDraft=null;save();editorPage.classList.remove('active');renderNoteList();};
 
   document.getElementById('editorSaveBtn').onclick=()=>{
     const fields={...(_noteDraft.fields||{})};
@@ -3859,6 +3892,7 @@ function openNoteContentPage(noteId){
       S.notes.push({id:uid(),title,type,fields,tags,images:currentEditorImages,files:currentEditorFiles,createdAt:Date.now(),updatedAt:Date.now()});
       toast('笔记已创建 ✓');
     }
+    S.noteEditDraft=null;
     save();editorPage.classList.remove('active');renderNoteList();
   };
 }
