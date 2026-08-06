@@ -76,8 +76,6 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .pg{display:none;padding:16px;}
 .pg.active{display:block;}
 .top-tabs{display:flex;justify-content:flex-start;gap:6px;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid var(--g-border);overflow-x:auto;scrollbar-width:none;}
-.rec-group-label{font-size:11px;color:var(--ink2);font-weight:700;letter-spacing:.5px;margin:0 0 6px 2px;text-shadow:0 1px 3px rgba(255,255,255,.6);}
-.countdown-wrap{margin-bottom:16px;}
 .countdown-carousel{display:flex;align-items:center;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:16px 42vw;margin:0 -20px 4px;scrollbar-width:none;}
 .countdown-card{flex-shrink:0;scroll-snap-align:center;background:var(--card);border:1px solid var(--g-border);border-radius:var(--radius-md);padding:14px 18px;text-align:center;width:140px;transition:transform .25s,opacity .25s;opacity:.55;transform:scale(.8);cursor:pointer;}
 .countdown-card.active{opacity:1;transform:scale(1.08);background:linear-gradient(135deg,var(--g),var(--g-dark));color:#fff;border-color:transparent;box-shadow:0 8px 20px rgba(0,0,0,.18);}
@@ -102,39 +100,14 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .priority-red{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;}
 .priority-orange{width:8px;height:8px;border-radius:50%;background:var(--orange);flex-shrink:0;}
 .priority-green{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
-.si{background:var(--card);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--g-mid);box-shadow:var(--shadow-sm);}
-.si-text{font-size:14px;line-height:1.65;color:var(--ink);white-space:pre-wrap;word-break:break-all;}
-.si-date{font-size:10px;color:var(--ink3);margin-top:4px;letter-spacing:.3px;}
-.si-acts{display:flex;gap:8px;margin-top:7px;}
 .habit-card{background:var(--card);border-radius:var(--radius-md);padding:14px;margin-bottom:12px;box-shadow:var(--shadow-sm);border:1px solid var(--g-border);}
 .habit-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
-.habit-dots{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
-.habit-day{width:34px;height:34px;border-radius:9px;background:var(--bg);border:1px solid var(--g-border);cursor:pointer;font-size:11px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;transition:all .12s;color:var(--ink2);}
-.habit-day.on{background:var(--g);color:#fff;border-color:var(--g);box-shadow:0 2px 6px var(--g-border);}
 .project-card-root{background:var(--card);border-radius:var(--radius-md);padding:14px;margin-bottom:12px;border-left:4px solid var(--g);box-shadow:var(--shadow-sm);}
 .project-card-child{border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;margin-left:20px;border-left:2px solid;}
 .project-card-grandchild{border-radius:8px;padding:8px 10px;margin-bottom:6px;margin-left:28px;border-left:1px dashed;}
 /* 交替色——子项目/孙项目都用这组，JS里用 colorIdx % 5 决定用哪个 */
-.pc-0{background:#fef9ec;border-color:#e8d48a;}
-.pc-1{background:#eaf4fb;border-color:#90c8e8;}
-.pc-2{background:#fdf0f5;border-color:#e8a8c0;}
-.pc-3{background:#f0f8ee;border-color:#96d4a0;}
-.pc-4{background:#f5f0fa;border-color:#c0a8e0;}
 .progress-bar{height:5px;background:var(--g-light);border-radius:3px;margin:8px 0 4px;overflow:hidden;}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--g),#5db87a);width:0%;border-radius:3px;transition:width .3s;}
-.plan-tabs{display:flex;gap:0;justify-content:stretch;margin-bottom:18px;background:var(--g-light);border-radius:var(--radius-sm);padding:3px;}
-.plan-tab{flex:1;background:none;border:none;font-size:13px;padding:8px 4px;color:var(--ink3);cursor:pointer;position:relative;font-weight:500;border-radius:8px;transition:all .15s;}
-.plan-tab.on{color:var(--g-dark);font-weight:700;background:var(--white);box-shadow:var(--shadow-sm);}
-.plan-add-btn{width:100%;padding:11px;margin-bottom:12px;background:transparent;border:1.5px dashed var(--g-mid);border-radius:var(--radius-sm);color:var(--g);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s;}
-.plan-add-btn:active{background:var(--g-light);}
-.plan-check-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--g-border);}
-.plan-check{width:22px;height:22px;border:2px solid var(--g-mid);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;background:var(--white);flex-shrink:0;transition:all .15s;}
-.plan-check.done{background:var(--g);border-color:var(--g);color:#fff;}
-.plan-text{flex:1;font-size:14px;word-break:break-all;}
-.plan-text.done{text-decoration:line-through;color:var(--ink3);}
-.plan-del{background:transparent;border:none;color:#c97c5a;font-size:16px;cursor:pointer;padding:4px;}
-.plan-archive-item{background:var(--card);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:7px;border-left:2px solid var(--g-mid);box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:8px;}
-.plan-archive-content{flex:1;}
 .ach-header{text-align:center;padding:20px 16px 16px;background:linear-gradient(135deg,var(--g-light),var(--white));border-radius:var(--radius-md);margin-bottom:16px;box-shadow:var(--shadow-sm);}
 .ach-icon{font-size:40px;}
 .ach-slogan{font-size:14px;color:var(--g);font-weight:600;margin-top:6px;cursor:pointer;letter-spacing:.5px;}
@@ -146,7 +119,6 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .addbtn:active{opacity:.8;}
 .pbtn{padding:8px 16px;background:var(--g);color:#fff;border:none;border-radius:var(--radius-sm);font-weight:600;cursor:pointer;font-size:13px;transition:background .15s;box-shadow:0 2px 8px var(--g-border);}
 .pbtn:active{background:var(--g-dark);}
-.gbtn{background:transparent;border:1px solid var(--g-border);border-radius:var(--radius-sm);padding:5px 12px;cursor:pointer;font-size:12px;}
 .sbtn{padding:4px 11px;background:var(--g-light);color:var(--g);border:none;border-radius:10px;font-size:11px;cursor:pointer;font-weight:500;}
 .delbtn{background:transparent;border:none;color:#c97c5a;font-size:17px;cursor:pointer;padding:4px;}
 /* 树形结构（计划/项目/今日任务）里"加子项/编辑/删除"这类次要操作，
@@ -175,9 +147,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .priority-option.p-green.selected{border-color:var(--green);background:var(--g-light);}
 input,textarea,select{background:var(--bg);border:1.5px solid var(--g-border);border-radius:var(--radius-sm);padding:10px 12px;width:100%;font-family:inherit;font-size:14px;color:var(--ink);transition:border-color .15s;}
 input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--white);}
-.right-btn{display:flex;justify-content:flex-end;margin-top:8px;}
 .task-section{margin-bottom:20px;}
-.timer-section{margin-top:20px;}
 .stl{font-weight:700;margin-bottom:10px;color:var(--ink2);font-size:13px;letter-spacing:.5px;text-transform:uppercase;}
 .fortune-trigger{background:linear-gradient(145deg,#1e1030,#120820);border-radius:var(--radius-md);padding:18px 16px;text-align:center;position:relative;margin:18px 0 4px;border:2px solid #e8c940;box-shadow:0 0 0 2px rgba(0,0,0,.2),0 0 0 3.5px #a07820,0 8px 24px rgba(0,0,0,.3),0 0 18px rgba(232,201,64,.4);}
 .fortune-trigger-title{font-size:16px;font-weight:700;color:#e8c940;margin-bottom:12px;text-shadow:0 0 8px rgba(232,201,64,.5);letter-spacing:2px;}
@@ -204,7 +174,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .oracle-subtitle{font-size:10px;color:rgba(232,201,64,.5);letter-spacing:2px;margin-bottom:14px;}
 .oracle-divider{width:80%;height:1px;background:linear-gradient(90deg,transparent,#e8c940,transparent);margin:10px auto;opacity:.5;}
 .oracle-msg-text{font-size:19px;font-weight:700;color:#f5e8c0;line-height:1.6;letter-spacing:.5px;text-shadow:0 0 8px rgba(245,232,192,.3);padding:0 8px;position:relative;z-index:1;}
-.oracle-record-btn{margin-top:14px;background:rgba(232,201,64,.15);border:1px solid rgba(232,201,64,.4);color:#e8c940;padding:6px 18px;border-radius:20px;font-size:12px;cursor:pointer;letter-spacing:1px;}
 #note-editor-page{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:400;overflow-y:auto;display:none;padding:16px;max-width:500px;margin:0 auto;}
 #note-editor-page.active{display:block;}
 .note-editor-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(61,139,94,.12);position:sticky;top:0;background:var(--bg);z-index:5;}
@@ -215,7 +184,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .note-field-group{margin-bottom:14px;}
 .note-field-label{font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px;letter-spacing:.3px;}
 .note-input,.note-select{width:100%;padding:10px 12px;background:var(--bg);border:1.5px solid var(--g-border);border-radius:var(--radius-sm);font-size:14px;}
-.note-textarea{width:100%;padding:12px;background:var(--white);border:1.5px solid var(--g-border);border-radius:var(--radius-md);font-size:14px;font-family:inherit;resize:vertical;min-height:200px;line-height:1.7;}
 .diary-style-textarea{width:100%;border:none;background:transparent;resize:none;font-family:inherit;font-size:14px;color:var(--nb-ink);outline:none;line-height:32px;padding:0;min-height:224px;overflow:hidden;}
 .diary-style-textarea:focus{background:transparent;border:none;}
 .note-basic-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--g-light);border:1px solid var(--g-border);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:14px;}
@@ -279,27 +247,12 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .section-divider{display:flex;align-items:center;gap:10px;margin:20px 0 12px;}
 .section-divider .stl{margin:0;}
 .section-divider::after{content:'';flex:1;height:1px;background:var(--g-border);}
-.timer-btns{display:flex;gap:10px;}
-.timer-btn{flex:1;padding:12px 8px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;transition:transform .1s,box-shadow .1s;}
-.timer-btn:active{transform:scale(.96);}
-.timer-btn-1{background:var(--g);color:#fff;box-shadow:0 3px 10px var(--g-border);}
-.timer-btn-3{background:var(--g-mid);color:var(--g-dark);box-shadow:0 3px 10px var(--g-border);}
-.timer-btn-5{background:var(--g-dark);color:#fff;box-shadow:0 3px 10px rgba(42,102,66,.3);}
 
-.install-banner{background:linear-gradient(135deg,var(--g-light),var(--g-xlight));border:1.5px solid var(--g-mid);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:16px;display:flex;align-items:flex-start;gap:12px;}
-.install-banner-icon{font-size:28px;flex-shrink:0;}
-.install-banner-text{flex:1;}
-.install-banner-title{font-size:14px;font-weight:700;color:var(--g-dark);margin-bottom:4px;}
-.install-banner-desc{font-size:12px;color:var(--ink2);line-height:1.6;}
-.install-banner-close{background:none;border:none;color:var(--ink3);font-size:18px;cursor:pointer;padding:0;line-height:1;flex-shrink:0;}
 
 .backup-reminder{background:linear-gradient(135deg,#fff8f0,#ffeedd);border:1.5px solid #f0c080;border-radius:var(--radius-md);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;}
 .backup-reminder-text{flex:1;font-size:13px;color:#7a4a10;}
 .backup-now-btn{background:#e8a030;border:none;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap;}
 /* ===== 日记条目样式 ===== */
-.new-tag-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
-.new-tag-opt{padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1.5px solid var(--g-mid);background:var(--bg);color:var(--ink2);transition:all .15s;}
-.new-tag-opt.on{background:var(--g);color:#fff;border-color:var(--g);}
 /* ══ 主题选择器 ══ */
 .th-grid{display:flex;flex-wrap:wrap;gap:8px;}
 .th-item{display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;}
@@ -322,9 +275,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .notebook-date{font-size:10px;color:var(--nb-ink3);margin-top:2px;}
 /* 32px格子：31px内容 + 1px线，所有文字行高都是32px */
 .notebook-body{padding:0 14px 20px 38px;background:repeating-linear-gradient(180deg,transparent,transparent 31px,var(--nb-line) 31px,var(--nb-line) 32px);min-height:calc(100vh - 280px);}
-.nb-tab-row{display:flex;gap:0;padding:0 0 0 28px;background:var(--nb-bg);border-bottom:1px solid var(--nb-line);overflow-x:auto;}
-.nb-tab{padding:8px 12px;font-size:12px;font-weight:600;color:var(--nb-ink3);cursor:pointer;border-bottom:2.5px solid transparent;transition:all .15s;white-space:nowrap;flex-shrink:0;}
-.nb-tab.on{color:var(--nb-ink2);border-bottom-color:var(--nb-ring);}
 .nb-item{padding:0;border:none;display:flex;align-items:flex-start;gap:8px;margin-bottom:2px;}
 .nb-item-child{margin-left:13px;padding-left:11px;border-left:2px solid var(--nb-line);margin-top:2px;}
 .nb-check{width:18px;height:18px;border:1.5px solid var(--nb-ring);border-radius:4px;flex-shrink:0;margin-top:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--nb-ink2);background:var(--white);}
@@ -334,12 +284,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .nb-item-title.done{text-decoration:line-through;color:var(--nb-ink3);}
 .nb-item-note{font-size:12px;color:var(--nb-ink3);line-height:32px;white-space:pre-wrap;margin:0;padding:0;}
 .nb-item-meta{font-size:10px;color:var(--nb-ink3);line-height:32px;height:32px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.nb-add-btn{display:block;width:100%;height:32px;line-height:32px;background:transparent;border:none;color:var(--nb-ink3);font-size:13px;cursor:pointer;font-family:inherit;text-align:left;padding:0;margin:0;}
-.nb-add-btn:active{color:var(--nb-ink2);}
 .nb-empty{text-align:center;padding:96px 0 0;color:var(--nb-ink3);font-size:13px;line-height:32px;}
 .nb-item-actions{display:flex;gap:6px;height:32px;align-items:center;}
 /* tab在本子外面 */
-.plan-outer-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
 .plan-outer-tab{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;color:var(--ink3);background:var(--card);border:1.5px solid var(--g-mid);cursor:pointer;transition:all .15s;}
 .plan-outer-tab.on{background:var(--g);color:#fff;border-color:var(--g);}
 /* 添加按钮居中在本子外面 */
@@ -421,8 +368,7 @@ let S = {
   noteTypes:['📌 收藏','🎬 书影','✍️ 素材','📝 通用'],
   selfNoteCats:['性格','情绪','习惯','价值观'],
   lastBackupReminder: 0,
-  quoteIntervalMinutes: 30,
-  installBannerDismissed: false
+  quoteIntervalMinutes: 30
 };
 const ALL_EMOJIS=['💪','🏃','📚','🎨','✍️','🧘','💤','🥗','💧','🎯','🌸','🎵','🌿','🔥','💡','🌟','🍀','🦋','🌈','☀️','🌙','⭐','💎','📖','💃','✈️','👗','🍜','📱','💻','🏠','🧹','🍳','🎓','📝','🎬','🏊','🏸','☕','🎧','🏛️','👪','🛒','💰','⚽','🤖'];
 
@@ -482,22 +428,6 @@ function loadTheme(){
   if(removedThemes.includes(t)){t='green';localStorage.setItem('myu_theme','green');}
   applyTheme(t);
 }
-function buildThemeSection(curId){
-  const dot=(t)=>`<div class="th-item" data-tid="${t.id}" title="${t.name}">
-    <div class="th-dot${t.id===curId?' th-active':''}" style="background:${t.mid?`linear-gradient(135deg,${t.a} 33%,${t.mid} 66%,${t.b} 100%)`:`linear-gradient(135deg,${t.a} 50%,${t.b} 50%)`}"></div>
-    <div class="th-name">${t.name}</div>
-  </div>`;
-  const allThemes=[...THEMES.grad,...THEMES.multi,...THEMES.duo];
-  return`<div style="border-radius:12px;padding:4px 0 8px;">
-    <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:14px;">🎨 主题</div>
-    <div style="font-size:10px;color:var(--ink3);margin-bottom:8px;letter-spacing:.5px;font-weight:600;">✦ 渐变</div>
-    <div class="th-grid" style="margin-bottom:16px;">${THEMES.grad.map(dot).join('')}</div>
-    <div style="font-size:10px;color:var(--ink3);margin-bottom:8px;letter-spacing:.5px;font-weight:600;">✦ 多色</div>
-    <div class="th-grid" style="margin-bottom:16px;">${THEMES.multi.map(dot).join('')}</div>
-    <div style="font-size:10px;color:var(--ink3);margin-bottom:8px;letter-spacing:.5px;font-weight:600;">✦ 双色</div>
-    <div class="th-grid">${THEMES.duo.map(dot).join('')}</div>
-  </div>`;
-}
 
 function load(){
   try{let d=localStorage.getItem('myu_final_v10');if(d){let p=JSON.parse(d);Object.assign(S,p);}}catch(e){}
@@ -522,30 +452,12 @@ function load(){
   }
   // 日计划恢复为独立计划类型，不再自动搬进"今日任务"
   if(!S.lastBackupReminder)S.lastBackupReminder=0;
-  if(S.installBannerDismissed===undefined)S.installBannerDismissed=false;
   if(!S.quoteIntervalMinutes)S.quoteIntervalMinutes=30;
   // ==== 第一批新功能：数据初始化 ====
   if(!S.memos)S.memos=[]; // 快速备忘（已废弃，仅保留兼容旧备份）：[{id,text,createdAt}]
   if(S.diaryDraft===undefined)S.diaryDraft='';
   if(S.noteEditDraft===undefined)S.noteEditDraft=null;
-  if(!S.jots){
-    // 记一记：由「想法流」+「快速备忘」合并而来，只在第一次升级时迁移一次
-    const fromWishes=(S.wishes||[]).map(w=>({id:w.id,t:w.t,done:false,date:w.date||nowStr()}));
-    const fromMemos=(S.memos||[]).map(m=>({id:m.id,t:m.text,done:false,date:m.createdAt?new Date(m.createdAt).toLocaleString('zh-CN'):nowStr()}));
-    S.jots=[...fromWishes,...fromMemos];
-  }
-  if(!S.waterTarget)S.waterTarget=2000; // 每日喝水目标，单位ml
-  if(!S.waterLog)S.waterLog={}; // {'2026-07-13':[{id,amount,time}]}
   if(!S.countdowns)S.countdowns=[]; // 倒数日：[{id,title,date,isMain}]
-  // ==== 第二批新功能：数据初始化 ====
-  if(!S.sleepLogs)S.sleepLogs=[]; // [{id,date,bedTime,wakeTime,deepMin,lightMin,mood,beforeBed,note}]
-  if(!S.bodyLogs)S.bodyLogs=[]; // 体重+饮食：[{id,date,weight,dietNote}]
-  if(!S.measurementLogs)S.measurementLogs=[]; // 身体围度：[{id,date,waist,thigh,hip,note}]
-  if(!S.sizeNotes)S.sizeNotes=[]; // 尺码笔记：[{id,category,brand,size,note,createdAt}]
-  if(!S.periodLogs)S.periodLogs=[]; // 生理期：[{id,startDate,duration,flow,note}]
-  if(!S.periodTips)S.periodTips=[]; // 经期自我关怀小贴士：字符串数组
-  if(!S.timelineEvents)S.timelineEvents=[]; // 手动补充的时间线事件：[{id,date,time,text,icon}]
-  if(!S.timelineOverrides)S.timelineOverrides={}; // 对自动生成的时间线事件的编辑覆盖：{eventId:{time,text}}
   // ==== 阶段日程：数据迁移 ====
   if(!S.phases)S.phases=[];
   if(!S.lastPhaseReminderShown)S.lastPhaseReminderShown='';
@@ -560,6 +472,7 @@ function load(){
     if(!h.weekOverrides)h.weekOverrides={};
     if(!h.restRanges)h.restRanges=[];
   });
+  rolloverPlanPeriods();
   pruneExpiredPlans();
 }
 // 周/月/年计划：截止日期一过，自动清除（不再需要手动删除）
@@ -644,7 +557,6 @@ function backupBeforeOverwrite(){
     localStorage.setItem('myu_pre_overwrite_backup',JSON.stringify({data:S,savedAt:Date.now()}));
   }catch(e){console.error('覆盖前备份失败',e);}
 }
-function hasPreOverwriteBackup(){return !!localStorage.getItem('myu_pre_overwrite_backup');}
 function getPreOverwriteBackupInfo(){
   try{
     const raw=localStorage.getItem('myu_pre_overwrite_backup');
@@ -841,7 +753,6 @@ function bindAutoGrow(el){
   requestAnimationFrame(()=>requestAnimationFrame(()=>autoGrow(el)));
   el.oninput=()=>autoGrow(el);
 }
-function escHtml(s){return esc(s).replace(/\n/g,'<br>');}
 
 // 通用：给输入框绑定"停止输入约1.2秒后自动保存草稿"，避免误退出导致内容丢失。
 // 会叠加在已有的 oninput 处理上（比如自动增高），不会把原有的覆盖掉。
@@ -860,10 +771,6 @@ function bindDraftAutosave(el,onSave,delay){
 // ==================== 安装引导（Android Chrome） ====================
 function showInstallBanner(){
   return; // 已按用户要求关闭此提示
-}
-function dismissInstallBanner(){
-  S.installBannerDismissed=true;save();
-  const b=document.getElementById('installBanner');if(b)b.remove();
 }
 // ==================== 自动备份提醒（每7天） ====================
 function checkBackupReminder(){
@@ -1711,43 +1618,6 @@ function renderRecord(){
   document.getElementById('recTabsA').addEventListener('click',(e)=>{const btn=e.target.closest('[data-rec]');if(btn)switchRecTab(btn.dataset.rec);});
 }
 
-// ==================== 记一记（想法流 + 快速备忘 合并） ====================
-function renderJot(){
-  const el=document.getElementById('recJot');if(!el)return;
-  el.innerHTML=`
-    <div class="checklist-add-row" style="margin-top:0;margin-bottom:14px;">
-      <input type="text" id="jotInput" placeholder="随手记点什么，回车快速添加">
-      <button onclick="addJot()">添加</button>
-    </div>
-    <div id="jotListWrap"></div>`;
-  document.getElementById('jotInput').onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();addJot();}};
-  renderJotList();
-}
-function renderJotList(){
-  const wrap=document.getElementById('jotListWrap');if(!wrap)return;
-  if(!S.jots.length){wrap.innerHTML='<div class="empty" data-icon="📝">还没有记录，随手记点什么吧</div>';return;}
-  wrap.innerHTML=S.jots.map(j=>`
-    <div class="si">
-      <div style="display:flex;align-items:flex-start;gap:8px;">
-        <input type="checkbox" ${j.done?'checked':''} style="margin-top:3px;width:18px;height:18px;flex-shrink:0;accent-color:var(--g);" onchange="toggleJot('${j.id}')">
-        <div style="flex:1;">
-          <div class="si-text" style="${j.done?'text-decoration:line-through;opacity:.5;':''}">${esc(j.t)}</div>
-          <div class="si-date">${j.date}</div>
-        </div>
-      </div>
-      <div class="si-acts"><button class="tree-action-btn" onclick="editJotItem('${j.id}')">✏️ 编辑</button><button class="tree-action-btn danger" onclick="delJotConfirm('${j.id}')">🗑️</button></div>
-    </div>`).join('');
-}
-function addJot(){
-  const inp=document.getElementById('jotInput');
-  const v=inp.value.trim();if(!v)return;
-  S.jots.unshift({id:uid(),t:v,done:false,date:nowStr()});
-  save();inp.value='';renderJotList();
-}
-function toggleJot(id){const j=S.jots.find(x=>x.id===id);if(!j)return;j.done=!j.done;save();renderJotList();}
-function editJotItem(id){const j=S.jots.find(x=>x.id===id);if(!j)return;showModal('编辑',`<textarea id="editJotTA" rows="4">${esc(j.t)}</textarea>`,()=>{const val=document.getElementById('editJotTA').value.trim();if(val){j.t=val;save();closeModal();renderJotList();}});}
-function delJotConfirm(id){confirmDel(()=>{S.jots=S.jots.filter(j=>j.id!==id);save();renderJotList();});}
-
 // ==================== 日记（本子版） ====================
 let _diaryPage=0; // 0=写新日记, 1=最新一篇, 2=更早...
 
@@ -1871,559 +1741,7 @@ function editDiaryNb(id){
   });
 }
 
-// 兼容旧函数
-function editDiary(id){editDiaryNb(id);}
-function renderDiaryList(){renderDiaryNbPage();}
 function delDiaryConfirm(id){confirmDel(()=>{S.diaries=S.diaries.filter(d=>d.id!==id);save();_diaryPage=Math.max(0,_diaryPage-1);renderDiaries();});}
-
-function getDisplayClarityQs(){return[...S.defaultClarityQs,...S.userClarityQs];}
-let clarityRotate=null;
-function startClarityRotate(){
-  if(clarityRotate)clearInterval(clarityRotate);
-  clarityRotate=setInterval(()=>{const qs=getDisplayClarityQs();if(qs.length){const idx=Math.floor(Date.now()/1800000)%qs.length;const q=document.getElementById('clarityQuestion');if(q)q.innerText=qs[idx];}},30000);
-}
-
-function renderDump(){
-  const el=document.getElementById('recDump');
-  el.innerHTML=`<textarea id="dumpInput" rows="4" placeholder="有什么不开心的都扔进来吧" style="margin-bottom:8px"></textarea><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span id="clarityQuestion" style="font-size:12px;color:var(--g);cursor:pointer;text-decoration:underline;flex:1" onclick="openClarityModal()">加载中...</span><button class="pbtn" id="clearDumpBtn" style="margin-left:12px">🗑️ 清空</button></div><div class="section-divider"><div class="stl">📜 过往记录</div></div><div id="dumpHistory"></div>`;
-  document.getElementById('clearDumpBtn').onclick=()=>{const t=document.getElementById('dumpInput').value.trim();if(t){S.emotions.unshift({id:uid(),t,date:nowStr()});save();renderDumpHistory();document.getElementById('dumpInput').value='';toast('已扔进垃圾桶');}};
-  renderDumpHistory();
-  const qs=getDisplayClarityQs();const qEl=document.getElementById('clarityQuestion');if(qEl&&qs.length)qEl.innerText=qs[0];
-  startClarityRotate();
-}
-function renderDumpHistory(){
-  const el=document.getElementById('dumpHistory');if(!el)return;
-  if(!S.emotions.length){el.innerHTML='<div class="empty" data-icon="🌿">垃圾桶是空的</div>';return;}
-  el.innerHTML=S.emotions.slice(0,8).map(e=>`<div class="si"><div class="si-date">${e.date}</div><div class="si-text">${esc(e.t)}</div><div class="si-acts"><button class="sbtn" onclick="editDump('${e.id}')">编辑</button><button class="delbtn" onclick="delDumpConfirm('${e.id}')">🗑️</button></div></div>`).join('');
-}
-function editDump(id){const e=S.emotions.find(x=>x.id===id);if(!e)return;showModal('编辑记录',`<textarea id="editDumpTA" rows="4">${esc(e.t)}</textarea>`,()=>{const val=document.getElementById('editDumpTA').value.trim();if(val){e.t=val;save();closeModal();renderDumpHistory();}});}
-function delDumpConfirm(id){confirmDel(()=>{S.emotions=S.emotions.filter(e=>e.id!==id);save();renderDumpHistory();});}
-
-// ==================== 喝水打卡 ====================
-function renderWater(){
-  const el=document.getElementById('recWater');if(!el)return;
-  const t=td();
-  const todayLog=S.waterLog[t]||[];
-  const drunk=todayLog.reduce((sum,item)=>sum+item.amount,0);
-  const target=S.waterTarget||2000;
-  const pct=Math.min(100,Math.round(drunk/target*100));
-  el.innerHTML=`
-    <div style="text-align:center;margin-bottom:18px;">
-      <div style="font-size:13px;color:var(--ink3);margin-bottom:6px;">今天已喝 <b style="color:var(--g-dark);font-size:18px;">${drunk}</b> / ${target} ml</div>
-      <div style="background:var(--g-xlight);border-radius:10px;height:14px;overflow:hidden;">
-        <div style="background:var(--g);height:100%;width:${pct}%;transition:width .3s;"></div>
-      </div>
-      <div style="font-size:11px;color:var(--ink3);margin-top:4px;cursor:pointer;text-decoration:underline;" onclick="openWaterTargetModal()">目标 ${target}ml，点这里改</div>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
-      <button class="sbtn" onclick="addWater(50)">+50ml</button>
-      <button class="sbtn" onclick="addWater(100)">+100ml</button>
-      <button class="sbtn" onclick="addWater(200)">+200ml</button>
-      <button class="sbtn" onclick="addWater(300)">+300ml</button>
-    </div>
-    <button class="addbtn" onclick="openCustomWaterModal()">+ 自定义分量</button>
-    <div class="section-divider"><div class="stl">📋 今天的记录</div></div>
-    <div id="waterTodayList"></div>`;
-  renderWaterTodayList();
-}
-function renderWaterTodayList(){
-  const wrap=document.getElementById('waterTodayList');if(!wrap)return;
-  const t=td();
-  const todayLog=S.waterLog[t]||[];
-  if(!todayLog.length){wrap.innerHTML='<div class="empty" data-icon="💧">今天还没喝水记录</div>';return;}
-  wrap.innerHTML=[...todayLog].reverse().map(item=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--g-border);">
-      <span style="flex:1;font-size:14px;">💧 ${item.amount}ml</span>
-      <span style="font-size:11px;color:var(--ink3);">${item.time}</span>
-      <span class="ci-del" onclick="delWaterEntry('${item.id}')">🗑️</span>
-    </div>`).join('');
-}
-function addWater(amount){
-  const t=td();
-  if(!S.waterLog[t])S.waterLog[t]=[];
-  const now=new Date();
-  S.waterLog[t].push({id:uid(),amount,time:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')});
-  save();renderWater();toast(`+${amount}ml ✓`);
-}
-function openCustomWaterModal(){
-  showModal('自定义分量',`<div class="note-field-group"><div class="note-field-label">喝了多少毫升？</div><input type="number" id="customWaterInput" min="1" placeholder="例如：120"></div>`,()=>{
-    const v=parseInt(document.getElementById('customWaterInput').value);
-    if(!v||v<=0){toast('请输入正确的数量');return;}
-    closeModal();addWater(v);
-  });
-}
-function delWaterEntry(id){
-  const t=td();
-  if(!S.waterLog[t])return;
-  S.waterLog[t]=S.waterLog[t].filter(item=>item.id!==id);
-  save();renderWater();
-}
-function openWaterTargetModal(){
-  showModal('设置每日喝水目标',`<div class="note-field-group"><div class="note-field-label">目标（毫升）</div><input type="number" id="waterTargetInput" min="500" value="${S.waterTarget||2000}"></div>`,()=>{
-    const v=parseInt(document.getElementById('waterTargetInput').value);
-    if(!v||v<=0){toast('请输入正确的数量');return;}
-    S.waterTarget=v;closeModal();save();renderWater();
-  });
-}
-
-// ==================== 睡眠记录 ====================
-function renderSleep(){
-  const el=document.getElementById('recSleep');if(!el)return;
-  el.innerHTML=`<button class="addbtn" style="margin-bottom:14px;" onclick="openSleepModal()">+ 记录今晚的睡眠</button><div id="sleepListWrap"></div>`;
-  renderSleepList();
-}
-function renderSleepList(){
-  const wrap=document.getElementById('sleepListWrap');if(!wrap)return;
-  if(!S.sleepLogs.length){wrap.innerHTML='<div class="empty" data-icon="😴">还没有睡眠记录</div>';return;}
-  const sorted=[...S.sleepLogs].sort((a,b)=>b.date.localeCompare(a.date));
-  wrap.innerHTML=sorted.map(s=>{
-    const total=(s.deepMin||0)+(s.lightMin||0);
-    const totalTxt=total?`共 ${Math.floor(total/60)}小时${total%60}分钟`:'';
-    return `<div style="background:var(--card);border:1px solid var(--g-border);border-radius:10px;padding:12px;margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <b style="font-size:14px;">${s.date}</b>
-        <div style="display:flex;gap:6px;">
-          <button class="sbtn" style="padding:2px 8px;font-size:11px;" onclick="editSleepLog('${s.id}')">编辑</button>
-          <button class="delbtn" style="padding:2px 6px;" onclick="delSleepConfirm('${s.id}')">🗑️</button>
-        </div>
-      </div>
-      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px;">🛏 ${s.bedTime||'--'} → ⏰ ${s.wakeTime||'--'} ${totalTxt?'· '+totalTxt:''}</div>
-      ${total?`<div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">深睡 ${Math.floor((s.deepMin||0)/60)}小时${(s.deepMin||0)%60}分钟 · 浅睡 ${Math.floor((s.lightMin||0)/60)}小时${(s.lightMin||0)%60}分钟</div>`:''}
-      ${s.mood?`<div style="font-size:12px;margin-bottom:4px;">感觉：${esc(s.mood)}</div>`:''}
-      ${s.beforeBed?`<div style="font-size:12px;color:var(--ink2);margin-bottom:4px;">睡前：${esc(s.beforeBed)}</div>`:''}
-      ${s.note?`<div style="font-size:12px;color:var(--ink3);">${esc(s.note)}</div>`:''}
-    </div>`;
-  }).join('');
-}
-function openSleepModal(existingId){
-  const s=existingId?S.sleepLogs.find(x=>x.id===existingId):null;
-  const body=`
-    <div class="note-field-group"><div class="note-field-label">日期（醒来的这天）</div><input type="date" id="sleepDate" value="${s?s.date:td()}"></div>
-    <div style="display:flex;gap:10px;">
-      <div class="note-field-group" style="flex:1;"><div class="note-field-label">入睡时间</div><input type="time" id="sleepBedTime" value="${s?.bedTime||''}"></div>
-      <div class="note-field-group" style="flex:1;"><div class="note-field-label">醒来时间</div><input type="time" id="sleepWakeTime" value="${s?.wakeTime||''}"></div>
-    </div>
-    <div class="note-field-group">
-      <div class="note-field-label">深睡</div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input type="number" id="sleepDeepH" min="0" style="flex:1;" placeholder="小时" value="${s?Math.floor((s.deepMin||0)/60):''}"><span style="font-size:12px;color:var(--ink3);">小时</span>
-        <input type="number" id="sleepDeepM" min="0" max="59" style="flex:1;" placeholder="分钟" value="${s?((s.deepMin||0)%60):''}"><span style="font-size:12px;color:var(--ink3);">分钟</span>
-      </div>
-    </div>
-    <div class="note-field-group">
-      <div class="note-field-label">浅睡</div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input type="number" id="sleepLightH" min="0" style="flex:1;" placeholder="小时" value="${s?Math.floor((s.lightMin||0)/60):''}"><span style="font-size:12px;color:var(--ink3);">小时</span>
-        <input type="number" id="sleepLightM" min="0" max="59" style="flex:1;" placeholder="分钟" value="${s?((s.lightMin||0)%60):''}"><span style="font-size:12px;color:var(--ink3);">分钟</span>
-      </div>
-    </div>
-    <div class="note-field-group"><div class="note-field-label">睡眠感觉如何</div><input id="sleepMood" placeholder="例如：还行/很浅/容易醒" value="${esc(s?.mood||'')}"></div>
-    <div class="note-field-group"><div class="note-field-label">睡前做了什么 / 可能影响睡眠的事</div><textarea id="sleepBeforeBed" rows="2">${esc(s?.beforeBed||'')}</textarea></div>
-    <div class="note-field-group"><div class="note-field-label">其他备注</div><textarea id="sleepNote" rows="2">${esc(s?.note||'')}</textarea></div>`;
-  showModal(existingId?'编辑睡眠记录':'记录睡眠',body,()=>{
-    const date=document.getElementById('sleepDate').value||td();
-    const data={
-      date,
-      bedTime:document.getElementById('sleepBedTime').value,
-      wakeTime:document.getElementById('sleepWakeTime').value,
-      deepMin:(parseInt(document.getElementById('sleepDeepH').value)||0)*60+(parseInt(document.getElementById('sleepDeepM').value)||0),
-      lightMin:(parseInt(document.getElementById('sleepLightH').value)||0)*60+(parseInt(document.getElementById('sleepLightM').value)||0),
-      mood:document.getElementById('sleepMood').value.trim(),
-      beforeBed:document.getElementById('sleepBeforeBed').value.trim(),
-      note:document.getElementById('sleepNote').value.trim(),
-    };
-    if(existingId){Object.assign(s,data);}
-    else{S.sleepLogs.push({id:uid(),...data});}
-    save();closeModal();renderSleepList();toast('已保存 ✓');
-  });
-}
-function editSleepLog(id){openSleepModal(id);}
-function delSleepConfirm(id){confirmDel(()=>{S.sleepLogs=S.sleepLogs.filter(s=>s.id!==id);save();renderSleepList();});}
-
-function openClarityModal(){
-  const renderBody=(container)=>{
-    const render=()=>{
-      container.innerHTML=`<div style="display:flex;gap:8px;margin-bottom:12px"><input id="newClarityInput" placeholder="新句子" style="flex:1"><button class="pbtn" id="addClarityBtn">添加</button></div><div id="clarityListInner"></div>`;
-      let html='';
-      S.userClarityQs.forEach((q,i)=>{html+=`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(61,139,94,.1)"><span style="font-size:13px">${esc(q)}</span><button class="delbtn" data-ci="${i}">🗑️</button></div>`;});
-      if(S.defaultClarityQs.length){html+=`<div style="padding:8px 0 4px;font-size:11px;color:var(--ink3);font-weight:600">📌 默认提示句</div>`;S.defaultClarityQs.forEach(q=>{html+=`<div style="padding:6px 0;font-size:13px;color:var(--ink3)">${esc(q)}</div>`;});}
-      container.querySelector('#clarityListInner').innerHTML=html;
-      container.querySelectorAll('[data-ci]').forEach(btn=>{btn.onclick=()=>{const i=parseInt(btn.dataset.ci);confirmDel(()=>{S.userClarityQs.splice(i,1);save();render();});};});
-      container.querySelector('#addClarityBtn').onclick=()=>{const txt=container.querySelector('#newClarityInput').value.trim();if(txt){S.userClarityQs.push(txt);save();toast('已添加');render();}};
-    };
-    render();
-  };
-  showModal('✏️ 编辑提示句',renderBody,null,null,{hideConfirm:true});
-}
-
-// ==================== 身体数据（体重饮食 / 围度 / 尺码笔记） ====================
-let _bodySubTab='weight';
-function renderBodyData(){
-  const el=document.getElementById('recBody');if(!el)return;
-  el.innerHTML=`
-    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
-      <div class="plan-outer-tab${_bodySubTab==='weight'?' on':''}" data-bt="weight">⚖️ 体重饮食</div>
-      <div class="plan-outer-tab${_bodySubTab==='measure'?' on':''}" data-bt="measure">📐 身体围度</div>
-      <div class="plan-outer-tab${_bodySubTab==='size'?' on':''}" data-bt="size">👕 尺码笔记</div>
-    </div>
-    <div id="bodySubContent"></div>`;
-  el.querySelectorAll('[data-bt]').forEach(t=>{
-    t.onclick=()=>{_bodySubTab=t.dataset.bt;renderBodyData();};
-  });
-  renderBodySubContent();
-}
-function renderBodySubContent(){
-  const el=document.getElementById('bodySubContent');if(!el)return;
-  if(_bodySubTab==='weight')renderWeightTab(el);
-  else if(_bodySubTab==='measure')renderMeasureTab(el);
-  else renderSizeTab(el);
-}
-// ---- 体重饮食 ----
-function renderWeightTab(el){
-  el.innerHTML=`<button class="addbtn" style="margin-bottom:14px;" onclick="openWeightModal()">+ 记录今天</button><div id="weightListWrap"></div>`;
-  const wrap=el.querySelector('#weightListWrap');
-  if(!S.bodyLogs.length){wrap.innerHTML='<div class="empty" data-icon="⚖️">还没有记录</div>';return;}
-  const sorted=[...S.bodyLogs].sort((a,b)=>b.date.localeCompare(a.date));
-  wrap.innerHTML=sorted.map(b=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--g-border);">
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:600;">${b.date}${b.weight?' · '+b.weight+'kg':''}</div>
-        ${b.dietNote?`<div style="font-size:12px;color:var(--ink3);margin-top:2px;">${esc(b.dietNote)}</div>`:''}
-      </div>
-      <button class="sbtn" style="padding:2px 8px;font-size:11px;" onclick="editWeightLog('${b.id}')">编辑</button>
-      <button class="delbtn" style="padding:2px 6px;" onclick="delWeightConfirm('${b.id}')">🗑️</button>
-    </div>`).join('');
-}
-function openWeightModal(existingId){
-  const b=existingId?S.bodyLogs.find(x=>x.id===existingId):null;
-  const body=`
-    <div class="note-field-group"><div class="note-field-label">日期</div><input type="date" id="weightDate" value="${b?b.date:td()}"></div>
-    <div class="note-field-group"><div class="note-field-label">体重（kg，可不填）</div><input type="number" step="0.1" id="weightVal" value="${b?.weight||''}"></div>
-    <div class="note-field-group"><div class="note-field-label">今天吃得怎么样（简单记一下就好）</div><textarea id="weightDiet" rows="3" placeholder="例如：正常/偏多，吃了什么">${esc(b?.dietNote||'')}</textarea></div>`;
-  showModal(existingId?'编辑记录':'记录今天',body,()=>{
-    const date=document.getElementById('weightDate').value||td();
-    const data={date,weight:parseFloat(document.getElementById('weightVal').value)||null,dietNote:document.getElementById('weightDiet').value.trim()};
-    if(existingId){Object.assign(b,data);}else{S.bodyLogs.push({id:uid(),...data});}
-    save();closeModal();renderBodySubContent();toast('已保存 ✓');
-  });
-}
-function editWeightLog(id){openWeightModal(id);}
-function delWeightConfirm(id){confirmDel(()=>{S.bodyLogs=S.bodyLogs.filter(b=>b.id!==id);save();renderBodySubContent();});}
-// ---- 身体围度 ----
-function renderMeasureTab(el){
-  el.innerHTML=`<button class="addbtn" style="margin-bottom:14px;" onclick="openMeasureModal()">+ 记录围度</button><div id="measureListWrap"></div>`;
-  const wrap=el.querySelector('#measureListWrap');
-  if(!S.measurementLogs.length){wrap.innerHTML='<div class="empty" data-icon="📐">还没有记录，瘦腿进度从这里开始看得见</div>';return;}
-  const sorted=[...S.measurementLogs].sort((a,b)=>b.date.localeCompare(a.date));
-  wrap.innerHTML=sorted.map(m=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--g-border);">
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:600;">${m.date}</div>
-        <div style="font-size:12px;color:var(--ink3);margin-top:2px;">${m.waist?'腰围'+m.waist+'cm ':''}${m.thigh?'腿围'+m.thigh+'cm ':''}${m.hip?'臀围'+m.hip+'cm':''}</div>
-        ${m.note?`<div style="font-size:12px;color:var(--ink3);">${esc(m.note)}</div>`:''}
-      </div>
-      <button class="sbtn" style="padding:2px 8px;font-size:11px;" onclick="editMeasureLog('${m.id}')">编辑</button>
-      <button class="delbtn" style="padding:2px 6px;" onclick="delMeasureConfirm('${m.id}')">🗑️</button>
-    </div>`).join('');
-}
-function openMeasureModal(existingId){
-  const m=existingId?S.measurementLogs.find(x=>x.id===existingId):null;
-  const body=`
-    <div class="note-field-group"><div class="note-field-label">日期</div><input type="date" id="measureDate" value="${m?m.date:td()}"></div>
-    <div style="display:flex;gap:8px;">
-      <div class="note-field-group" style="flex:1;"><div class="note-field-label">腰围cm</div><input type="number" step="0.1" id="measureWaist" value="${m?.waist||''}"></div>
-      <div class="note-field-group" style="flex:1;"><div class="note-field-label">腿围cm</div><input type="number" step="0.1" id="measureThigh" value="${m?.thigh||''}"></div>
-      <div class="note-field-group" style="flex:1;"><div class="note-field-label">臀围cm</div><input type="number" step="0.1" id="measureHip" value="${m?.hip||''}"></div>
-    </div>
-    <div class="note-field-group"><div class="note-field-label">备注</div><textarea id="measureNote" rows="2">${esc(m?.note||'')}</textarea></div>`;
-  showModal(existingId?'编辑围度':'记录围度',body,()=>{
-    const date=document.getElementById('measureDate').value||td();
-    const data={date,waist:parseFloat(document.getElementById('measureWaist').value)||null,thigh:parseFloat(document.getElementById('measureThigh').value)||null,hip:parseFloat(document.getElementById('measureHip').value)||null,note:document.getElementById('measureNote').value.trim()};
-    if(existingId){Object.assign(m,data);}else{S.measurementLogs.push({id:uid(),...data});}
-    save();closeModal();renderBodySubContent();toast('已保存 ✓');
-  });
-}
-function editMeasureLog(id){openMeasureModal(id);}
-function delMeasureConfirm(id){confirmDel(()=>{S.measurementLogs=S.measurementLogs.filter(m=>m.id!==id);save();renderBodySubContent();});}
-// ---- 尺码笔记 ----
-function renderSizeTab(el){
-  el.innerHTML=`<button class="addbtn" style="margin-bottom:14px;" onclick="openSizeModal()">+ 添加尺码笔记</button><div id="sizeListWrap"></div>`;
-  const wrap=el.querySelector('#sizeListWrap');
-  if(!S.sizeNotes.length){wrap.innerHTML='<div class="empty" data-icon="👕">还没有笔记，试穿之后随手记一下，攒多了买衣服就不纠结了</div>';return;}
-  const sorted=[...S.sizeNotes].sort((a,b)=>b.createdAt-a.createdAt);
-  wrap.innerHTML=sorted.map(s=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--g-border);">
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:600;">${esc(s.category)} · ${esc(s.brand||'未注明品牌')} · ${esc(s.size)}</div>
-        ${s.note?`<div style="font-size:12px;color:var(--ink3);margin-top:2px;">${esc(s.note)}</div>`:''}
-      </div>
-      <button class="delbtn" style="padding:2px 6px;" onclick="delSizeConfirm('${s.id}')">🗑️</button>
-    </div>`).join('');
-}
-function openSizeModal(){
-  const body=`
-    <div class="note-field-group"><div class="note-field-label">类别</div><input id="sizeCategory" placeholder="例如：上衣/外套/裤子/裙子/鞋"></div>
-    <div class="note-field-group"><div class="note-field-label">品牌（可不填）</div><input id="sizeBrand"></div>
-    <div class="note-field-group"><div class="note-field-label">合适的尺码/尺寸</div><input id="sizeVal" placeholder="例如：M码 / 26码 / 均码肩宽45cm"></div>
-    <div class="note-field-group"><div class="note-field-label">备注</div><textarea id="sizeNote" rows="2" placeholder="例如：版型偏小建议买大一码"></textarea></div>`;
-  showModal('添加尺码笔记',body,()=>{
-    const category=document.getElementById('sizeCategory').value.trim();if(!category){toast('请输入类别');return;}
-    const size=document.getElementById('sizeVal').value.trim();if(!size){toast('请输入尺码');return;}
-    S.sizeNotes.push({id:uid(),category,brand:document.getElementById('sizeBrand').value.trim(),size,note:document.getElementById('sizeNote').value.trim(),createdAt:Date.now()});
-    save();closeModal();renderBodySubContent();toast('已添加 ✓');
-  });
-}
-function delSizeConfirm(id){confirmDel(()=>{S.sizeNotes=S.sizeNotes.filter(s=>s.id!==id);save();renderBodySubContent();});}
-
-// ==================== 生理期 ====================
-function renderPeriod(){
-  const el=document.getElementById('recPeriod');if(!el)return;
-  const sorted=[...S.periodLogs].sort((a,b)=>b.startDate.localeCompare(a.startDate));
-  // 根据历史记录估算平均周期，给一个"预计下次"的参考（不追求医学精准）
-  let predictTxt='';
-  if(sorted.length>=2){
-    const gaps=[];
-    for(let i=0;i<sorted.length-1;i++){
-      const d1=new Date(sorted[i].startDate+'T00:00:00'),d2=new Date(sorted[i+1].startDate+'T00:00:00');
-      gaps.push(Math.abs(d1-d2)/86400000);
-    }
-    const avgCycle=Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length);
-    const nextDate=addDaysStr(sorted[0].startDate,avgCycle);
-    const daysLeft=daysUntil(nextDate);
-    predictTxt=`<div style="background:var(--g-light);border-radius:10px;padding:12px;margin-bottom:14px;text-align:center;">
-      <div style="font-size:11px;color:var(--ink3);">按历史周期（约${avgCycle}天）估算，仅供参考</div>
-      <div style="font-size:15px;font-weight:700;color:var(--g-dark);margin-top:4px;">预计下次：${nextDate}${daysLeft>=0?`（还有${daysLeft}天）`:''}</div>
-    </div>`;
-  }
-  el.innerHTML=`
-    ${predictTxt}
-    <button class="addbtn" style="margin-bottom:14px;" onclick="openPeriodModal()">+ 记录新一次</button>
-    <div id="periodListWrap"></div>
-    <div class="section-divider"><div class="stl">💡 经期小贴士（自己写给自己的）</div></div>
-    <div id="periodTipsWrap"></div>
-    <div class="checklist-add-row">
-      <input type="text" id="periodTipInput" placeholder="例如：多喝红糖水，别喝冰的">
-      <button onclick="addPeriodTip()">添加</button>
-    </div>`;
-  document.getElementById('periodTipInput').onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();addPeriodTip();}};
-  renderPeriodList();renderPeriodTips();
-}
-function renderPeriodList(){
-  const wrap=document.getElementById('periodListWrap');if(!wrap)return;
-  const sorted=[...S.periodLogs].sort((a,b)=>b.startDate.localeCompare(a.startDate));
-  if(!sorted.length){wrap.innerHTML='<div class="empty" data-icon="🩸">还没有记录</div>';return;}
-  const FLOW_LABEL={light:'轻',mid:'中',heavy:'重'};
-  wrap.innerHTML=sorted.map(p=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--g-border);">
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:600;">${p.startDate} · 持续${p.duration||'?'}天 · 量${FLOW_LABEL[p.flow]||'--'}</div>
-        ${p.note?`<div style="font-size:12px;color:var(--ink3);margin-top:2px;">${esc(p.note)}</div>`:''}
-      </div>
-      <button class="sbtn" style="padding:2px 8px;font-size:11px;" onclick="editPeriodLog('${p.id}')">编辑</button>
-      <button class="delbtn" style="padding:2px 6px;" onclick="delPeriodConfirm('${p.id}')">🗑️</button>
-    </div>`).join('');
-}
-function openPeriodModal(existingId){
-  const p=existingId?S.periodLogs.find(x=>x.id===existingId):null;
-  const body=`
-    <div class="note-field-group"><div class="note-field-label">开始日期</div><input type="date" id="periodStart" value="${p?p.startDate:td()}"></div>
-    <div class="note-field-group"><div class="note-field-label">持续天数</div><input type="number" id="periodDuration" min="1" value="${p?.duration||5}"></div>
-    <div class="note-field-group"><div class="note-field-label">量</div><select id="periodFlow" class="note-select">
-      <option value="light" ${p?.flow==='light'?'selected':''}>轻</option>
-      <option value="mid" ${(!p||p?.flow==='mid')?'selected':''}>中</option>
-      <option value="heavy" ${p?.flow==='heavy'?'selected':''}>重</option>
-    </select></div>
-    <div class="note-field-group"><div class="note-field-label">身体感受 / 备注</div><textarea id="periodNote" rows="2">${esc(p?.note||'')}</textarea></div>`;
-  showModal(existingId?'编辑记录':'记录新一次',body,()=>{
-    const startDate=document.getElementById('periodStart').value||td();
-    const data={startDate,duration:parseInt(document.getElementById('periodDuration').value)||5,flow:document.getElementById('periodFlow').value,note:document.getElementById('periodNote').value.trim()};
-    if(existingId){Object.assign(p,data);}else{S.periodLogs.push({id:uid(),...data});}
-    save();closeModal();renderPeriod();toast('已保存 ✓');
-  });
-}
-function editPeriodLog(id){openPeriodModal(id);}
-function delPeriodConfirm(id){confirmDel(()=>{S.periodLogs=S.periodLogs.filter(p=>p.id!==id);save();renderPeriod();});}
-function renderPeriodTips(){
-  const wrap=document.getElementById('periodTipsWrap');if(!wrap)return;
-  if(!S.periodTips.length){wrap.innerHTML='<div class="empty" data-icon="💡">还没有小贴士，写点关怀自己的话吧</div>';return;}
-  wrap.innerHTML=S.periodTips.map((tip,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--g-xlight);">
-      <span style="flex:1;font-size:13px;">💡 ${esc(tip)}</span>
-      <span class="ci-del" data-tipidx="${i}">🗑️</span>
-    </div>`).join('');
-  wrap.querySelectorAll('[data-tipidx]').forEach(el=>{
-    el.onclick=()=>{S.periodTips.splice(parseInt(el.dataset.tipidx),1);save();renderPeriodTips();};
-  });
-}
-function addPeriodTip(){
-  const inp=document.getElementById('periodTipInput');
-  const v=inp.value.trim();if(!v)return;
-  S.periodTips.push(v);save();inp.value='';renderPeriodTips();
-}
-
-// ==================== 一天时间线（自动拼接各处已有的时间戳，不用你重新手动记一遍） ====================
-let _timelineDate=null; // null 表示"今天"，会在渲染时惰性赋值
-function parseNowStr(s){
-  // 把 nowStr() 格式（"2026/7/13 14:30"）解析成 {dateKey:'2026-07-13', time:'14:30'}
-  const m=(s||'').match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{2}:\d{2})$/);
-  if(!m)return null;
-  return{dateKey:`${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`,time:m[4]};
-}
-function collectAllProjNotesForDate(list,dateKey,out,push){
-  (list||[]).forEach(p=>{
-    (p.notes||[]).forEach(n=>{
-      const parsed=parseNowStr(n.date);
-      if(parsed&&parsed.dateKey===dateKey){
-        if(push)push('proj:'+n.id,parsed.time,'✅',`打卡：${p.name}${n.note?'（'+n.note+'）':''}`);
-        else out.push({time:parsed.time,icon:'✅',text:`打卡：${p.name}${n.note?'（'+n.note+'）':''}`});
-      }
-    });
-    if(p.children&&p.children.length)collectAllProjNotesForDate(p.children,dateKey,out,push);
-  });
-}
-function collectDonePlanItemsForDate(list,dateKey,planType,push){
-  (list||[]).forEach(item=>{
-    if(!item.children||!item.children.length){
-      if(item.done&&item.completedAt){
-        const d=new Date(item.completedAt);
-        if(formatDate(d)===dateKey){
-          push('plan:'+item.id,String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),'🗓',`完成计划：${item.title||item.text||''}`);
-        }
-      }
-    }else{
-      collectDonePlanItemsForDate(item.children,dateKey,planType,push);
-    }
-  });
-}
-function getTimelineEvents(dateKey){
-  const events=[];
-  const ov=S.timelineOverrides||{};
-  const push=(id,time,icon,text)=>{
-    const o=ov[id];
-    events.push({id,time:o&&o.time?o.time:time,icon,text:o&&o.text?o.text:text,edited:!!o});
-  };
-  // 1. 阶段日程习惯打卡（可在编辑习惯时关闭"同步到时间线"）
-  (S.goodH||[]).forEach(h=>{
-    if(h.syncTimeline===false)return;
-    const entry=h.log&&h.log[dateKey];
-    if(entry&&entry.status==='done'&&entry.doneAt){
-      const d=new Date(entry.doneAt);
-      push('habit:'+h.id+':'+dateKey,String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),h.emoji||'✅',`完成习惯：${h.name}`);
-    }
-  });
-  // 2. 项目打卡（递归整棵树）
-  collectAllProjNotesForDate(S.projs,dateKey,events,push);
-  // 3. 今日任务完成
-  (S.tasks||[]).forEach(t=>{
-    if(t.done&&t.completedAt){
-      const d=new Date(t.completedAt);
-      const dk=formatDate(d);
-      if(dk===dateKey)push('task:'+t.id,String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),'☑️',`完成任务：${t.name}`);
-    }
-  });
-  // 4. 计划完成（周/月/年，递归子项）
-  ['day','week','month','year'].forEach(pt=>collectDonePlanItemsForDate(S.plans[pt],dateKey,pt,push));
-  // 5. 天意卡牌
-  (S.fortuneRecords||[]).forEach(r=>{
-    if(r.date===dateKey){
-      const d=new Date(r.ts||Date.now());
-      push('fortune:'+r.id,String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),'✨',`抽到「${r.msg}」${r.done?'· 已完成':'· 还没做'}`);
-    }
-  });
-  // 6. 成就
-  (S.achievements||[]).forEach(a=>{
-    const parsed=parseNowStr(a.date);
-    if(parsed&&parsed.dateKey===dateKey)push('ach:'+a.id,parsed.time,a.emoji||'🏆',`达成成就：${a.title}`);
-  });
-  // 7. 笔记
-  (S.notes||[]).forEach(n=>{
-    if(n.createdAt){
-      const d=new Date(n.createdAt);
-      if(formatDate(d)===dateKey)push('note:'+n.id,String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),'📔',`写了笔记：${n.title}`);
-    }
-  });
-  // 8. 手动补充的事件
-  (S.timelineEvents||[]).forEach(e=>{
-    if(e.date===dateKey)push('manual:'+e.id,e.time,e.icon||'📍',e.text);
-  });
-  events.forEach(e=>{if(e.id&&e.id.startsWith('manual:'))e.manual=true;});
-  // 按时间排序
-  events.sort((a,b)=>a.time.localeCompare(b.time));
-  return events;
-}
-let _timelineEventsCache=[];
-function editTimelineEvent(id){
-  const e=(_timelineEventsCache||[]).find(x=>x.id===id);if(!e)return;
-  const curTime=e.time,curText=e.text;
-  const body=`
-    <div class="note-field-group"><div class="note-field-label">时间</div><input type="time" id="tlEditTime" value="${curTime}"></div>
-    <div class="note-field-group"><div class="note-field-label">内容</div><input id="tlEditText" value="${esc(curText)}"></div>`;
-  showModal('编辑这条记录',body,()=>{
-    const time=document.getElementById('tlEditTime').value;if(!time){toast('请选择时间');return;}
-    const text=document.getElementById('tlEditText').value.trim();if(!text){toast('请输入内容');return;}
-    if(id.startsWith('manual:')){
-      const realId=id.slice(7);
-      const ev=(S.timelineEvents||[]).find(x=>x.id===realId);
-      if(ev){ev.time=time;ev.text=text;}
-    }else{
-      if(!S.timelineOverrides)S.timelineOverrides={};
-      S.timelineOverrides[id]={time,text};
-    }
-    save();closeModal();renderTimeline();toast('已保存 ✓');
-  });
-}
-function renderTimeline(){
-  const el=document.getElementById('recTimeline');if(!el)return;
-  if(!_timelineDate)_timelineDate=td();
-  const dateKey=_timelineDate;
-  const events=getTimelineEvents(dateKey);
-  _timelineEventsCache=events;
-  const isToday=dateKey===td();
-  el.innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-      <button class="sbtn" onclick="shiftTimelineDate(-1)">‹ 前一天</button>
-      <div style="text-align:center;">
-        <div style="font-size:14px;font-weight:700;">${dateKey}${isToday?'（今天）':''}</div>
-      </div>
-      <button class="sbtn" onclick="shiftTimelineDate(1)" ${isToday?'style="opacity:.3;pointer-events:none;"':''}>后一天 ›</button>
-    </div>
-    <button class="addbtn" style="margin-bottom:14px;" onclick="openAddTimelineEventModal()">+ 补充记一件事</button>
-    <div id="timelineListWrap"></div>`;
-  const wrap=document.getElementById('timelineListWrap');
-  if(!events.length){wrap.innerHTML='<div class="empty" data-icon="🕐">这一天还没有记录到什么</div>';return;}
-  wrap.innerHTML=`<div style="position:relative;padding-left:18px;">
-    <div style="position:absolute;left:5px;top:6px;bottom:6px;width:1.5px;background:var(--g-border);"></div>
-    ${events.map(e=>`
-      <div style="position:relative;padding:8px 0 8px 14px;">
-        <div style="position:absolute;left:-13px;top:12px;width:8px;height:8px;border-radius:50%;background:var(--g);"></div>
-        <div style="font-size:11px;color:var(--ink3);margin-bottom:2px;">${e.time}${e.edited?' · 已编辑':''}</div>
-        <div style="font-size:13px;display:flex;align-items:center;gap:6px;">
-          <span style="flex:1;">${e.icon} ${esc(e.text)}</span>
-          <button class="tree-action-btn" style="padding:2px 6px;" onclick="editTimelineEvent('${e.id}')">✏️</button>
-          ${e.manual?`<button class="tree-action-btn danger" style="padding:2px 6px;" onclick="delTimelineEvent('${e.id.slice(7)}')">🗑️</button>`:''}
-        </div>
-      </div>`).join('')}
-  </div>`;
-}
-function shiftTimelineDate(delta){
-  _timelineDate=addDaysStr(_timelineDate||td(),delta);
-  if(_timelineDate>td())_timelineDate=td(); // 不能看到未来
-  renderTimeline();
-}
-function openAddTimelineEventModal(){
-  const body=`
-    <div class="note-field-group"><div class="note-field-label">时间</div><input type="time" id="tlEventTime" value="${new Date().toTimeString().slice(0,5)}"></div>
-    <div class="note-field-group"><div class="note-field-label">这时候在做什么</div><input id="tlEventText" placeholder="例如：出门散步了"></div>`;
-  showModal('补充记一件事',body,()=>{
-    const time=document.getElementById('tlEventTime').value;if(!time){toast('请选择时间');return;}
-    const text=document.getElementById('tlEventText').value.trim();if(!text){toast('请输入内容');return;}
-    S.timelineEvents.push({id:uid(),date:_timelineDate||td(),time,text,icon:'📍'});
-    save();closeModal();renderTimeline();toast('已添加 ✓');
-  });
-}
-function delTimelineEvent(id){
-  confirmDel(()=>{S.timelineEvents=S.timelineEvents.filter(e=>e.id!==id);save();renderTimeline();});
-}
 
 // ==================== 计划页面 ====================
 // ==================== 计划页面（本子版） ====================
@@ -2434,16 +1752,57 @@ const PLAN_TABS=[
   {key:'month',label:'本月',icon:'🗓'},
   {key:'year',label:'今年',icon:'🎯'},
 ];
+const ARCHIVE_TAB={key:'archive',label:'存档',icon:'🗄️'};
+const ALL_PLAN_TABS=[...PLAN_TABS,ARCHIVE_TAB];
+
+// 日/周/月/年计划：过了那个周期就自动把当前内容（不管做完没做完）整体存进"存档"，再清空开始新的一期
+function getPlanPeriodKey(type,dateStr){
+  if(type==='week')return getISOWeekKey(dateStr);
+  if(type==='month')return dateStr.slice(0,7);
+  if(type==='year')return dateStr.slice(0,4);
+  return dateStr; // day
+}
+function formatPlanPeriodLabel(type,key){
+  if(type==='week'){const m=key.match(/^(\d+)-W(\d+)$/);return m?`${m[1]}年 第${parseInt(m[2])}周`:key;}
+  if(type==='month'){const m=key.match(/^(\d+)-(\d+)$/);return m?`${m[1]}年${parseInt(m[2])}月`:key;}
+  if(type==='year')return `${key}年`;
+  return key;
+}
+function rolloverPlanPeriods(){
+  if(!S.planPeriodKeys)S.planPeriodKeys={};
+  const t=td();
+  let changed=false;
+  ['day','week','month','year'].forEach(type=>{
+    const curKey=getPlanPeriodKey(type,t);
+    const lastKey=S.planPeriodKeys[type];
+    if(lastKey===undefined){
+      S.planPeriodKeys[type]=curKey;changed=true;return;
+    }
+    if(lastKey!==curKey){
+      const items=S.plans[type]||[];
+      if(items.length){
+        if(!S.planArchives)S.planArchives=[];
+        S.planArchives.unshift({id:uid(),type,periodLabel:formatPlanPeriodLabel(type,lastKey),archivedAt:Date.now(),items:JSON.parse(JSON.stringify(items))});
+      }
+      S.plans[type]=[];
+      S.planPeriodKeys[type]=curKey;
+      changed=true;
+    }
+  });
+  if(changed)save();
+}
 
 function renderPlan(){
+  rolloverPlanPeriods();
   pruneExpiredPlans();
   _planType='day';
   const pc=document.getElementById('planContent');
   const now=new Date();
   pc.innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px;">
       ${PLAN_TABS.map(t=>`<div class="plan-outer-tab${t.key==='day'?' on':''}" data-pt="${t.key}" style="text-align:center;">${t.icon} ${t.label}</div>`).join('')}
     </div>
+    <div class="plan-outer-tab" data-pt="archive" style="width:100%;text-align:center;margin-bottom:8px;">${ARCHIVE_TAB.icon} ${ARCHIVE_TAB.label}</div>
     <button id="planFixedAddBtn" class="plan-outer-tab" style="width:100%;text-align:center;background:var(--g);color:#fff;border-color:var(--g);cursor:pointer;margin-bottom:12px;">＋ 添加</button>
     <div class="notebook-wrap" id="planNotebook">
       <div class="notebook-rings">${Array(6).fill('<div class="notebook-ring"></div>').join('')}</div>
@@ -2461,8 +1820,9 @@ function renderPlan(){
       pc.querySelectorAll('[data-pt]').forEach(t=>t.classList.remove('on'));
       tab.classList.add('on');
       _planType=tab.dataset.pt;
-      const found=PLAN_TABS.find(t=>t.key===_planType);
+      const found=ALL_PLAN_TABS.find(t=>t.key===_planType);
       document.getElementById('planNbTitle').textContent=`${found.icon} ${found.label}`;
+      document.getElementById('planFixedAddBtn').style.display=_planType==='archive'?'none':'';
       renderPlanNbItems();
     });
   });
@@ -2491,6 +1851,7 @@ function calcPlanProgress(items){
 }
 function renderPlanNbItems(){
   const body=document.getElementById('planNbBody');if(!body)return;
+  if(_planType==='archive'){renderPlanArchiveList(body);return;}
   const items=(S.plans[_planType]||[]);
   const topDone=items.filter(isPlanItemDone).length;
   const progress=calcPlanProgress(items);
@@ -2507,14 +1868,55 @@ function renderPlanNbItems(){
     ${items.length?items.map((item)=>renderNbItem(item,0)).join(''):'<div class="nb-empty">还没有计划，点右上角＋添加</div>'}`;
 }
 
+// ---- 存档（每期计划到期后自动整体存进来，不管做完没做完） ----
+let expandedArchiveIds=new Set();
+function togglePlanArchiveExpand(id){if(expandedArchiveIds.has(id))expandedArchiveIds.delete(id);else expandedArchiveIds.add(id);renderPlanNbItems();}
+function renderPlanArchiveList(body){
+  const list=(S.planArchives||[]).filter(a=>a.items);
+  if(!list.length){body.innerHTML='<div class="nb-empty">还没有存档，日/周/月/年计划到期后会自动整体归档在这里</div>';return;}
+  const typeLabel={day:'📝 日计划',week:'📅 周计划',month:'🗓 月计划',year:'🎯 年计划'};
+  body.innerHTML=list.map(a=>{
+    const progress=calcPlanProgress(a.items);
+    const isOpen=expandedArchiveIds.has(a.id);
+    return`<div class="nb-item" style="align-items:flex-start;">
+      <div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;cursor:pointer;" onclick="togglePlanArchiveExpand('${a.id}')">${isOpen?'▼':'▶'}</div>
+      <div class="nb-content">
+        <div class="nb-item-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span>${typeLabel[a.type]||a.type} · ${esc(a.periodLabel||'')}</span>
+          <button class="tree-action-btn danger" onclick="deletePlanArchive('${a.id}')">🗑️</button>
+        </div>
+        <div class="nb-item-meta">完成度 ${progress.percent}%（${new Date(a.archivedAt).toLocaleDateString('zh-CN')} 存档）</div>
+        ${isOpen?`<div style="margin-top:6px;">${a.items.map(it=>renderArchiveItemReadonly(it,0)).join('')}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderArchiveItemReadonly(item,level){
+  const hasChildren=item.children&&item.children.length>0;
+  const done=isPlanItemDone(item);
+  const isChild=level>0;
+  const checkStyle=isChild?'width:14px;height:14px;margin-top:5px;':'';
+  return`<div class="nb-item${isChild?' nb-item-child':''}">
+    <div class="nb-check${done?' done':''}" style="${checkStyle}pointer-events:none;">${done?'✓':''}</div>
+    <div class="nb-content">
+      <div class="nb-item-title${done?' done':''}" style="font-size:${isChild?'12px':'14px'};${isChild?'font-weight:500;color:var(--nb-ink2);':''}">${isChild?'· ':''}${esc(item.title||item.text||'')}${item.total>0?` (${item.doneCount||0}/${item.total})`:''}</div>
+      ${hasChildren?item.children.map(c=>renderArchiveItemReadonly(c,level+1)).join(''):''}
+    </div>
+  </div>`;
+}
+function deletePlanArchive(id){confirmDel(()=>{S.planArchives=(S.planArchives||[]).filter(a=>a.id!==id);save();renderPlanNbItems();});}
+
 function isPlanItemDone(item){
   if(item.children&&item.children.length)return item.children.every(isPlanItemDone);
   if(item.total>0)return (item.doneCount||0)>=item.total;
   return !!item.done;
 }
 
-let collapsedPlans=new Set();
-function togglePlanCollapse(id){if(collapsedPlans.has(id))collapsedPlans.delete(id);else collapsedPlans.add(id);renderPlanNbItems();}
+// 子项默认收起（东西一多就很乱），点了才展开；操作按钮也收进"⋯"里，平时只留打卡按钮，画面清爽点
+let expandedPlanIds=new Set();
+function togglePlanCollapse(id){if(expandedPlanIds.has(id))expandedPlanIds.delete(id);else expandedPlanIds.add(id);renderPlanNbItems();}
+let openPlanActionIds=new Set();
+function togglePlanActions(id){if(openPlanActionIds.has(id))openPlanActionIds.delete(id);else openPlanActionIds.add(id);renderPlanNbItems();}
 
 function renderNbItem(item,level){
   level=level||0;
@@ -2522,7 +1924,7 @@ function renderNbItem(item,level){
   const hasNote=item.note&&item.note.trim();
   const hasDue=item.due;
   const hasDate=item.planDate&&item.planDate!==td();
-  const isCollapsed=collapsedPlans.has(item.id);
+  const isCollapsed=hasChildren&&!expandedPlanIds.has(item.id);
   const childDone=hasChildren?item.children.filter(isPlanItemDone).length:0;
   const allChildDone=hasChildren&&childDone===item.children.length;
   const isCounter=!hasChildren&&item.total>0;
@@ -2531,9 +1933,10 @@ function renderNbItem(item,level){
   const titleSize=isChild?(level===1?13:12):15;
   const checkSize=isChild?14:18;
   const checkStyle=`width:${checkSize}px;height:${checkSize}px;${isChild?'margin-top:5px;':''}`;
+  const showActions=openPlanActionIds.has(item.id);
   return`<div class="nb-item${itemDone?' done-nb':''}${isChild?' nb-item-child':''}">
     ${hasChildren?
-      `<div class="nb-check" style="${checkStyle}border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;cursor:pointer;" onclick="togglePlanCollapse('${item.id}')" title="${isCollapsed?'展开':'收起'}子项">${isCollapsed?'▶':childDone+'/'+item.children.length}</div>`
+      `<div class="nb-check" style="${checkStyle}border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;cursor:pointer;" onclick="togglePlanCollapse('${item.id}')" title="${isCollapsed?'展开':'收起'}子项">${isCollapsed?childDone+'/'+item.children.length:'▼'}</div>`
       :isCounter?
       `<div class="nb-check" style="${checkStyle}border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;">${item.doneCount||0}/${item.total}</div>`
       :`<div class="nb-check${item.done?' done':''}" style="${checkStyle}" onclick="toggleNbPlan('${item.id}')">${item.done?'✓':''}</div>`}
@@ -2548,15 +1951,19 @@ function renderNbItem(item,level){
         </div>`:''}
       ${isCounter?`
         <div style="background:var(--g-xlight);border-radius:6px;height:5px;margin:6px 0;overflow:hidden;"><div style="background:var(--g);height:100%;width:${Math.min(100,Math.round((item.doneCount||0)/item.total*100))}%;"></div></div>`:''}
-      <div class="nb-item-actions" style="margin:2px 0 2px;flex-wrap:wrap;height:auto;">
-        ${isCounter?`<button class="tree-action-btn accent" onclick="checkInPlanItem('${item.id}')" ${itemDone?'style="opacity:.4;pointer-events:none;"':''}>✅ 打卡 +1</button>${(item.doneCount||0)>0?`<button class="tree-action-btn" onclick="undoCheckInPlanItem('${item.id}')">↩️ 撤销</button>`:''}`:''}
+      <div style="display:flex;align-items:center;gap:6px;margin:2px 0;">
+        ${isCounter?`<button class="tree-action-btn accent" onclick="checkInPlanItem('${item.id}')" ${itemDone?'style="opacity:.4;pointer-events:none;"':''}>✅ +1</button>`:''}
+        <button class="tree-action-btn" onclick="togglePlanActions('${item.id}')" style="color:var(--nb-ink3);${isCounter?'':'margin-left:0;'}margin-left:auto;padding:3px 9px;">⋯</button>
+      </div>
+      ${showActions?`<div class="nb-item-actions" style="margin:0 0 4px;flex-wrap:wrap;height:auto;">
+        ${isCounter&&(item.doneCount||0)>0?`<button class="tree-action-btn" onclick="undoCheckInPlanItem('${item.id}')">↩️ 撤销</button>`:''}
         <button class="tree-action-btn" onclick="openAddChildPlanModal('${item.id}')">➕ 子项</button>
-        ${_planType==='day'?`<button class="tree-action-btn" onclick="movePlanItemToToday('${item.id}')" title="挪到今日任务">↗️今日</button>`:''}
+        ${_planType==='day'?`<button class="tree-action-btn" onclick="movePlanItemToToday('${item.id}')" title="挪到今日任务">↗️ 今日</button>`:''}
         <button class="tree-action-btn" onclick="editNbPlan('${item.id}')">✏️ 编辑</button>
         ${hasChildren&&allChildDone?`<button class="tree-action-btn accent" onclick="archiveWholePlan('${item.id}')">✓ 全部完成</button>`:''}
-        <button class="tree-action-btn danger" onclick="deleteNbPlan('${item.id}')">🗑️</button>
-      </div>
-      ${!isCollapsed&&hasChildren?item.children.map(c=>renderNbItem(c,level+1)).join(''):(hasChildren?`<div style="font-size:11px;color:var(--nb-ink3);padding:2px 0;">▶ ${item.children.length} 项子任务（已折叠）</div>`:'')}
+        <button class="tree-action-btn danger" onclick="deleteNbPlan('${item.id}')">🗑️ 删除</button>
+      </div>`:''}
+      ${!isCollapsed&&hasChildren?item.children.map(c=>renderNbItem(c,level+1)).join(''):''}
     </div>
   </div>`;
 }
@@ -2619,7 +2026,7 @@ function openNbPlanModal(existingId,parentId){
       const parent=findPlanItem(parentId);if(!parent)return;
       if(!parent.children)parent.children=[];
       parent.children.push({id:uid(),title,note,due,text:title,done:false,children:[],total,doneCount:0});
-      collapsedPlans.delete(parentId);
+      expandedPlanIds.add(parentId);
     }else{
       if(!S.plans[_planType])S.plans[_planType]=[];
       S.plans[_planType].push({id:uid(),title,note,due,text:title,done:false,children:[],total,doneCount:0});
@@ -2695,11 +2102,6 @@ function deleteNbPlan(id){
   });
 }
 
-// 兼容旧函数名
-function addPlanItem(type){_planType=type;addNbPlanItem();}
-function togglePlanItem(type,idx){_planType=type;toggleNbPlan(idx);}
-function deletePlanItem(type,idx){_planType=type;deleteNbPlan(idx);}
-
 // ==================== 成长页面 ====================
 function showGrowTab(tab){
   const tabs=['habit','proj','ach'];
@@ -2773,42 +2175,6 @@ function isHabitDueToday(h){
     return todayWd>=assignedWd;
   }
   return true; // daily
-}
-function getHabitStreak(h){
-  const t=td();
-  if(h.repeatType==='weeklyRotation'){
-    let count=0;
-    const doneThisWeek=Object.keys(h.log||{}).some(dt=>h.log[dt].status==='done'&&getISOWeekKey(dt)===getISOWeekKey(t));
-    let cursor=doneThisWeek?t:addDaysStr(t,-7);
-    let guard=0;
-    while(guard<520){
-      const cwk=getISOWeekKey(cursor);
-      const done=Object.keys(h.log||{}).some(dt=>h.log[dt].status==='done'&&getISOWeekKey(dt)===cwk);
-      if(!done)break;
-      count++;cursor=addDaysStr(cursor,-7);guard++;
-    }
-    return count;
-  }
-  if(h.repeatType==='everyNDays'){
-    const doneDates=Object.keys(h.log||{}).filter(dt=>h.log[dt].status==='done').sort();
-    if(!doneDates.length)return 0;
-    let count=1;
-    for(let i=1;i<doneDates.length;i++){
-      let expected=addDaysStr(doneDates[i-1],h.everyN||3);
-      let guard=0;while(isDateRestForHabit(h,expected)&&guard<30){expected=addDaysStr(expected,1);guard++;}
-      count=(doneDates[i]<=expected)?count+1:1;
-    }
-    return count;
-  }
-  // daily
-  let count=0;let cursor=isDateDoneForHabit(h,t)?t:addDaysStr(t,-1);let guard=0;
-  while(guard<3660){
-    if(isDateDoneForHabit(h,cursor)){count++;cursor=addDaysStr(cursor,-1);}
-    else if(isDateRestForHabit(h,cursor)){cursor=addDaysStr(cursor,-1);}
-    else break;
-    guard++;
-  }
-  return count;
 }
 function checkInHabitToday(id){
   const h=S.goodH.find(x=>x.id===id);if(!h)return;
@@ -3318,11 +2684,13 @@ let _statsRange='week'; // 'week'=近7天, 'month'=近30天
 function renderStats(){
   const el=document.getElementById('recStats');if(!el)return;
   el.innerHTML=`
-    <div style="display:flex;gap:8px;margin-bottom:16px;">
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
       <div class="plan-outer-tab${_statsRange==='week'?' on':''}" data-sr="week" style="flex:1;text-align:center;">近7天</div>
       <div class="plan-outer-tab${_statsRange==='month'?' on':''}" data-sr="month" style="flex:1;text-align:center;">近30天</div>
     </div>
-    <div id="statsBody"></div>`;
+    <div style="background:var(--card);border-radius:var(--radius-md);padding:14px;box-shadow:var(--shadow-sm);">
+      <div id="statsBody"></div>
+    </div>`;
   el.querySelectorAll('[data-sr]').forEach(t=>{t.onclick=()=>{_statsRange=t.dataset.sr;renderStats();};});
   renderStatsBody();
 }
