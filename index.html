@@ -1913,8 +1913,8 @@ function isPlanItemDone(item){
 }
 
 // 子项默认收起（东西一多就很乱），点了才展开；操作按钮也收进"⋯"里，平时只留打卡按钮，画面清爽点
-let expandedPlanIds=new Set();
-function togglePlanCollapse(id){if(expandedPlanIds.has(id))expandedPlanIds.delete(id);else expandedPlanIds.add(id);renderPlanNbItems();}
+let collapsedPlanIds=new Set();
+function togglePlanCollapse(id){if(collapsedPlanIds.has(id))collapsedPlanIds.delete(id);else collapsedPlanIds.add(id);renderPlanNbItems();}
 let openPlanActionIds=new Set();
 function togglePlanActions(id){if(openPlanActionIds.has(id))openPlanActionIds.delete(id);else openPlanActionIds.add(id);renderPlanNbItems();}
 
@@ -1924,7 +1924,7 @@ function renderNbItem(item,level){
   const hasNote=item.note&&item.note.trim();
   const hasDue=item.due;
   const hasDate=item.planDate&&item.planDate!==td();
-  const isCollapsed=hasChildren&&!expandedPlanIds.has(item.id);
+  const isCollapsed=hasChildren&&collapsedPlanIds.has(item.id);
   const childDone=hasChildren?item.children.filter(isPlanItemDone).length:0;
   const allChildDone=hasChildren&&childDone===item.children.length;
   const isCounter=!hasChildren&&item.total>0;
@@ -1963,7 +1963,7 @@ function renderNbItem(item,level){
         ${hasChildren&&allChildDone?`<button class="tree-action-btn accent" onclick="archiveWholePlan('${item.id}')">✓ 全部完成</button>`:''}
         <button class="tree-action-btn danger" onclick="deleteNbPlan('${item.id}')">🗑️ 删除</button>
       </div>`:''}
-      ${!isCollapsed&&hasChildren?item.children.map(c=>renderNbItem(c,level+1)).join(''):''}
+      ${!isCollapsed&&hasChildren?item.children.map(c=>renderNbItem(c,level+1)).join(''):(hasChildren?`<div style="font-size:11px;color:var(--nb-ink3);padding:2px 0;">▶ ${item.children.length} 项子任务（已折叠，点左边圆圈展开）</div>`:'')}
     </div>
   </div>`;
 }
@@ -2026,7 +2026,7 @@ function openNbPlanModal(existingId,parentId){
       const parent=findPlanItem(parentId);if(!parent)return;
       if(!parent.children)parent.children=[];
       parent.children.push({id:uid(),title,note,due,text:title,done:false,children:[],total,doneCount:0});
-      expandedPlanIds.add(parentId);
+      collapsedPlanIds.delete(parentId);
     }else{
       if(!S.plans[_planType])S.plans[_planType]=[];
       S.plans[_planType].push({id:uid(),title,note,due,text:title,done:false,children:[],total,doneCount:0});
