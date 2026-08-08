@@ -242,7 +242,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .note-tab-btn{padding:7px 16px;background:var(--bg);border:none;border-radius:30px;font-size:13px;color:var(--ink3);white-space:nowrap;cursor:pointer;font-weight:500;flex-shrink:0;transition:all .15s;}
 .note-tab-btn.on{background:var(--g);color:white;box-shadow:0 2px 8px var(--g-border);}
 .list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
-.list-count{font-size:12px;color:var(--ink3);}
+.list-count{font-size:12px;color:var(--ink2);font-weight:600;background:var(--card);padding:5px 11px;border-radius:12px;box-shadow:var(--shadow-sm);}
 .new-note-btn{background:var(--g-dark);border:none;padding:7px 16px;border-radius:24px;font-size:12px;color:white;cursor:pointer;font-weight:500;}
 .section-divider{display:flex;align-items:center;gap:10px;margin:20px 0 12px;}
 .section-divider .stl{margin:0;}
@@ -254,12 +254,12 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .backup-now-btn{background:#e8a030;border:none;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap;}
 /* ===== 日记条目样式 ===== */
 /* ══ 主题选择器 ══ */
-.th-grid{display:flex;flex-wrap:wrap;gap:8px;}
-.th-item{display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;}
-.th-dot{width:38px;height:38px;border-radius:50%;border:2.5px solid transparent;transition:transform .15s,border-color .15s;}
+.th-grid{display:flex;flex-wrap:wrap;gap:16px 12px;}
+.th-item{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;width:52px;}
+.th-dot{width:38px;height:38px;border-radius:50%;border:2.5px solid transparent;transition:transform .15s,border-color .15s;flex-shrink:0;}
 .th-dot:hover{transform:scale(1.1);}
 .th-active{border-color:var(--ink)!important;transform:scale(1.08);box-shadow:0 0 0 2px var(--white),0 0 0 3px var(--ink);}
-.th-name{font-size:9px;color:var(--ink3);text-align:center;width:40px;line-height:1.2;}
+.th-name{font-size:10px;color:var(--ink3);text-align:center;width:52px;line-height:1.3;word-break:break-all;}
 /* 设置面板指示点 */
 .set-dot{width:8px;height:8px;border-radius:50%;background:var(--g-mid);cursor:pointer;transition:background .2s,transform .2s;}
 .set-dot.on{background:var(--g);transform:scale(1.3);}
@@ -409,12 +409,19 @@ const THEMES={
   ],
   duo:[
     {id:'mars-rose',name:'粉绿',a:'#01847F',b:'#F9D2E4'},
-    {id:'lotus-mist',name:'荷塘烟雨',a:'#99a8b4',b:'#d8afb5'},
     {id:'klein-jade',name:'艾绿蓝',a:'#012696',mid:'#789FC0',b:'#A4E2C6'},
     {id:'ziluobai',name:'紫萝白',a:'#74759B',b:'#E2E1E4'},
     {id:'gongqiangliu',name:'宫墙柳',a:'#689274',b:'#bdccb8'},
     {id:'wasongbai',name:'瓦松绿白',a:'#6E8B74',b:'#F2E6CE'},
-    {id:'ouhedailan',name:'藕荷黛蓝',a:'#425066',b:'#E4C6D0'},
+    {id:'ouhedailan',name:'荷塘烟雨',a:'#425066',b:'#E4C6D0'},
+    {id:'tiantan-qiniandian',name:'天坛祈年殿',a:'#681414',b:'#D7CCB6'},
+    {id:'miaoling',name:'妙龄',a:'#D9C7E7',b:'#F6E2C8'},
+    {id:'chuitiao-zhiyi',name:'垂髫之谊',a:'#FFC2CB',b:'#FFF5E8'},
+    {id:'rizhao-aiqinhai',name:'日照爱琴海',a:'#DABF47',b:'#2095CD'},
+    {id:'jiaotang-kafei',name:'焦糖咖啡',a:'#B79777',b:'#3C281E'},
+    {id:'fenmo-dengchang',name:'粉墨登场',a:'#E6397C',b:'#1A1A1D'},
+    {id:'haiyan-bingcha',name:'海盐冰茶',a:'#BED7F3',b:'#FFE8A3'},
+    {id:'wumeng-hua',name:'雾朦花',a:'#F8CDED',b:'#A198A8'},
   ],
 };
 function applyTheme(id){
@@ -423,7 +430,7 @@ function applyTheme(id){
   localStorage.setItem('myu_theme',id||'green');
 }
 function loadTheme(){
-  const removedThemes=['datang2','xia','summer-bite','cinnabar-sky'];
+  const removedThemes=['datang2','xia','summer-bite','cinnabar-sky','lotus-mist'];
   let t=localStorage.getItem('myu_theme')||'green';
   if(removedThemes.includes(t)){t='green';localStorage.setItem('myu_theme','green');}
   applyTheme(t);
@@ -738,6 +745,12 @@ function renderSyncPanel(){
   bindSyncPanelEvents();
 }
 function formatDate(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function formatNoteTime(ts){
+  const d=new Date(ts);
+  const cur=new Date().getFullYear();
+  const y=d.getFullYear()===cur?'':d.getFullYear()+'/';
+  return `${y}${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
 function fmtDateShort(s){if(!s)return s;const cur=String(new Date().getFullYear());return s.startsWith(cur+'-')?s.slice(5):s;}
 function td(){return formatDate(new Date());}
 function nowStr(){let d=new Date();return`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
@@ -2891,6 +2904,7 @@ function renderNoteList(){
     }
     let attachmentCount = (n.images?.length || 0) + (n.files?.length || 0);
     let attachmentBadge = attachmentCount > 0 ? `<span style="font-size:11px;color:var(--g);background:var(--g-light);padding:1px 6px;border-radius:8px;margin-left:6px">📎 ${attachmentCount}</span>` : '';
+    const createdText=n.createdAt?formatNoteTime(n.createdAt):'';
     
     return`<div class="note-card" data-id="${n.id}">
       <div class="note-card-header">
@@ -2901,6 +2915,7 @@ function renderNoteList(){
         </span>
         <button class="note-del-btn delbtn" data-id="${n.id}">🗑️</button>
       </div>
+      ${createdText?`<div style="font-size:11px;color:var(--ink3);margin-top:3px;">🕐 创建于 ${createdText}</div>`:''}
       ${n.tags&&n.tags.length?`<div class="note-tags">${n.tags.map(t=>`<span class="note-tag">#${esc(t)}</span>`).join('')}</div>`:''}
       ${preview?`<div class="note-preview">${esc(preview.substring(0,80))}</div>`:''}
     </div>`;
