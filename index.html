@@ -131,6 +131,8 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 /* 树形结构（计划/项目/今日任务）里"加子项/编辑/删除"这类次要操作，
    刻意做得比正文标题更轻、更淡，视觉重心留给真正重要的条目内容本身 */
 .tree-action-btn{background:transparent;border:none;color:var(--ink3);font-size:11.5px;padding:3px 7px;cursor:pointer;font-weight:400;border-radius:8px;}
+.plan-type-choice-btn{width:100%;background:var(--card);border:1.5px solid var(--g-mid);border-radius:14px;padding:18px 12px;text-align:center;cursor:pointer;color:var(--ink);}
+.plan-type-choice-btn:active{background:var(--g-xlight);}
 .tree-action-btn:active{background:var(--g-light);}
 .tree-action-btn.danger{color:#c97c5a;}
 .tree-action-btn.accent{color:var(--g);font-weight:500;}
@@ -759,6 +761,14 @@ function formatNoteTime(ts){
   return `${y}${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 function fmtDateShort(s){if(!s)return s;const cur=String(new Date().getFullYear());return s.startsWith(cur+'-')?s.slice(5):s;}
+// 解析 nowStr() 格式的字符串，如"2026/8/8 21:24"，用于统计页面按日期归类日记/项目打卡
+function parseNowStr(s){
+  if(!s)return null;
+  const m=String(s).match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if(!m)return null;
+  const dateKey=`${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  return{dateKey};
+}
 function td(){return formatDate(new Date());}
 function nowStr(){let d=new Date();return`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
 function toast(m){let t=document.getElementById('toast');t.innerText=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1800);}
@@ -1855,6 +1865,7 @@ function calcPlanProgress(items){
   let total=0,done=0;
   const walk=(list)=>{
     (list||[]).forEach(item=>{
+      if(item.kind==='note')return; // 笔记式条目不参与完成度统计
       if(item.children&&item.children.length){
         walk(item.children);
       }else if(item.total>0){
@@ -1867,18 +1878,19 @@ function calcPlanProgress(items){
     });
   };
   walk(items);
-  return{total,done,percent:total?Math.round(done/total*100):0};
+  return{total,done,percent:total?Math.round(done/total*100):100};
 }
 function renderPlanNbItems(){
   const body=document.getElementById('planNbBody');if(!body)return;
   if(_planType==='archive'){renderPlanArchiveList(body);return;}
   const items=(S.plans[_planType]||[]);
-  const topDone=items.filter(isPlanItemDone).length;
+  const checkableItems=items.filter(i=>i.kind!=='note');
+  const topDone=checkableItems.filter(isPlanItemDone).length;
   const progress=calcPlanProgress(items);
   body.innerHTML=`
     <div style="padding:8px 0 6px;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:11px;color:var(--nb-ink3);margin-bottom:5px;">
-        <span>完成 ${topDone}/${items.length} 项</span>
+        <span>完成 ${topDone}/${checkableItems.length} 项</span>
         <span style="font-weight:700;color:var(--g);font-size:15px;">${progress.percent}%</span>
       </div>
       <div style="background:var(--g-xlight);border-radius:6px;height:7px;overflow:hidden;">
@@ -1912,6 +1924,16 @@ function renderPlanArchiveList(body){
   }).join('');
 }
 function renderArchiveItemReadonly(item,level){
+  if(item.kind==='note'){
+    const isChild=level>0;
+    return`<div class="nb-item${isChild?' nb-item-child':''}">
+      <div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:11px;pointer-events:none;">📝</div>
+      <div class="nb-content">
+        ${item.title?`<div class="nb-item-title" style="font-size:${isChild?12:14}px;">${isChild?'· ':''}${esc(item.title)}</div>`:''}
+        <div style="margin:4px 0;border:1px solid var(--g-mid);border-radius:8px;overflow:hidden;max-width:180px;cursor:pointer;" onclick="viewPlanSketchImage(this.querySelector('img').src)"><img src="${item.image}" style="width:100%;display:block;"></div>
+      </div>
+    </div>`;
+  }
   const hasChildren=item.children&&item.children.length>0;
   const done=isPlanItemDone(item);
   const isChild=level>0;
@@ -1927,6 +1949,7 @@ function renderArchiveItemReadonly(item,level){
 function deletePlanArchive(id){confirmDel(()=>{S.planArchives=(S.planArchives||[]).filter(a=>a.id!==id);save();renderPlanNbItems();});}
 
 function isPlanItemDone(item){
+  if(item.kind==='note')return true; // 笔记式条目视为中性，不影响完成度计算
   if(item.children&&item.children.length)return item.children.every(isPlanItemDone);
   if(item.total>0)return (item.doneCount||0)>=item.total;
   return !!item.done;
@@ -1940,6 +1963,7 @@ function togglePlanActions(id){if(openPlanActionIds.has(id))openPlanActionIds.de
 
 function renderNbItem(item,level){
   level=level||0;
+  if(item.kind==='note')return renderNbNoteItem(item,level);
   const hasChildren=item.children&&item.children.length>0;
   const hasNote=item.note&&item.note.trim();
   const hasDue=item.due;
@@ -1988,6 +2012,41 @@ function renderNbItem(item,level){
   </div>`;
 }
 
+function renderNbNoteItem(item,level){
+  const isChild=level>0;
+  const showActions=openPlanActionIds.has(item.id);
+  return`<div class="nb-item${isChild?' nb-item-child':''}">
+    <div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:11px;${isChild?'width:14px;height:14px;margin-top:5px;':''}">📝</div>
+    <div class="nb-content">
+      ${item.title?`<div class="nb-item-title" style="font-size:${isChild?13:15}px;${isChild?'font-weight:500;color:var(--nb-ink2);':''}">${isChild?'· ':''}${esc(item.title)}</div>`:''}
+      <div style="margin:6px 0;border:1px solid var(--g-mid);border-radius:8px;overflow:hidden;max-width:220px;cursor:pointer;" onclick="viewPlanSketchImage('${item.id}')">
+        <img src="${item.image}" style="width:100%;display:block;">
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin:2px 0;">
+        <button class="tree-action-btn" onclick="togglePlanActions('${item.id}')" style="color:var(--nb-ink3);margin-left:auto;padding:3px 9px;">⋯</button>
+      </div>
+      ${showActions?`<div class="nb-item-actions" style="margin:0 0 4px;flex-wrap:wrap;height:auto;">
+        <button class="tree-action-btn" onclick="editNbPlan('${item.id}')">✏️ 编辑</button>
+        <button class="tree-action-btn danger" onclick="deleteNbPlan('${item.id}')">🗑️ 删除</button>
+      </div>`:''}
+    </div>
+  </div>`;
+}
+function viewPlanSketchImage(idOrImage){
+  let image=idOrImage;
+  if(idOrImage&&!idOrImage.startsWith('data:')&&!idOrImage.startsWith('http')&&!idOrImage.startsWith('blob:')){
+    const item=findPlanItem(idOrImage);
+    if(!item||!item.image)return;
+    image=item.image;
+  }
+  if(!image)return;
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML=`<img src="${image}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px;">`;
+  overlay.onclick=()=>overlay.remove();
+  document.body.appendChild(overlay);
+}
+
 function findPlanItem(id,list){
   list=list||S.plans[_planType]||[];
   for(const item of list){
@@ -2009,6 +2068,28 @@ function findPlanParentArray(id,list){
     }
   }
   return null;
+}
+
+function chooseNewPlanItemType(parentId){
+  const body=`<div style="display:flex;flex-direction:column;gap:12px;padding:4px 0;">
+    <button class="plan-type-choice-btn" id="choosePlanKindPlan">
+      <div style="font-size:28px;">📋</div>
+      <div style="font-weight:700;font-size:15px;margin-top:6px;">计划式</div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:2px;">标题 + 备注，可设数量 / 截止日期</div>
+    </button>
+    <button class="plan-type-choice-btn" id="choosePlanKindNote">
+      <div style="font-size:28px;">📝</div>
+      <div style="font-weight:700;font-size:15px;margin-top:6px;">笔记式</div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:2px;">一张空白纸，手写涂鸦，或直接上传一张截图</div>
+    </button>
+  </div>`;
+  showModal('添加什么类型？',body,null,null,{hideConfirm:true,showCancel:true,cancelText:'取消'});
+  setTimeout(()=>{
+    const b1=document.getElementById('choosePlanKindPlan');
+    const b2=document.getElementById('choosePlanKindNote');
+    if(b1)b1.onclick=()=>{closeModal();openNbPlanModal(undefined,parentId);};
+    if(b2)b2.onclick=()=>{closeModal();openPlanSketchModal(undefined,parentId);};
+  },50);
 }
 
 function openNbPlanModal(existingId,parentId){
@@ -2055,9 +2136,129 @@ function openNbPlanModal(existingId,parentId){
   });
 }
 
-function addNbPlanItem(){openNbPlanModal();}
-function editNbPlan(id){openNbPlanModal(id);}
-function openAddChildPlanModal(parentId){openNbPlanModal(undefined,parentId);}
+function addNbPlanItem(){chooseNewPlanItemType(null);}
+function editNbPlan(id){
+  const item=findPlanItem(id);
+  if(item&&item.kind==='note'){openPlanSketchModal(id);return;}
+  openNbPlanModal(id);
+}
+function openAddChildPlanModal(parentId){chooseNewPlanItemType(parentId);}
+
+// ---- 笔记式条目：手写涂鸦 或 上传一张截图 ----
+function openPlanSketchModal(existingId,parentId){
+  const isEdit=existingId!==undefined&&existingId!==null;
+  const item=isEdit?(findPlanItem(existingId)||{}):{};
+  const body=(container)=>{
+    container.innerHTML=`
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:4px;">标题（可选，方便区分）</div>
+        <input id="sketchTitle" placeholder="比如：手抄笔记" value="${esc(item.title||'')}">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="tree-action-btn" id="sketchModeDrawBtn" style="flex:1;border:1px solid var(--g-mid);">✏️ 手写</button>
+        <button class="tree-action-btn" id="sketchModeUploadBtn" style="flex:1;border:1px solid var(--g-mid);">📷 上传截图</button>
+        <button class="tree-action-btn" id="sketchClearBtn" style="flex:1;border:1px solid var(--g-mid);">🧹 清空</button>
+      </div>
+      <input type="file" id="sketchFileInput" accept="image/*" style="display:none;">
+      <div id="sketchCanvasWrap" style="border:1.5px solid var(--g-mid);border-radius:10px;overflow:hidden;background:#fff;touch-action:none;">
+        <canvas id="sketchCanvas" style="display:block;width:100%;height:340px;"></canvas>
+      </div>
+      <div id="sketchImgWrap" style="display:none;border:1.5px solid var(--g-mid);border-radius:10px;overflow:hidden;background:#fff;text-align:center;">
+        <img id="sketchImgPreview" style="max-width:100%;max-height:400px;display:block;margin:0 auto;">
+      </div>`;
+  };
+  showModal(isEdit?'编辑笔记式条目':(parentId?'添加子项（笔记式）':'新建笔记式条目'),body,()=>{
+    const title=document.getElementById('sketchTitle').value.trim();
+    const imgWrap=document.getElementById('sketchImgWrap');
+    let image;
+    if(imgWrap.style.display!=='none'){
+      image=document.getElementById('sketchImgPreview').src;
+    }else{
+      image=document.getElementById('sketchCanvas').toDataURL('image/png');
+    }
+    if(!image||image==='data:,'){toast('请先手写点什么，或上传一张截图');return;}
+    if(isEdit){
+      Object.assign(item,{title,image});
+    }else if(parentId){
+      const parent=findPlanItem(parentId);if(!parent)return;
+      if(!parent.children)parent.children=[];
+      parent.children.push({id:uid(),kind:'note',title,image,children:[],done:false});
+      collapsedPlanIds.delete(parentId);
+    }else{
+      if(!S.plans[_planType])S.plans[_planType]=[];
+      S.plans[_planType].push({id:uid(),kind:'note',title,image,children:[],done:false});
+    }
+    save();closeModal();renderPlanNbItems();toast(isEdit?'已更新 ✓':'已添加 ✓');
+  });
+  setTimeout(()=>initSketchCanvas(item.image),80);
+}
+function initSketchCanvas(existingImage){
+  const canvas=document.getElementById('sketchCanvas');if(!canvas)return;
+  const wrap=document.getElementById('sketchCanvasWrap');
+  const imgWrap=document.getElementById('sketchImgWrap');
+  const imgPreview=document.getElementById('sketchImgPreview');
+  const fileInput=document.getElementById('sketchFileInput');
+  const drawBtn=document.getElementById('sketchModeDrawBtn');
+  const uploadBtn=document.getElementById('sketchModeUploadBtn');
+  const clearBtn=document.getElementById('sketchClearBtn');
+
+  const rect=canvas.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=rect.width*dpr;
+  canvas.height=rect.height*dpr;
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.fillStyle='#fff';
+  ctx.fillRect(0,0,rect.width,rect.height);
+  ctx.strokeStyle='#222';
+  ctx.lineWidth=2.5;
+  ctx.lineCap='round';
+  ctx.lineJoin='round';
+
+  let drawing=false,lastX=0,lastY=0;
+  function pos(e){
+    const r=canvas.getBoundingClientRect();
+    const cx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+    const cy=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+    return{x:cx,y:cy};
+  }
+  function start(e){e.preventDefault();drawing=true;const p=pos(e);lastX=p.x;lastY=p.y;}
+  function move(e){
+    if(!drawing)return;e.preventDefault();
+    const p=pos(e);
+    ctx.beginPath();ctx.moveTo(lastX,lastY);ctx.lineTo(p.x,p.y);ctx.stroke();
+    lastX=p.x;lastY=p.y;
+  }
+  function end(){drawing=false;}
+  canvas.addEventListener('pointerdown',start);
+  canvas.addEventListener('pointermove',move);
+  window.addEventListener('pointerup',end);
+  canvas.addEventListener('touchstart',start,{passive:false});
+  canvas.addEventListener('touchmove',move,{passive:false});
+  canvas.addEventListener('touchend',end);
+
+  drawBtn.onclick=()=>{wrap.style.display='';imgWrap.style.display='none';};
+  uploadBtn.onclick=()=>{fileInput.click();};
+  fileInput.onchange=()=>{
+    const f=fileInput.files[0];if(!f)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      imgPreview.src=reader.result;
+      wrap.style.display='none';imgWrap.style.display='';
+    };
+    reader.readAsDataURL(f);
+  };
+  clearBtn.onclick=()=>{
+    imgWrap.style.display='none';wrap.style.display='';
+    imgPreview.src='';
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,rect.width,rect.height);
+  };
+
+  if(existingImage){
+    imgPreview.src=existingImage;
+    wrap.style.display='none';imgWrap.style.display='';
+  }
+}
 
 function archiveWholePlan(id){
   const item=findPlanItem(id);if(!item)return;
