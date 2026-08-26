@@ -89,7 +89,6 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .countdown-card .cd-days small{font-size:11px;opacity:.85;font-weight:400;}
 .countdown-card .cd-num{font-size:26px;font-weight:800;margin:0 2px;}
 .countdown-card.active .cd-num{font-size:32px;}
-.lifebuoy-btn{display:block;margin:0 auto 16px;background:none;border:1px dashed var(--g-mid);color:var(--g-dark);border-radius:20px;padding:6px 16px;font-size:12px;cursor:pointer;}
 .top-tabs::-webkit-scrollbar{display:none;}
 .tab-main{background:rgba(255,255,255,.65);border:none;font-size:14px;font-family:inherit;cursor:pointer;padding:7px 14px;border-radius:30px;color:var(--ink2);display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s;font-weight:500;}
 .tab-main.on{color:var(--g);font-weight:600;background:var(--g-light);}
@@ -282,8 +281,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .notebook-date{font-size:10px;color:var(--nb-ink3);margin-top:2px;}
 /* 32px格子：31px内容 + 1px线，所有文字行高都是32px */
 .notebook-body{padding:0 14px 20px 38px;background:repeating-linear-gradient(180deg,transparent,transparent 31px,var(--nb-line) 31px,var(--nb-line) 32px);min-height:calc(100vh - 280px);}
-.nb-item{padding:0;border:none;display:flex;align-items:flex-start;gap:8px;margin-bottom:2px;}
-.nb-item-child{margin-left:13px;padding-left:11px;border-left:2px solid var(--nb-line);margin-top:2px;}
+.nb-item{padding:0;border:none;display:flex;align-items:flex-start;gap:8px;margin-bottom:2px;position:relative;}
+.nb-item-child{margin-left:14px;padding-left:16px;margin-top:3px;}
+.nb-item-child::before{content:'';position:absolute;left:0;top:0;width:13px;height:17px;border-left:2px solid var(--nb-line);border-bottom:2px solid var(--nb-line);border-bottom-left-radius:8px;}
+.nb-item-child::after{content:'';position:absolute;left:0;top:15px;bottom:-3px;border-left:2px solid var(--nb-line);}
+.nb-item-child:last-child::after{display:none;}
 .nb-check{width:18px;height:18px;border:1.5px solid var(--nb-ring);border-radius:4px;flex-shrink:0;margin-top:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--nb-ink2);background:var(--white);}
 .nb-check.done{background:var(--nb-ring);border-color:var(--nb-ring);color:#fff;}
 .nb-content{flex:1;min-width:0;}
@@ -1045,7 +1047,9 @@ function switchPage(pageId){
   document.querySelectorAll('.pg').forEach(pg=>pg.classList.remove('active'));
   document.getElementById('pg-'+pageId).classList.add('active');
   document.querySelectorAll('.ni').forEach(nav=>{nav.classList.toggle('on',nav.dataset.page===pageId);});
-  if(!_pageInited[pageId]){
+  if(pageId==='today'){
+    renderToday(); // 今日页每次都重新渲染，避免从计划/阶段日程"挪到今日"之后切回来看不到最新内容
+  }else if(!_pageInited[pageId]){
     _pageInited[pageId]=true;
     if(pageId==='grow')renderGrow();
     if(pageId==='record')renderRecord();
@@ -1187,7 +1191,6 @@ function renderToday(){
       <div class="quote-txt" id="quoteEl">"${esc(displayQuote)}"</div>
       <button class="quote-edit-btn" onclick="openQuoteModal()">编辑</button>
     </div>
-    <button class="lifebuoy-btn" onclick="openLifebuoy()">🛟 救生圈</button>
     <div id="countdownSection"></div>
     <div class="task-section">
       <div class="section-divider"><div class="stl">📋 今日任务</div></div>
@@ -1314,15 +1317,6 @@ function openCountdownManage(){
   showModal('⏳ 管理倒数日',body,null,null,{hideConfirm:true});
 }
 
-// ==================== 救生圈 ====================
-function openLifebuoy(){
-  const body=`
-    <div style="text-align:center;padding:6px 0;">
-      <div style="font-size:15px;color:var(--ink2);line-height:1.8;margin-bottom:22px;font-style:italic;">"登山时不要盯着山顶，就看脚下"</div>
-      <button class="pbtn" style="width:100%;" onclick="closeModal();selectTaskForTimer(60);">🚀 启动 1 分钟</button>
-    </div>`;
-  showModal('🛟 救生圈',body,null,null,{hideConfirm:true});
-}
 function openQuoteModal(){
   const renderQuoteBody=(container)=>{
     container.innerHTML=`
@@ -1572,61 +1566,6 @@ function manageTaskTypes(){
   showModal('管理任务类型',body,null,null,{hideConfirm:true});
 }
 
-
-function selectTaskForTimer(secs){
-  const tasks=S.tasks.filter(t=>t.date===td()&&!t.done);
-  const chipsHtml=tasks.length?`
-    <div style="font-size:12px;color:var(--ink3);margin-bottom:6px;">今天的任务，点一下快速带入 ↓</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="timerTaskChips">
-      ${tasks.map(t=>`<div class="plan-outer-tab" data-ttid="${t.id}" style="font-size:12px;padding:5px 12px;cursor:pointer;">${esc(t.name)}</div>`).join('')}
-    </div>`:'';
-  const body=`
-    ${chipsHtml}
-    <div class="note-field-group"><div class="note-field-label">要启动做什么？（不填也能开始）</div><input type="text" id="timerTaskInput" placeholder="随便写，或者留空直接启动"></div>`;
-  showModal('🚀 启动',body,()=>{
-    const name=document.getElementById('timerTaskInput').value.trim();
-    const linked=document.getElementById('timerTaskInput').dataset.linkedId||null;
-    closeModal();
-    startTimer(secs,name,linked);
-  },null,{confirmText:'启动'});
-  setTimeout(()=>{
-    document.querySelectorAll('#timerTaskChips [data-ttid]').forEach(chip=>{
-      chip.onclick=()=>{
-        const t=tasks.find(x=>x.id===chip.dataset.ttid);if(!t)return;
-        const inp=document.getElementById('timerTaskInput');
-        inp.value=t.name;inp.dataset.linkedId=t.id;
-        document.querySelectorAll('#timerTaskChips [data-ttid]').forEach(c=>c.classList.remove('on'));
-        chip.classList.add('on');
-      };
-    });
-    document.getElementById('timerTaskInput')?.focus();
-  },80);
-}
-
-let timerInt=null;
-function startTimer(secs,taskName,taskId){
-  if(timerInt)clearInterval(timerInt);
-  const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;background:linear-gradient(135deg,var(--bg),var(--g-light));z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;';
-  let s=secs;
-  const fmt=()=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-  ov.innerHTML=`<div style="font-size:26px;">🚀 启动中</div>${taskName?`<div style="font-size:16px;color:var(--ink2);font-weight:500;">${esc(taskName)}</div>`:''}<div style="font-size:88px;font-weight:800;color:var(--g);letter-spacing:-4px;" id="timerDisp">${fmt()}</div><button class="pbtn" style="background:var(--red);" onclick="this.parentElement.remove();clearInterval(timerInt);">停止</button>`;
-  document.body.appendChild(ov);
-  timerInt=setInterval(()=>{
-    s--;const d=document.getElementById('timerDisp');if(d)d.innerText=fmt();
-    if(s<=0){
-      clearInterval(timerInt);ov.remove();toast('时间到！');
-      if(taskId){
-        showModal('🎉 启动完成！', `<p style="font-size:14px;color:var(--ink2);">迈出第一步了！是否现在就将任务【<b>${esc(taskName)}</b>】标记为完成？</p>`,()=>{
-          const t=S.tasks.find(x=>x.id===taskId);if(t){t.done=true;t.completedAt=Date.now();save();renderTasks();toast('任务完成，小宇宙爆发！');}
-          closeModal();
-        },null,{confirmText:'标记完成',cancelText:'暂不'});
-      }else{
-        toast('迈出第一步了，要不要趁热再启动一轮？');
-      }
-    }
-  },1000);
-}
 
 // ==================== 记录页面 ====================
 function renderRecord(){
@@ -1963,7 +1902,7 @@ function renderArchiveItemReadonly(item,level){
     return`<div class="nb-item${isChild?' nb-item-child':''}">
       <div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:11px;pointer-events:none;">📝</div>
       <div class="nb-content">
-        ${item.title?`<div class="nb-item-title" style="font-size:${isChild?12:14}px;">${isChild?'· ':''}${esc(item.title)}</div>`:''}
+        ${item.title?`<div class="nb-item-title" style="font-size:${isChild?12:14}px;">${esc(item.title)}</div>`:''}
         <div style="margin:4px 0;border:1px solid var(--g-mid);border-radius:8px;overflow:hidden;max-width:180px;cursor:pointer;" onclick="viewPlanSketchImage(this.querySelector('img').src)"><img src="${item.image}" style="width:100%;display:block;"></div>
       </div>
     </div>`;
@@ -1975,7 +1914,7 @@ function renderArchiveItemReadonly(item,level){
   return`<div class="nb-item${isChild?' nb-item-child':''}">
     <div class="nb-check${done?' done':''}" style="${checkStyle}pointer-events:none;">${done?'✓':''}</div>
     <div class="nb-content">
-      <div class="nb-item-title${done?' done':''}" style="font-size:${isChild?'12px':'14px'};${isChild?'font-weight:500;color:var(--nb-ink2);':''}">${isChild?'· ':''}${esc(item.title||item.text||'')}${item.total>0?` (${item.doneCount||0}/${item.total})`:''}</div>
+      <div class="nb-item-title${done?' done':''}" style="font-size:${isChild?'12px':'14px'};${isChild?'font-weight:500;color:var(--nb-ink2);':''}">${esc(item.title||item.text||'')}${item.total>0?` (${item.doneCount||0}/${item.total})`:''}</div>
       ${hasChildren?item.children.map(c=>renderArchiveItemReadonly(c,level+1)).join(''):''}
     </div>
   </div>`;
@@ -2008,7 +1947,7 @@ function renderNbItem(item,level){
   const isCounter=!hasChildren&&item.total>0;
   const itemDone=hasChildren?allChildDone:(isCounter?(item.doneCount||0)>=item.total:item.done);
   const isChild=level>0;
-  const titleSize=isChild?(level===1?13:12):15;
+  const titleSize=isChild?13:15;
   const checkSize=isChild?14:18;
   const checkStyle=`width:${checkSize}px;height:${checkSize}px;${isChild?'margin-top:5px;':''}`;
   const showActions=openPlanActionIds.has(item.id);
@@ -2019,7 +1958,7 @@ function renderNbItem(item,level){
       `<div class="nb-check" style="${checkStyle}border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;">${item.doneCount||0}/${item.total}</div>`
       :`<div class="nb-check${item.done?' done':''}" style="${checkStyle}" onclick="toggleNbPlan('${item.id}')">${item.done?'✓':''}</div>`}
     <div class="nb-content">
-      <div class="nb-item-title${itemDone?' done':''}" style="font-size:${titleSize}px;${isChild?'font-weight:500;color:var(--nb-ink2);':''}">${isChild?'· ':''}${esc(item.title||item.text||'')}</div>
+      <div class="nb-item-title${itemDone?' done':''}" style="font-size:${titleSize}px;${isChild?'font-weight:500;color:var(--nb-ink2);':''}">${esc(item.title||item.text||'')}</div>
       ${hasNote?`<div class="nb-item-note">${esc(item.note)}</div>`:''}
       ${hasDue?`<div class="nb-item-meta">⏰ 截止 ${fmtDateShort(item.due)}</div>`:''}
       ${hasDate?`<div class="nb-item-meta">📅 计划于 ${fmtDateShort(item.planDate)}</div>`:''}
@@ -2036,7 +1975,7 @@ function renderNbItem(item,level){
       ${showActions?`<div class="nb-item-actions" style="margin:0 0 4px;flex-wrap:wrap;height:auto;">
         ${isCounter&&(item.doneCount||0)>0?`<button class="tree-action-btn" onclick="undoCheckInPlanItem('${item.id}')">↩️ 撤销</button>`:''}
         <button class="tree-action-btn" onclick="openAddChildPlanModal('${item.id}')">➕ 子项</button>
-        ${_planType==='day'?`<button class="tree-action-btn" onclick="movePlanItemToToday('${item.id}')" title="挪到今日任务">↗️ 今日</button>`:''}
+        ${!isChild&&_planType==='day'?`<button class="tree-action-btn" onclick="movePlanItemToToday('${item.id}')" title="挪到今日任务">↗️ 今日</button>`:''}
         <button class="tree-action-btn" onclick="editNbPlan('${item.id}')">✏️ 编辑</button>
         ${hasChildren&&allChildDone?`<button class="tree-action-btn accent" onclick="archiveWholePlan('${item.id}')">✓ 全部完成</button>`:''}
         <button class="tree-action-btn danger" onclick="deleteNbPlan('${item.id}')">🗑️ 删除</button>
@@ -2052,7 +1991,7 @@ function renderNbNoteItem(item,level){
   return`<div class="nb-item${isChild?' nb-item-child':''}">
     <div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:11px;${isChild?'width:14px;height:14px;margin-top:5px;':''}">📝</div>
     <div class="nb-content">
-      ${item.title?`<div class="nb-item-title" style="font-size:${isChild?13:15}px;${isChild?'font-weight:500;color:var(--nb-ink2);':''}">${isChild?'· ':''}${esc(item.title)}</div>`:''}
+      ${item.title?`<div class="nb-item-title" style="font-size:${isChild?13:15}px;${isChild?'font-weight:500;color:var(--nb-ink2);':''}">${esc(item.title)}</div>`:''}
       <div style="margin:6px 0;border:1px solid var(--g-mid);border-radius:8px;overflow:hidden;max-width:220px;cursor:pointer;" onclick="viewPlanSketchImage('${item.id}')">
         <img src="${item.image}" style="width:100%;display:block;">
       </div>
@@ -2171,7 +2110,7 @@ function editNbPlan(id){
   if(item&&item.kind==='note'){openPlanSketchModal(id);return;}
   openNbPlanModal(id);
 }
-function openAddChildPlanModal(parentId){chooseNewPlanItemType(parentId);}
+function openAddChildPlanModal(parentId){openNbPlanModal(undefined,parentId);}
 
 // ---- 笔记式条目：手写涂鸦 或 上传一张截图 ----
 function openPlanSketchModal(existingId,parentId){
@@ -2608,11 +2547,18 @@ function renderHabits(){
         <button class="tree-action-btn" onclick="openRestRangeModal('${h.id}')">🗓 请假一段</button>
         <button class="tree-action-btn" onclick="moveHabitUp(${idx})" ${idx===0?'style="opacity:.3;pointer-events:none;"':''}>↑</button>
         <button class="tree-action-btn" onclick="moveHabitDown(${idx})" ${idx===S.goodH.length-1?'style="opacity:.3;pointer-events:none;"':''}>↓</button>
+        <button class="tree-action-btn" onclick="moveHabitToToday('${h.id}')" title="挪到今日任务">↗️ 今日</button>
         <button class="tree-action-btn" onclick="editHabit('${h.id}')">✏️ 编辑</button>
         <button class="tree-action-btn danger" onclick="delHabitConfirm('${h.id}')">🗑️</button>
       </div>
     </div>`;
   }).join('');
+}
+// 把某个阶段日程习惯挪一份到"今日任务"里，方便当天写具体的时间/备注（阶段日程本身还在，不受影响）
+function moveHabitToToday(id){
+  const h=S.goodH.find(x=>x.id===id);if(!h)return;
+  S.tasks.push({id:uid(),name:h.name,note:'',date:td(),taskType:S.taskTypes[S.taskTypes.length-1]||'💭 其他',priority:'orange',done:false,children:[]});
+  save();toast('已挪到今日任务 ✓');
 }
 function moveHabitUp(idx){if(idx<=0)return;[S.goodH[idx-1],S.goodH[idx]]=[S.goodH[idx],S.goodH[idx-1]];save();renderHabits();}
 function moveHabitDown(idx){if(idx>=S.goodH.length-1)return;[S.goodH[idx],S.goodH[idx+1]]=[S.goodH[idx+1],S.goodH[idx]];save();renderHabits();}
