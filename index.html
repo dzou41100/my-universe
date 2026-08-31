@@ -11,7 +11,6 @@
 <title>我的宇宙</title>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
 <style>
 *:focus { outline: none !important; }
@@ -96,6 +95,24 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .quote-box::before{content:'"';position:absolute;top:-10px;left:10px;font-size:72px;color:var(--nb-line);font-family:serif;line-height:1;pointer-events:none;}
 .quote-txt{font-size:14px;color:var(--ink2);line-height:1.7;font-style:italic;padding-right:40px;}
 .quote-edit-btn{position:absolute;bottom:10px;right:12px;background:var(--g-xlight);border:none;border-radius:16px;padding:3px 11px;font-size:11px;color:var(--g);cursor:pointer;}
+.report-banner{background:linear-gradient(120deg,var(--g) 0%,var(--g-dark) 100%);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:var(--shadow-md);animation:reportPulse 2.4s ease-in-out infinite;}
+@keyframes reportPulse{0%,100%{box-shadow:0 2px 10px rgba(0,0,0,.12);}50%{box-shadow:0 4px 18px rgba(0,0,0,.22);}}
+.report-banner-icon{font-size:26px;flex-shrink:0;}
+.report-banner-text{flex:1;color:#fff;}
+.report-banner-title{font-size:14px;font-weight:700;}
+.report-banner-desc{font-size:11px;opacity:.85;margin-top:2px;}
+.report-banner-arrow{color:#fff;font-size:18px;opacity:.85;}
+.report-card{background:linear-gradient(165deg,var(--g) 0%,var(--g-dark) 100%);border-radius:20px;padding:26px 20px;color:#fff;position:relative;overflow:hidden;}
+.report-card-header{text-align:center;margin-bottom:20px;}
+.report-card-title{font-size:22px;font-weight:800;letter-spacing:1px;}
+.report-card-period{font-size:12px;opacity:.85;margin-top:4px;}
+.report-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.report-stat-tile{background:rgba(255,255,255,.14);border-radius:14px;padding:14px 10px;text-align:center;backdrop-filter:blur(2px);}
+.report-stat-num{font-size:26px;font-weight:800;line-height:1.1;}
+.report-stat-label{font-size:11px;opacity:.85;margin-top:4px;}
+.report-highlight{background:rgba(255,255,255,.14);border-radius:14px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.7;}
+.report-comment{font-size:14px;line-height:1.8;text-align:center;margin-bottom:18px;padding:0 6px;}
+.report-quote{background:rgba(255,255,255,.1);border-left:3px solid rgba(255,255,255,.6);border-radius:8px;padding:12px 14px;font-size:12.5px;line-height:1.7;font-style:italic;opacity:.95;}
 .ti{background:var(--card);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:7px;display:flex;align-items:center;gap:10px;border:1px solid var(--g-border);box-shadow:var(--shadow-sm);transition:opacity .2s,background .2s;}
 .ti.done{opacity:.55;background:var(--g-light);}
 .chk{width:24px;height:24px;border:2px solid var(--g-mid);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;transition:all .15s;}
@@ -448,6 +465,8 @@ function load(){
   if(!S.userQuotes)S.userQuotes=[];
   if(!S.userClarityQs)S.userClarityQs=[];
   if(!S.planArchives)S.planArchives=[];
+  if(!S.reports)S.reports=[]; // 周报/月报/年报：[{id,type,periodLabel,startDate,endDate,generatedAt,stats,viewed}]
+  if(!S.reportPeriodKeys)S.reportPeriodKeys={};
   if(!S.notes)S.notes=[];
   if(!S.fortuneMessages)S.fortuneMessages=[];
   if(!S.fortuneRecords)S.fortuneRecords=[];
@@ -494,6 +513,7 @@ function load(){
   });
   rolloverPlanPeriods();
   pruneExpiredPlans();
+  checkAndGenerateReports();
 }
 // 周/月/年计划：截止日期一过，自动清除（不再需要手动删除）
 function pruneExpiredPlans(){
@@ -765,14 +785,6 @@ function formatNoteTime(ts){
   return `${y}${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 function fmtDateShort(s){if(!s)return s;const cur=String(new Date().getFullYear());return s.startsWith(cur+'-')?s.slice(5):s;}
-// 解析 nowStr() 格式的字符串，如"2026/8/8 21:24"，用于统计页面按日期归类日记/项目打卡
-function parseNowStr(s){
-  if(!s)return null;
-  const m=String(s).match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
-  if(!m)return null;
-  const dateKey=`${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
-  return{dateKey};
-}
 function td(){return formatDate(new Date());}
 function nowStr(){let d=new Date();return`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
 function toast(m){let t=document.getElementById('toast');t.innerText=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1800);}
@@ -1184,6 +1196,7 @@ function showOracleRecords(){
 }
 
 function renderToday(){
+  checkAndGenerateReports();
   const _dq=getDisplayQuotes();
   const displayQuote=_dq.length?_dq[Math.floor(Math.random()*_dq.length)]:'这是我的课题，那是别人的课题。';
   document.getElementById('todayContent').innerHTML=`
@@ -1191,6 +1204,7 @@ function renderToday(){
       <div class="quote-txt" id="quoteEl">"${esc(displayQuote)}"</div>
       <button class="quote-edit-btn" onclick="openQuoteModal()">编辑</button>
     </div>
+    <div id="reportBanner"></div>
     <div id="countdownSection"></div>
     <div class="task-section">
       <div class="section-divider"><div class="stl">📋 今日任务</div></div>
@@ -1200,19 +1214,12 @@ function renderToday(){
     <div class="task-section">
       <div class="section-divider"><div class="stl">📅 今天该做的（阶段日程）</div></div>
       <div id="todayHabitsList"></div>
-    </div>
-    <div style="position:relative;margin-top:4px;">
-      <div class="fortune-trigger">
-        <div class="fortune-trigger-title">✨ 天意卡牌 ✨</div>
-        <button class="fortune-trigger-btn" onclick="drawFortuneCard()">点击抽卡</button>
-        <button class="fortune-trigger-btn" style="background:transparent;border:1px solid rgba(232,201,64,.5);color:#e8c940;box-shadow:none;margin-left:8px" onclick="showOracleRecords()">📜 查看记录</button>
-        <div class="fortune-edit-icon" onclick="editFortuneMessages()">✏️</div>
-      </div>
     </div>`;
   document.getElementById('addTaskBtn').onclick=openAddTaskModal;
   renderTasks();
   renderTodayHabitsSection();
   renderCountdownSection();
+  renderReportBanner();
   if(getDisplayQuotes().length>=2)startQuoteRotate();
   setTimeout(()=>{showInstallBanner();checkBackupReminder();checkPhaseEndingReminder();},300);
 }
@@ -1567,26 +1574,198 @@ function manageTaskTypes(){
 }
 
 
+// ==================== 周报 / 月报 / 年报 ====================
+// 按"周日~周六"算一周，跟用户习惯对应：每周日0点，上一周（周日到周六）的报告就会生成
+function getReportWeekKey(dateStr){
+  const d=new Date(dateStr+'T00:00:00');
+  const day=d.getDay(); // 0=周日
+  const sunday=new Date(d);
+  sunday.setDate(d.getDate()-day);
+  return formatDate(sunday);
+}
+function getReportPeriodKey(type,dateStr){
+  if(type==='week')return getReportWeekKey(dateStr);
+  if(type==='month')return dateStr.slice(0,7);
+  return dateStr.slice(0,4);
+}
+// 算出"刚刚结束的那一期"的起止日期
+function getPrevReportRange(type,todayStr){
+  if(type==='week'){
+    const curSunday=getReportWeekKey(todayStr);
+    return{startDate:addDaysStr(curSunday,-7),endDate:addDaysStr(curSunday,-1)};
+  }
+  if(type==='month'){
+    const d=new Date(todayStr+'T00:00:00');
+    const firstOfThisMonth=new Date(d.getFullYear(),d.getMonth(),1);
+    const lastOfPrevMonth=new Date(firstOfThisMonth.getTime()-86400000);
+    const firstOfPrevMonth=new Date(lastOfPrevMonth.getFullYear(),lastOfPrevMonth.getMonth(),1);
+    return{startDate:formatDate(firstOfPrevMonth),endDate:formatDate(lastOfPrevMonth)};
+  }
+  const y=parseInt(todayStr.slice(0,4))-1;
+  return{startDate:`${y}-01-01`,endDate:`${y}-12-31`};
+}
+function formatReportPeriodLabel(type,range){
+  if(type==='week')return `${fmtDateShort(range.startDate)} ~ ${fmtDateShort(range.endDate)}`;
+  if(type==='month'){const [y,m]=range.startDate.split('-');return `${y}年${parseInt(m)}月`;}
+  return `${range.startDate.slice(0,4)}年`;
+}
+function parseDiaryDateKey(s){
+  if(!s)return null;
+  const m=String(s).match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if(!m)return null;
+  return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+}
+function generateReportStats(startDate,endDate){
+  const inRange=(dk)=>dk&&dk>=startDate&&dk<=endDate;
+  let tasksCompleted=0;
+  const countTaskDone=(list)=>{
+    (list||[]).forEach(t=>{
+      if(t.children&&t.children.length)countTaskDone(t.children);
+      else if(t.done&&t.completedAt&&inRange(formatDate(new Date(t.completedAt))))tasksCompleted++;
+    });
+  };
+  countTaskDone(S.tasks);
+
+  let habitCheckinsTotal=0,topHabit=null,topHabitCount=0;
+  (S.goodH||[]).forEach(h=>{
+    const dates=Object.keys(h.log||{}).filter(dk=>h.log[dk].status==='done'&&inRange(dk));
+    habitCheckinsTotal+=dates.length;
+    if(dates.length>topHabitCount){topHabitCount=dates.length;topHabit=h;}
+  });
+
+  const diaryCount=(S.diaries||[]).filter(d=>inRange(parseDiaryDateKey(d.date))).length;
+  const noteCount=(S.notes||[]).filter(n=>n.createdAt&&inRange(formatDate(new Date(n.createdAt)))).length;
+
+  const hasData=tasksCompleted>0||habitCheckinsTotal>0||diaryCount>0||noteCount>0;
+  return{
+    tasksCompleted,habitCheckinsTotal,
+    topHabitName:topHabit?(topHabit.emoji||'')+' '+topHabit.name:'',topHabitCount,
+    diaryCount,noteCount,hasData
+  };
+}
+function generateReportComment(type,s){
+  const periodWord={week:'这周',month:'这个月',year:'这一年'}[type]||'这段时间';
+  const total=s.tasksCompleted+s.habitCheckinsTotal;
+  if(total===0)return `${periodWord}好像有点安静呢，没关系，休息也是一种节奏，新的开始随时都可以～`;
+  if(total<5)return `${periodWord}虽然做的不算多，但每一步都算数，慢慢来，比较快。`;
+  if(total<20)return `${periodWord}稳稳地往前走了不少呢，这种一点一点积累的感觉真的很棒！`;
+  return `${periodWord}状态全开！你完成的这些事，以后都会变成你的底气。`;
+}
+function checkAndGenerateReports(){
+  const t=td();
+  let changed=false;
+  ['week','month','year'].forEach(type=>{
+    const curKey=getReportPeriodKey(type,t);
+    const lastKey=S.reportPeriodKeys[type];
+    if(lastKey===undefined){
+      S.reportPeriodKeys[type]=curKey;changed=true;return;
+    }
+    if(lastKey!==curKey){
+      const range=getPrevReportRange(type,t);
+      const stats=generateReportStats(range.startDate,range.endDate);
+      if(stats.hasData){
+        S.reports.unshift({id:uid(),type,periodLabel:formatReportPeriodLabel(type,range),startDate:range.startDate,endDate:range.endDate,generatedAt:Date.now(),stats,viewed:false});
+      }
+      S.reportPeriodKeys[type]=curKey;
+      changed=true;
+    }
+  });
+  if(changed)save();
+}
+function renderReportBanner(){
+  const el=document.getElementById('reportBanner');if(!el)return;
+  const unviewed=(S.reports||[]).filter(r=>!r.viewed);
+  const typeLabel={week:'周报',month:'月报',year:'年报'};
+  if(unviewed.length){
+    const names=unviewed.map(r=>typeLabel[r.type]).join('/');
+    el.innerHTML=`<div class="report-banner" onclick="openReportEntry()">
+      <div class="report-banner-icon">🎁</div>
+      <div class="report-banner-text">
+        <div class="report-banner-title">查收${names}</div>
+        <div class="report-banner-desc">你的专属报告出炉啦，点击查看</div>
+      </div>
+      <div class="report-banner-arrow">›</div>
+    </div>`;
+  }else if((S.reports||[]).length){
+    el.innerHTML=`<div class="report-banner" style="animation:none;background:var(--card);border:1px solid var(--g-border);" onclick="openReportHistoryList()">
+      <div class="report-banner-icon">📊</div>
+      <div class="report-banner-text" style="color:var(--ink2);">
+        <div class="report-banner-title" style="color:var(--ink);">往期报告</div>
+        <div class="report-banner-desc" style="color:var(--ink3);">回顾你的周报/月报/年报</div>
+      </div>
+      <div class="report-banner-arrow" style="color:var(--ink3);">›</div>
+    </div>`;
+  }else{
+    el.innerHTML='';
+  }
+}
+function openReportEntry(){
+  const unviewed=(S.reports||[]).filter(r=>!r.viewed);
+  if(!unviewed.length)return;
+  if(unviewed.length===1){openReportView(unviewed[0].id);return;}
+  const typeLabel={week:'📅 周报',month:'🗓 月报',year:'🎯 年报'};
+  const body=`<div style="display:flex;flex-direction:column;gap:10px;">
+    ${unviewed.map(r=>`<button class="plan-type-choice-btn" data-rid="${r.id}">${typeLabel[r.type]||r.type} · ${esc(r.periodLabel)}</button>`).join('')}
+  </div>`;
+  showModal('查收报告',body,null,null,{hideConfirm:true,showCancel:true,cancelText:'关闭'});
+  setTimeout(()=>{
+    document.querySelectorAll('[data-rid]').forEach(btn=>{btn.onclick=()=>{closeModal();openReportView(btn.dataset.rid);};});
+  },50);
+}
+function openReportHistoryList(){
+  const typeLabel={week:'📅 周报',month:'🗓 月报',year:'🎯 年报'};
+  const body=(S.reports||[]).length?`<div style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;">
+    ${S.reports.map(r=>`<button class="plan-type-choice-btn" style="padding:12px;" data-rid="${r.id}">${typeLabel[r.type]||r.type} · ${esc(r.periodLabel)}</button>`).join('')}
+  </div>`:'<div class="empty" data-icon="📊">还没有报告，攒够一周的数据就会自动生成</div>';
+  showModal('往期报告',body,null,null,{hideConfirm:true,showCancel:true,cancelText:'关闭'});
+  setTimeout(()=>{
+    document.querySelectorAll('[data-rid]').forEach(btn=>{btn.onclick=()=>{closeModal();openReportView(btn.dataset.rid);};});
+  },50);
+}
+function closeReportOverlay(el){
+  const overlay=el.closest('.report-overlay');
+  if(overlay)overlay.remove();
+}
+function openReportView(id){
+  const r=(S.reports||[]).find(x=>x.id===id);if(!r)return;
+  if(!r.viewed){r.viewed=true;save();renderReportBanner();}
+  const s=r.stats;
+  const typeLabel={week:'周报',month:'月报',year:'年报'};
+  const typeEmoji={week:'📅',month:'🗓',year:'🎯'};
+  const quotes=getDisplayQuotes();
+  const quote=quotes.length?quotes[Math.floor(Math.random()*quotes.length)]:'愿你我，终有所成。';
+  const comment=generateReportComment(r.type,s);
+  const overlay=document.createElement('div');
+  overlay.className='report-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto;';
+  overlay.innerHTML=`
+    <div style="max-width:420px;width:100%;position:relative;margin:auto;">
+      <button onclick="closeReportOverlay(this)" style="position:absolute;top:-6px;right:-6px;background:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:1;">✕</button>
+      <div class="report-card">
+        <div class="report-card-header">
+          <div class="report-card-title">${typeEmoji[r.type]||''} 我的${typeLabel[r.type]||'报告'}</div>
+          <div class="report-card-period">${esc(r.periodLabel)}</div>
+        </div>
+        <div class="report-stat-grid">
+          <div class="report-stat-tile"><div class="report-stat-num">${s.tasksCompleted}</div><div class="report-stat-label">✅ 完成任务</div></div>
+          <div class="report-stat-tile"><div class="report-stat-num">${s.habitCheckinsTotal}</div><div class="report-stat-label">📅 习惯打卡</div></div>
+          <div class="report-stat-tile"><div class="report-stat-num">${s.diaryCount}</div><div class="report-stat-label">📔 写下日记</div></div>
+          <div class="report-stat-tile"><div class="report-stat-num">${s.noteCount}</div><div class="report-stat-label">📝 新建笔记</div></div>
+        </div>
+        ${s.topHabitName?`<div class="report-highlight">🏆 打卡最多的是 <b>${esc(s.topHabitName)}</b>，坚持了 <b>${s.topHabitCount}</b> 次</div>`:''}
+        <div class="report-comment">${esc(comment)}</div>
+        <div class="report-quote">"${esc(quote)}"</div>
+      </div>
+    </div>`;
+  overlay.addEventListener('click',(e)=>{if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
+}
+
 // ==================== 记录页面 ====================
 function renderRecord(){
   const rc=document.getElementById('recordContent');
-  rc.innerHTML=`
-    <div class="top-tabs" id="recTabsA">
-      <button class="tab-main on" data-rec="diary">📔 日记</button>
-      <button class="tab-main" data-rec="stats">📊 统计</button>
-    </div>
-    <div id="recDiary"></div>
-    <div id="recStats" style="display:none"></div>`;
-  renderDiaries();renderStats();
-  const allRecPages=['diary','stats'];
-  const switchRecTab=(key)=>{
-    document.querySelectorAll('#recTabsA [data-rec]').forEach(b=>b.classList.toggle('on',b.dataset.rec===key));
-    allRecPages.forEach(k=>{
-      const el=document.getElementById('rec'+k.charAt(0).toUpperCase()+k.slice(1));
-      if(el)el.style.display=(k===key)?'':'none';
-    });
-  };
-  document.getElementById('recTabsA').addEventListener('click',(e)=>{const btn=e.target.closest('[data-rec]');if(btn)switchRecTab(btn.dataset.rec);});
+  rc.innerHTML=`<div id="recDiary"></div>`;
+  renderDiaries();
 }
 
 // ==================== 日记（本子版） ====================
@@ -1739,6 +1918,21 @@ function formatPlanPeriodLabel(type,key){
   if(type==='year')return `${key}年`;
   return key;
 }
+// 把"今日任务"的结构转换回计划条目的结构，用于把已挪去今日任务的日计划条目重新收进存档
+function convertTaskShapeToPlanItem(t){
+  return{
+    id:t.id,
+    title:t.name,
+    text:t.name,
+    note:t.note||'',
+    done:!!t.done,
+    completedAt:t.completedAt||null,
+    total:t.total||0,
+    doneCount:t.doneCount||0,
+    reflection:t.reflection||'',
+    children:(t.children||[]).map(convertTaskShapeToPlanItem)
+  };
+}
 function rolloverPlanPeriods(){
   if(!S.planPeriodKeys)S.planPeriodKeys={};
   const t=td();
@@ -1750,7 +1944,15 @@ function rolloverPlanPeriods(){
       S.planPeriodKeys[type]=curKey;changed=true;return;
     }
     if(lastKey!==curKey){
-      const items=S.plans[type]||[];
+      let items=(S.plans[type]||[]).slice();
+      if(type==='day'){
+        // 那天挪去"今日任务"的日计划条目，也要在这里一起收进同一份存档，不然就找不到了
+        const movedTasks=S.tasks.filter(tk=>tk.fromPlan==='day'&&tk.date===lastKey);
+        if(movedTasks.length){
+          items=items.concat(movedTasks.map(convertTaskShapeToPlanItem));
+          S.tasks=S.tasks.filter(tk=>!(tk.fromPlan==='day'&&tk.date===lastKey));
+        }
+      }
       if(items.length){
         if(!S.planArchives)S.planArchives=[];
         S.planArchives.unshift({id:uid(),type,periodLabel:formatPlanPeriodLabel(type,lastKey),archivedAt:Date.now(),items:JSON.parse(JSON.stringify(items))});
@@ -1878,6 +2080,7 @@ function cloneResetPlanItem(item){
   if(item.kind!=='note'){
     copy.done=false;
     copy.completedAt=null;
+    copy.reflection='';
     if(item.total>0)copy.doneCount=0;
   }
   if(item.children&&item.children.length){
@@ -1960,6 +2163,7 @@ function renderNbItem(item,level){
     <div class="nb-content">
       <div class="nb-item-title${itemDone?' done':''}" style="font-size:${titleSize}px;${isChild?'font-weight:500;color:var(--nb-ink2);':''}">${esc(item.title||item.text||'')}</div>
       ${hasNote?`<div class="nb-item-note">${esc(item.note)}</div>`:''}
+      ${item.reflection?`<div class="nb-item-note" style="font-style:italic;color:var(--g-dark);">💭 ${esc(item.reflection)}</div>`:''}
       ${hasDue?`<div class="nb-item-meta">⏰ 截止 ${fmtDateShort(item.due)}</div>`:''}
       ${hasDate?`<div class="nb-item-meta">📅 计划于 ${fmtDateShort(item.planDate)}</div>`:''}
       ${hasChildren?`
@@ -1977,6 +2181,7 @@ function renderNbItem(item,level){
         <button class="tree-action-btn" onclick="openAddChildPlanModal('${item.id}')">➕ 子项</button>
         ${!isChild&&_planType==='day'?`<button class="tree-action-btn" onclick="movePlanItemToToday('${item.id}')" title="挪到今日任务">↗️ 今日</button>`:''}
         <button class="tree-action-btn" onclick="editNbPlan('${item.id}')">✏️ 编辑</button>
+        <button class="tree-action-btn" onclick="editPlanReflection('${item.id}')">💭 ${item.reflection?'改感想':'写感想'}</button>
         ${hasChildren&&allChildDone?`<button class="tree-action-btn accent" onclick="archiveWholePlan('${item.id}')">✓ 全部完成</button>`:''}
         <button class="tree-action-btn danger" onclick="deleteNbPlan('${item.id}')">🗑️ 删除</button>
       </div>`:''}
@@ -2242,6 +2447,15 @@ function toggleNbPlan(id){
   item.completedAt=item.done?Date.now():null;
   save();renderPlanNbItems();toast(item.done?'✓ 已完成':'已取消完成');
 }
+// 给计划项写点感想/心得，跟标题时写的备注分开，专门记完成之后的想法
+function editPlanReflection(id){
+  const item=findPlanItem(id);if(!item)return;
+  const body=`<textarea id="planReflectionTA" rows="4" placeholder="写点感想、心得，什么都行…">${esc(item.reflection||'')}</textarea>`;
+  showModal('💭 写感想',body,()=>{
+    item.reflection=document.getElementById('planReflectionTA').value.trim();
+    save();closeModal();renderPlanNbItems();toast('已保存 ✓');
+  });
+}
 
 function checkInPlanItem(id){
   const item=findPlanItem(id);if(!item)return;
@@ -2272,6 +2486,8 @@ function convertPlanItemToTaskShape(item){
     done:false,
     total:item.total||0,
     doneCount:0,
+    reflection:item.reflection||'',
+    fromPlan:'day', // 标记这条任务是从"日计划"挪过来的，第二天存档的时候要把它一起收进去
     children:(item.children||[]).map(convertPlanItemToTaskShape)
   };
 }
@@ -2280,7 +2496,7 @@ function movePlanItemToToday(id){
   const arr=findPlanParentArray(id);
   S.tasks.push(convertPlanItemToTaskShape(item));
   if(arr){const idx=arr.findIndex(i=>i.id===id);if(idx>-1)arr.splice(idx,1);}
-  save();renderPlanNbItems();toast('已挪到今日任务 ✓');
+  save();renderPlanNbItems();toast('已挪到今日任务 ✓（明天过完还是会存档）');
 }
 
 function deleteNbPlan(id){
@@ -2293,14 +2509,14 @@ function deleteNbPlan(id){
 
 // ==================== 成长页面 ====================
 function showGrowTab(tab){
-  const tabs=['habit','proj','ach'];
+  const tabs=['habit','ach'];
   tabs.forEach(t=>{const el=document.getElementById('grow'+t.charAt(0).toUpperCase()+t.slice(1));if(el)el.style.display=t===tab?'':'none';});
   document.querySelectorAll('#growTabs [data-grow]').forEach(b=>{b.classList.toggle('on',b.dataset.grow===tab);});
 }
 function renderGrow(){
   const gc=document.getElementById('growContent');
-  gc.innerHTML=`<div class="top-tabs" id="growTabs"><button class="tab-main on" data-grow="habit">📅 阶段日程</button><button class="tab-main" data-grow="proj">📂 项目</button><button class="tab-main" data-grow="ach">🏆 成就</button></div><div id="growHabit"></div><div id="growProj" style="display:none"></div><div id="growAch" style="display:none"></div>`;
-  renderHabits();renderProjects();renderAchievements();
+  gc.innerHTML=`<div class="top-tabs" id="growTabs"><button class="tab-main on" data-grow="habit">📅 阶段日程</button><button class="tab-main" data-grow="ach">🏆 成就</button></div><div id="growHabit"></div><div id="growAch" style="display:none"></div>`;
+  renderHabits();renderAchievements();
   document.getElementById('growTabs').addEventListener('click',(e)=>{const btn=e.target.closest('[data-grow]');if(btn)showGrowTab(btn.dataset.grow);});
 }
 
@@ -2381,32 +2597,39 @@ function undoHabitCheckinToday(id){
 }
 function openHabitCheckinDetailPopup(habitId,dateStr){
   const h=S.goodH.find(x=>x.id===habitId);if(!h)return;
-  const entry=h.log[dateStr]||{};
+  if(!h.log)h.log={};
+  if(!h.log[dateStr])h.log[dateStr]={}; // 还没打卡也能先写今天具体要做什么，不会被当成"已完成"
+  const entry=h.log[dateStr];
+  const alreadyChecked=entry.status==='done';
   const mask=document.createElement('div');
   mask.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:500;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .15s;';
   const card=document.createElement('div');
   card.style.cssText='background:var(--card);border-radius:18px 18px 0 0;padding:18px 18px max(18px,env(safe-area-inset-bottom));width:100%;max-width:500px;box-shadow:0 -4px 24px rgba(0,0,0,.25);';
   card.innerHTML=`
-    <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:2px;">✅ ${esc(h.name)} 打卡成功！</div>
-    <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">可以顺手记点备注、打个标签、定个重要性，不弄也没关系</div>
+    <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:2px;">${alreadyChecked?`✅ ${esc(h.name)} 打卡成功！`:`📝 ${esc(h.name)} · 今天具体做什么`}</div>
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">${alreadyChecked?'可以顺手记点备注、打个标签、定个重要性，不弄也没关系':'比如"读《李宗仁回忆录》2页"，写好之后打卡的时候就不用再想了'}</div>
     <div style="display:flex;gap:8px;margin-bottom:10px;">
-      <div class="priority-option p-red" data-p="red" style="flex:1;text-align:center;">🔴 重要</div>
-      <div class="priority-option p-orange selected" data-p="orange" style="flex:1;text-align:center;">🟠 一般</div>
-      <div class="priority-option p-green" data-p="green" style="flex:1;text-align:center;">🟢 随意</div>
+      <div class="priority-option p-red${entry.priority==='red'?' selected':''}" data-p="red" style="flex:1;text-align:center;">🔴 重要</div>
+      <div class="priority-option p-orange${(!entry.priority||entry.priority==='orange')?' selected':''}" data-p="orange" style="flex:1;text-align:center;">🟠 一般</div>
+      <div class="priority-option p-green${entry.priority==='green'?' selected':''}" data-p="green" style="flex:1;text-align:center;">🟢 随意</div>
     </div>
     <input type="text" id="habitCheckinTag" placeholder="标签（可选）" value="${esc(entry.tag||'')}" style="margin-bottom:8px;">
-    <textarea id="habitCheckinNote" rows="2" placeholder="随手记两句…">${esc(entry.note||'')}</textarea>
+    <textarea id="habitCheckinNote" rows="2" placeholder="今天具体要做什么，写完打卡的时候就不用再想了…">${esc(entry.note||'')}</textarea>
     <button class="pbtn" id="habitCheckinSaveBtn" style="width:100%;margin-top:10px;">保存并关闭</button>`;
   mask.appendChild(card);document.body.appendChild(mask);
   card.querySelectorAll('.priority-option').forEach(opt=>{opt.onclick=()=>{card.querySelectorAll('.priority-option').forEach(o=>o.classList.remove('selected'));opt.classList.add('selected');};});
   const saveAndClose=()=>{
     const hh=S.goodH.find(x=>x.id===habitId);
-    if(hh&&hh.log[dateStr]){
+    if(hh){
+      if(!hh.log)hh.log={};
+      if(!hh.log[dateStr])hh.log[dateStr]={};
       const sel=card.querySelector('.priority-option.selected');
       hh.log[dateStr].priority=sel?sel.dataset.p:'orange';
       hh.log[dateStr].tag=card.querySelector('#habitCheckinTag').value.trim();
       hh.log[dateStr].note=card.querySelector('#habitCheckinNote').value.trim();
       save();
+      renderHabits();
+      if(document.getElementById('todayHabitsList'))renderTodayHabitsSection();
     }
     mask.remove();
   };
@@ -2529,6 +2752,7 @@ function renderHabits(){
     const badge=getBadgeForCount(totalCount);
     const doneToday=isDateDoneForHabit(h,td());
     const restToday=isDateRestForHabit(h,td())&&!doneToday;
+    const todayNote=h.log&&h.log[td()]&&h.log[td()].note;
     let repeatDesc=REPEAT_LABEL[h.repeatType]||'每天';
     if(h.repeatType==='everyNDays')repeatDesc=`每隔 ${h.everyN} 天`;
     if(h.repeatType==='weeklyRotation')repeatDesc=`每周轮值 · 默认星期${['一','二','三','四','五','六','日'][h.defaultWeekday]}`;
@@ -2541,8 +2765,10 @@ function renderHabits(){
         </span>
         <span style="font-size:20px;" title="累计打卡 ${totalCount} 次">${badge}${totalCount>0?totalCount:''}</span>
       </div>
+      ${todayNote?`<div style="font-size:12px;color:var(--g-dark);background:var(--g-xlight);border-radius:8px;padding:6px 10px;margin-top:8px;">📖 ${esc(todayNote)}</div>`:''}
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center;">
         ${doneToday?`<button class="sbtn" onclick="undoHabitCheckinToday('${h.id}')">↩️ 撤销今天</button>`:(restToday?`<span style="font-size:12px;color:var(--ink3);padding:6px;">🌤 今天请假中</span>`:`<button class="sbtn" onclick="checkInHabitToday('${h.id}')">✅ 今天打卡</button>`)}
+        <button class="tree-action-btn" onclick="openHabitCheckinDetailPopup('${h.id}','${td()}')" title="设置今天具体要做什么">📝 ${todayNote?'改今天备注':'今天做什么'}</button>
         ${(!doneToday&&!restToday)?`<button class="tree-action-btn" onclick="takeRestToday('${h.id}')">🌤 今天请假</button>`:''}
         <button class="tree-action-btn" onclick="openRestRangeModal('${h.id}')">🗓 请假一段</button>
         <button class="tree-action-btn" onclick="moveHabitUp(${idx})" ${idx===0?'style="opacity:.3;pointer-events:none;"':''}>↑</button>
@@ -2875,173 +3101,6 @@ function editAchievementItem(id){
 }
 function delAchConfirm(id){confirmDel(()=>{S.achievements=S.achievements.filter(a=>a.id!==id);save();filterAchievements('all');});}
 
-// ==================== 大统计 ====================
-let _statsRange='week'; // 'week'=近7天, 'month'=近30天
-function renderStats(){
-  const el=document.getElementById('recStats');if(!el)return;
-  el.innerHTML=`
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <div class="plan-outer-tab${_statsRange==='week'?' on':''}" data-sr="week" style="flex:1;text-align:center;">近7天</div>
-      <div class="plan-outer-tab${_statsRange==='month'?' on':''}" data-sr="month" style="flex:1;text-align:center;">近30天</div>
-    </div>
-    <div style="background:var(--card);border-radius:var(--radius-md);padding:14px;box-shadow:var(--shadow-sm);">
-      <div id="statsBody"></div>
-    </div>`;
-  el.querySelectorAll('[data-sr]').forEach(t=>{t.onclick=()=>{_statsRange=t.dataset.sr;renderStats();};});
-  renderStatsBody();
-}
-// 递归统计"日计划"里已完成条目（按完成日期）
-function countDonePlanItemsForDate(list,dateKey){
-  let c=0;
-  (list||[]).forEach(item=>{
-    if(item.children&&item.children.length){
-      c+=countDonePlanItemsForDate(item.children,dateKey);
-    }else if(item.done&&item.completedAt&&formatDate(new Date(item.completedAt))===dateKey){
-      c++;
-    }
-  });
-  return c;
-}
-function renderStatsBody(){
-  const wrap=document.getElementById('statsBody');if(!wrap)return;
-  const days=_statsRange==='week'?7:30;
-  const today=td();
-  const dateKeys=[];
-  for(let i=0;i<days;i++)dateKeys.push(addDaysStr(today,-i));
-  const dateSet=new Set(dateKeys);
-
-  // ---- 今日任务 / 日计划完成情况（合并统计） ----
-  const taskCountByDay=dateKeys.map(dk=>
-    (S.tasks||[]).filter(t=>t.done&&t.completedAt&&formatDate(new Date(t.completedAt))===dk).length
-    +countDonePlanItemsForDate(S.plans&&S.plans.day,dk)
-  );
-  const taskTotal=taskCountByDay.reduce((a,b)=>a+b,0);
-
-  // ---- 写日记 ----
-  const diaryCountByDay=dateKeys.map(dk=>(S.diaries||[]).filter(d=>{const p=parseNowStr(d.date);return p&&p.dateKey===dk;}).length);
-  const diaryTotal=diaryCountByDay.reduce((a,b)=>a+b,0);
-
-  // ---- 阶段日程打卡率 ----
-  const habitStats=(S.goodH||[]).map(h=>{
-    const doneCount=dateKeys.filter(dk=>h.log&&h.log[dk]&&h.log[dk].status==='done').length;
-    return{name:h.name,emoji:h.emoji,doneCount,rate:Math.round(doneCount/days*100)};
-  }).sort((a,b)=>b.doneCount-a.doneCount);
-
-  // ---- 项目打卡次数 ----
-  const projStats=[];
-  const walkProj=(list)=>{
-    (list||[]).forEach(p=>{
-      const cnt=(p.notes||[]).filter(n=>{const parsed=parseNowStr(n.date);return parsed&&dateSet.has(parsed.dateKey);}).length;
-      if(cnt>0)projStats.push({name:p.name,cnt});
-      if(p.children)walkProj(p.children);
-    });
-  };
-  walkProj(S.projs);
-  projStats.sort((a,b)=>b.cnt-a.cnt);
-
-  // ---- 笔记 ----
-  const noteCountByDay=dateKeys.map(dk=>(S.notes||[]).filter(n=>n.createdAt&&formatDate(new Date(n.createdAt))===dk).length);
-  const noteTotal=noteCountByDay.reduce((a,b)=>a+b,0);
-
-  wrap.innerHTML=`
-    <div class="section-divider"><div class="stl">☑️ 今日任务 / 日计划</div></div>
-    ${taskTotal?`
-      <div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">这段时间共完成 <b style="font-size:15px;color:var(--g)">${taskTotal}</b> 项</div>
-      <div style="position:relative;height:160px;margin-bottom:8px;"><canvas id="chartTask"></canvas></div>
-    `:'<div class="empty" data-icon="☑️">这段时间还没有完成的任务</div>'}
-
-    <div class="section-divider"><div class="stl">📔 写日记</div></div>
-    ${diaryTotal?`
-      <div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">这段时间共写了 <b style="font-size:15px;color:var(--g)">${diaryTotal}</b> 篇日记</div>
-      <div style="position:relative;height:160px;margin-bottom:8px;"><canvas id="chartDiary"></canvas></div>
-    `:'<div class="empty" data-icon="📔">这段时间还没有写日记</div>'}
-
-    <div class="section-divider"><div class="stl">📅 阶段日程打卡</div></div>
-    ${habitStats.length?`<div style="position:relative;height:${Math.max(120,habitStats.length*36)}px;margin-bottom:8px;"><canvas id="chartHabit"></canvas></div>`:'<div class="empty" data-icon="📅">还没有习惯</div>'}
-
-    <div class="section-divider"><div class="stl">📂 项目打卡</div></div>
-    ${projStats.length?`<div style="position:relative;height:${Math.max(120,projStats.length*36)}px;margin-bottom:8px;"><canvas id="chartProj"></canvas></div>`:'<div class="empty" data-icon="📂">这段时间没有项目打卡</div>'}
-
-    <div class="section-divider"><div class="stl">📝 笔记</div></div>
-    ${noteTotal?`
-      <div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">这段时间新建了 <b style="font-size:15px;color:var(--g)">${noteTotal}</b> 条笔记</div>
-      <div style="position:relative;height:160px;margin-bottom:8px;"><canvas id="chartNote"></canvas></div>
-    `:'<div class="empty" data-icon="📝">这段时间还没有新笔记</div>'}
-  `;
-
-  renderStatsCharts({habitStats,projStats,dateKeys,taskCountByDay,diaryCountByDay,noteCountByDay});
-}
-
-// Chart.js 是从 CDN 异步加载的（加了 defer，避免像之前 Firebase 那次一样卡住整个页面）。
-// 万一网络问题导致它没加载成功，这里直接跳过画图，不会报错、不会影响页面其他部分。
-let _statsCharts={};
-function destroyStatsCharts(){
-  Object.values(_statsCharts).forEach(c=>{if(c)c.destroy();});
-  _statsCharts={};
-}
-function renderStatsCharts({habitStats,projStats,dateKeys,taskCountByDay,diaryCountByDay,noteCountByDay}){
-  destroyStatsCharts();
-  if(typeof Chart==='undefined')return; // 图表库没加载成功，静默跳过
-
-  const gColor=getComputedStyle(document.body).getPropertyValue('--g').trim()||'#3d8b5e';
-  const inkColor=getComputedStyle(document.body).getPropertyValue('--ink3').trim()||'#888';
-
-  // 任务/日计划完成数：按天条形图（正序，从早到近）
-  const taskCanvas=document.getElementById('chartTask');
-  if(taskCanvas&&taskCountByDay){
-    const ordered=[...dateKeys].reverse();
-    const counts=[...taskCountByDay].reverse();
-    _statsCharts.task=new Chart(taskCanvas,{
-      type:'bar',
-      data:{labels:ordered.map(dk=>dk.slice(5)),datasets:[{label:'完成数',data:counts,backgroundColor:gColor,borderRadius:4}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:inkColor,maxRotation:0}},y:{ticks:{color:inkColor,stepSize:1}}}}
-    });
-  }
-
-  // 日记：按天条形图
-  const diaryCanvas=document.getElementById('chartDiary');
-  if(diaryCanvas&&diaryCountByDay){
-    const ordered=[...dateKeys].reverse();
-    const counts=[...diaryCountByDay].reverse();
-    _statsCharts.diary=new Chart(diaryCanvas,{
-      type:'bar',
-      data:{labels:ordered.map(dk=>dk.slice(5)),datasets:[{label:'日记篇数',data:counts,backgroundColor:gColor,borderRadius:4}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:inkColor,maxRotation:0}},y:{ticks:{color:inkColor,stepSize:1}}}}
-    });
-  }
-
-  // 习惯打卡率：横向条形图
-  const habitCanvas=document.getElementById('chartHabit');
-  if(habitCanvas&&habitStats.length){
-    _statsCharts.habit=new Chart(habitCanvas,{
-      type:'bar',
-      data:{labels:habitStats.map(h=>h.emoji+' '+h.name),datasets:[{label:'打卡率%',data:habitStats.map(h=>h.rate),backgroundColor:gColor,borderRadius:4}]},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{color:inkColor}},y:{ticks:{color:inkColor}}}}
-    });
-  }
-
-  // 项目打卡：横向条形图
-  const projCanvas=document.getElementById('chartProj');
-  if(projCanvas&&projStats.length){
-    _statsCharts.proj=new Chart(projCanvas,{
-      type:'bar',
-      data:{labels:projStats.map(p=>p.name),datasets:[{label:'打卡次数',data:projStats.map(p=>p.cnt),backgroundColor:gColor,borderRadius:4}]},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:inkColor,stepSize:1}},y:{ticks:{color:inkColor}}}}
-    });
-  }
-
-  // 笔记：按天条形图
-  const noteCanvas=document.getElementById('chartNote');
-  if(noteCanvas&&noteCountByDay){
-    const ordered=[...dateKeys].reverse();
-    const counts=[...noteCountByDay].reverse();
-    _statsCharts.note=new Chart(noteCanvas,{
-      type:'bar',
-      data:{labels:ordered.map(dk=>dk.slice(5)),datasets:[{label:'新建笔记数',data:counts,backgroundColor:gColor,borderRadius:4}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:inkColor,maxRotation:0}},y:{ticks:{color:inkColor,stepSize:1}}}}
-    });
-  }
-}
 
 // ==================== 笔记板块 ====================
 let currentNoteType='all',noteSearchKeyword='';
