@@ -1615,7 +1615,13 @@ function parseDiaryDateKey(s){
   if(!m)return null;
   return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
 }
-function generateReportStats(startDate,endDate){
+// 收集某个日期范围内，每一天"日计划"存档的完成情况（用来看趋势、找状态最好/最差的日子）
+function collectDayPlanArchives(startDate,endDate){
+  return (S.planArchives||[]).filter(a=>a.type==='day'&&a.periodLabel>=startDate&&a.periodLabel<=endDate)
+    .sort((a,b)=>a.periodLabel.localeCompare(b.periodLabel));
+}
+const WEEKDAY_NAMES=['周日','周一','周二','周三','周四','周五','周六'];
+function generateReportStats(type,startDate,endDate){
   const inRange=(dk)=>dk&&dk>=startDate&&dk<=endDate;
   let tasksCompleted=0;
   const countTaskDone=(list)=>{
@@ -1636,20 +1642,85 @@ function generateReportStats(startDate,endDate){
   const diaryCount=(S.diaries||[]).filter(d=>inRange(parseDiaryDateKey(d.date))).length;
   const noteCount=(S.notes||[]).filter(n=>n.createdAt&&inRange(formatDate(new Date(n.createdAt)))).length;
 
-  const hasData=tasksCompleted>0||habitCheckinsTotal>0||diaryCount>0||noteCount>0;
+  // ---- 日计划完成趋势（这是你主要在用的部分，重点分析）----
+  const dayArchives=collectDayPlanArchives(startDate,endDate);
+  const dailyStats=dayArchives.map(a=>{
+    const p=calcPlanProgress(a.items);
+    return{date:a.periodLabel,percent:p.percent,done:Math.round(p.done),total:p.total,weekday:new Date(a.periodLabel+'T00:00:00').getDay()};
+  });
+  let avgPlanCompletion=null,planItemsDone=0,planItemsTotal=0,bestDay=null,worstDay=null,bestWeekdayText='',trend=null;
+  if(dailyStats.length){
+    avgPlanCompletion=Math.round(dailyStats.reduce((s,d)=>s+d.percent,0)/dailyStats.length);
+    planItemsDone=dailyStats.reduce((s,d)=>s+d.done,0);
+    planItemsTotal=dailyStats.reduce((s,d)=>s+d.total,0);
+    bestDay=dailyStats.reduce((a,b)=>b.percent>a.percent?b:a);
+    worstDay=dailyStats.reduce((a,b)=>b.percent<a.percent?b:a);
+    // 样本足够多（比如月报/年报）才归纳"哪个星期几状态好"，否则样本太少下结论不靠谱
+    if(dailyStats.length>=10){
+      const byWeekday={};
+      dailyStats.forEach(d=>{(byWeekday[d.weekday]=byWeekday[d.weekday]||[]).push(d.percent);});
+      let bestWk=null,bestWkAvg=-1;
+      Object.keys(byWeekday).forEach(wk=>{
+        const avg=byWeekday[wk].reduce((a,b)=>a+b,0)/byWeekday[wk].length;
+        if(avg>bestWkAvg){bestWkAvg=avg;bestWk=wk;}
+      });
+      if(bestWk!==null)bestWeekdayText=WEEKDAY_NAMES[bestWk];
+    }
+    // 跟上一期比较，看是不是在变好
+    const prevRange=getPrevReportRange(type,startDate);
+    const prevArchives=collectDayPlanArchives(prevRange.startDate,prevRange.endDate);
+    if(prevArchives.length){
+      const prevAvg=Math.round(prevArchives.reduce((s,a)=>s+calcPlanProgress(a.items).percent,0)/prevArchives.length);
+      trend={prevAvg,diff:avgPlanCompletion-prevAvg};
+    }
+  }
+
+  const hasData=tasksCompleted>0||habitCheckinsTotal>0||diaryCount>0||noteCount>0||dailyStats.length>0;
   return{
     tasksCompleted,habitCheckinsTotal,
     topHabitName:topHabit?(topHabit.emoji||'')+' '+topHabit.name:'',topHabitCount,
-    diaryCount,noteCount,hasData
+    diaryCount,noteCount,
+    avgPlanCompletion,planItemsDone,planItemsTotal,bestDay,worstDay,bestWeekdayText,trend,
+    hasData
   };
+}
+// 根据数据给一句具体的改进建议，而不是空泛的加油
+function generateImprovementTip(s){
+  const tips=[];
+  if(s.bestDay&&s.worstDay&&s.bestDay.date!==s.worstDay.date){
+    const bestWk=WEEKDAY_NAMES[s.bestDay.weekday];
+    const worstWk=WEEKDAY_NAMES[s.worstDay.weekday];
+    tips.push(`${bestWk}（${fmtDateShort(s.bestDay.date)}）完成度最高，有 ${s.bestDay.percent}%；${worstWk}（${fmtDateShort(s.worstDay.date)}）相对少一点，只有 ${s.worstDay.percent}%。`);
+  }
+  if(s.bestWeekdayText){
+    tips.push(`拉长看，你在【${s.bestWeekdayText}】的状态普遍更好，重要的计划可以优先安排在这天。`);
+  }
+  if(s.trend){
+    if(s.trend.diff>=8)tips.push(`比上一期提升了 ${s.trend.diff} 个百分点，节奏正在变好，继续保持！`);
+    else if(s.trend.diff<=-8)tips.push(`比上一期下降了 ${Math.abs(s.trend.diff)} 个百分点，可以想想是不是安排得太满了，适当留点缓冲。`);
+    else tips.push(`跟上一期基本持平，状态很稳定。`);
+  }
+  if(!tips.length&&s.avgPlanCompletion!==null){
+    if(s.avgPlanCompletion>=80)tips.push('计划完成度很高，保持这个节奏就很好。');
+    else if(s.avgPlanCompletion>=50)tips.push('完成了一半以上，可以试着把计划拆得再小一点，更容易做完。');
+    else tips.push('完成度不算高，可以试试每天只定1-2件最重要的事，先把"完成"的感觉找回来。');
+  }
+  return tips.join(' ');
 }
 function generateReportComment(type,s){
   const periodWord={week:'这周',month:'这个月',year:'这一年'}[type]||'这段时间';
-  const total=s.tasksCompleted+s.habitCheckinsTotal;
+  const total=s.tasksCompleted+s.habitCheckinsTotal+s.planItemsDone;
   if(total===0)return `${periodWord}好像有点安静呢，没关系，休息也是一种节奏，新的开始随时都可以～`;
   if(total<5)return `${periodWord}虽然做的不算多，但每一步都算数，慢慢来，比较快。`;
   if(total<20)return `${periodWord}稳稳地往前走了不少呢，这种一点一点积累的感觉真的很棒！`;
   return `${periodWord}状态全开！你完成的这些事，以后都会变成你的底气。`;
+}
+// 语录优先用"山高万仞"那句（如果你在语录里存过），没有的话才随机挑一句
+function pickReportQuote(){
+  const quotes=getDisplayQuotes();
+  const pinned=quotes.find(q=>q.includes('山高万仞'));
+  if(pinned)return pinned;
+  return quotes.length?quotes[Math.floor(Math.random()*quotes.length)]:'山高万仞，只登一步。';
 }
 function checkAndGenerateReports(){
   const t=td();
@@ -1662,7 +1733,7 @@ function checkAndGenerateReports(){
     }
     if(lastKey!==curKey){
       const range=getPrevReportRange(type,t);
-      const stats=generateReportStats(range.startDate,range.endDate);
+      const stats=generateReportStats(type,range.startDate,range.endDate);
       if(stats.hasData){
         S.reports.unshift({id:uid(),type,periodLabel:formatReportPeriodLabel(type,range),startDate:range.startDate,endDate:range.endDate,generatedAt:Date.now(),stats,viewed:false});
       }
@@ -1732,9 +1803,11 @@ function openReportView(id){
   const s=r.stats;
   const typeLabel={week:'周报',month:'月报',year:'年报'};
   const typeEmoji={week:'📅',month:'🗓',year:'🎯'};
-  const quotes=getDisplayQuotes();
-  const quote=quotes.length?quotes[Math.floor(Math.random()*quotes.length)]:'愿你我，终有所成。';
+  const quote=pickReportQuote();
   const comment=generateReportComment(r.type,s);
+  const tip=generateImprovementTip(s);
+  const hasPlanData=s.avgPlanCompletion!==null;
+  const trendArrow=s.trend?(s.trend.diff>=8?'📈':(s.trend.diff<=-8?'📉':'➖')):'';
   const overlay=document.createElement('div');
   overlay.className='report-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto;';
@@ -1747,12 +1820,16 @@ function openReportView(id){
           <div class="report-card-period">${esc(r.periodLabel)}</div>
         </div>
         <div class="report-stat-grid">
+          ${hasPlanData?`<div class="report-stat-tile"><div class="report-stat-num">${s.avgPlanCompletion}%</div><div class="report-stat-label">📋 计划完成度</div></div>`:''}
+          ${hasPlanData?`<div class="report-stat-tile"><div class="report-stat-num">${s.planItemsDone}</div><div class="report-stat-label">☑️ 完成计划项</div></div>`:''}
           <div class="report-stat-tile"><div class="report-stat-num">${s.tasksCompleted}</div><div class="report-stat-label">✅ 完成任务</div></div>
           <div class="report-stat-tile"><div class="report-stat-num">${s.habitCheckinsTotal}</div><div class="report-stat-label">📅 习惯打卡</div></div>
           <div class="report-stat-tile"><div class="report-stat-num">${s.diaryCount}</div><div class="report-stat-label">📔 写下日记</div></div>
           <div class="report-stat-tile"><div class="report-stat-num">${s.noteCount}</div><div class="report-stat-label">📝 新建笔记</div></div>
         </div>
+        ${s.trend?`<div class="report-highlight">${trendArrow} 计划完成度比上一期${s.trend.diff>0?'提升':(s.trend.diff<0?'下降':'持平')} ${Math.abs(s.trend.diff)} 个百分点（上一期 ${s.trend.prevAvg}%）</div>`:''}
         ${s.topHabitName?`<div class="report-highlight">🏆 打卡最多的是 <b>${esc(s.topHabitName)}</b>，坚持了 <b>${s.topHabitCount}</b> 次</div>`:''}
+        ${tip?`<div class="report-highlight">💡 ${esc(tip)}</div>`:''}
         <div class="report-comment">${esc(comment)}</div>
         <div class="report-quote">"${esc(quote)}"</div>
       </div>
