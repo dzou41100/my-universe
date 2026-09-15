@@ -286,11 +286,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 /* 设置面板指示点 */
 .set-dot{width:8px;height:8px;border-radius:50%;background:var(--g-mid);cursor:pointer;transition:background .2s,transform .2s;}
 .set-dot.on{background:var(--g);transform:scale(1.3);}
-/* ══ 本子计划（颜色全部跟随主题的 --nb-* 变量） ══ */
-.notebook-wrap{position:relative;background:var(--nb-bg);border-radius:var(--radius-md);box-shadow:3px 3px 0 rgba(0,0,0,.06),6px 6px 0 rgba(0,0,0,.1),0 8px 24px rgba(0,0,0,.12);margin:0 2px;overflow:hidden;}
+/* ══ 日记/笔记仍保留本子样式（颜色跟随主题的 --nb-* 变量） ══ */
 /* 给内含"自动增高textarea"的场景用：不裁切，避免高度计算稍有偏差时把底部文字和横线一起藏起来 */
 .notebook-wrap-grow{position:relative;background:var(--nb-bg);border-radius:var(--radius-md);box-shadow:3px 3px 0 rgba(0,0,0,.06),6px 6px 0 rgba(0,0,0,.1),0 8px 24px rgba(0,0,0,.12);margin:0 2px;overflow:visible;}
-.notebook-wrap::before{content:'';position:absolute;left:28px;top:0;bottom:0;width:1.5px;background:var(--nb-line);z-index:1;}
 .notebook-rings{position:absolute;left:18px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:space-around;padding:24px 0;pointer-events:none;z-index:2;}
 .notebook-ring{width:10px;height:10px;border-radius:50%;border:2px solid var(--nb-ink3);background:var(--nb-bg);box-shadow:inset 0 1px 2px rgba(0,0,0,.12);}
 .notebook-header{background:var(--nb-bg);padding:12px 14px 10px 38px;border-bottom:1.5px solid var(--nb-line);}
@@ -298,24 +296,30 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .notebook-date{font-size:10px;color:var(--nb-ink3);margin-top:2px;}
 /* 32px格子：31px内容 + 1px线，所有文字行高都是32px */
 .notebook-body{padding:0 14px 20px 38px;background:repeating-linear-gradient(180deg,transparent,transparent 31px,var(--nb-line) 31px,var(--nb-line) 32px);min-height:calc(100vh - 280px);}
-.nb-item{padding:0;border:none;display:flex;align-items:flex-start;gap:8px;margin-bottom:2px;position:relative;}
-.nb-item-child{margin-left:14px;padding-left:16px;margin-top:3px;}
-.nb-item-child::before{content:'';position:absolute;left:0;top:0;width:13px;height:17px;border-left:2px solid var(--nb-line);border-bottom:2px solid var(--nb-line);border-bottom-left-radius:8px;}
-.nb-item-child::after{content:'';position:absolute;left:0;top:15px;bottom:-3px;border-left:2px solid var(--nb-line);}
-.nb-item-child:last-child::after{display:none;}
-.nb-check{width:18px;height:18px;border:1.5px solid var(--nb-ring);border-radius:4px;flex-shrink:0;margin-top:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--nb-ink2);background:var(--white);}
-.nb-check.done{background:var(--nb-ring);border-color:var(--nb-ring);color:#fff;}
+
+/* ══ 计划板块：普通卡片样式（不再是笔记本／横线纸的样子） ══ */
+.plan-card-wrap{position:relative;background:var(--card);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);border:1px solid var(--g-border);margin:0 2px;overflow:hidden;}
+.plan-card-header{padding:12px 14px;border-bottom:1px solid var(--g-border);background:var(--g-xlight);}
+.plan-card-title{font-size:15px;font-weight:700;color:var(--g-dark);letter-spacing:.5px;}
+.plan-card-date{font-size:10px;color:var(--ink3);margin-top:2px;}
+.plan-card-body{padding:8px 12px 18px;}
+.nb-item{padding:10px 0;border-bottom:1px solid var(--g-border);display:flex;align-items:flex-start;gap:8px;position:relative;}
+.nb-item:last-child{border-bottom:none;}
+.nb-item-child{margin-left:16px;padding-left:14px;margin-top:0;border-left:2px solid var(--g-border);}
+.nb-check{width:18px;height:18px;border:1.5px solid var(--g-mid);border-radius:4px;flex-shrink:0;margin-top:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink2);background:var(--white);}
+.nb-check.done{background:var(--g);border-color:var(--g);color:#fff;}
 .nb-content{flex:1;min-width:0;}
-.nb-item-title{font-size:15px;font-weight:600;color:var(--nb-ink);line-height:1.5;min-height:auto;padding:4px 0;}
-.nb-item-title.done{text-decoration:line-through;color:var(--nb-ink3);}
-.nb-item-note{font-size:12px;color:var(--nb-ink3);line-height:32px;white-space:pre-wrap;margin:0;padding:0;}
-.nb-item-meta{font-size:10px;color:var(--nb-ink3);line-height:32px;height:32px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.nb-empty{text-align:center;padding:96px 0 0;color:var(--nb-ink3);font-size:13px;line-height:32px;}
-.nb-item-actions{display:flex;gap:6px;height:32px;align-items:center;}
-/* tab在本子外面 */
+/* 三级字体：第一级（主计划/隶书）、第二级（子计划/宋体）、第三级（孙计划/楷体），字体族由 JS 按层级内联指定 */
+.nb-item-title{font-size:15px;font-weight:600;color:var(--ink);line-height:1.5;min-height:auto;padding:4px 0;}
+.nb-item-title.done{text-decoration:line-through;color:var(--ink3);}
+.nb-item-note{font-size:12px;color:var(--ink3);line-height:1.6;white-space:pre-wrap;margin:2px 0;padding:0;}
+.nb-item-meta{font-size:10px;color:var(--ink3);line-height:1.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nb-empty{text-align:center;padding:40px 0;color:var(--ink3);font-size:13px;line-height:1.8;}
+.nb-item-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px;}
+/* tab在卡片外面 */
 .plan-outer-tab{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;color:var(--ink3);background:var(--card);border:1.5px solid var(--g-mid);cursor:pointer;transition:all .15s;}
 .plan-outer-tab.on{background:var(--g);color:#fff;border-color:var(--g);}
-/* 添加按钮居中在本子外面 */
+/* 添加按钮居中在本子外面（日记板块使用） */
 .nb-add-outer-btn{display:block;margin:12px auto 0;padding:10px 32px;background:var(--g);border:none;border-radius:20px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
 </style>
 </head>
@@ -329,9 +333,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
   <button class="export-btn" id="exportBtn">⚙️ 设置</button>
 </div>
 
-<div id="pg-today" class="pg active"><div id="todayContent"></div></div>
+<div id="pg-plan" class="pg active"><div id="planContent"></div></div>
+<div id="pg-today" class="pg"><div id="todayContent"></div></div>
 <div id="pg-record" class="pg"><div id="recordContent"></div></div>
-<div id="pg-plan" class="pg"><div id="planContent"></div></div>
 <div id="pg-grow" class="pg"><div id="growContent"></div></div>
 <div id="pg-note" class="pg"><div id="noteListPage"></div></div>
 
@@ -361,9 +365,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 </div>
 
 <div class="bnav">
-  <div class="ni on" data-page="today"><span class="ico">🌤</span><span class="lbl">今日</span></div>
-  <div class="ni" data-page="record"><span class="ico">📝</span><span class="lbl">记录</span></div>
-  <div class="ni" data-page="plan"><span class="ico">🗓</span><span class="lbl">计划</span></div>
+  <div class="ni on" data-page="plan"><span class="ico">🗓</span><span class="lbl">计划</span></div>
+  <div class="ni" data-page="today"><span class="ico">🌤</span><span class="lbl">今日</span></div>
+  <div class="ni" data-page="record"><span class="ico">📝</span><span class="lbl">日记</span></div>
   <div class="ni" data-page="grow"><span class="ico">🌱</span><span class="lbl">成长</span></div>
   <div class="ni" data-page="note"><span class="ico">📔</span><span class="lbl">笔记</span></div>
 </div>
@@ -1206,17 +1210,10 @@ function renderToday(){
     </div>
     <div id="reportBanner"></div>
     <div id="countdownSection"></div>
-    <div class="task-section">
-      <div class="section-divider"><div class="stl">📋 今日任务</div></div>
-      <div id="taskList"></div>
-      <button class="addbtn" id="addTaskBtn">+ 添加任务</button>
-    </div>
-    <div class="task-section">
+    <div class="task-section" id="phaseScheduleSection">
       <div class="section-divider"><div class="stl">📅 今天该做的（阶段日程）</div></div>
       <div id="todayHabitsList"></div>
     </div>`;
-  document.getElementById('addTaskBtn').onclick=openAddTaskModal;
-  renderTasks();
   renderTodayHabitsSection();
   renderCountdownSection();
   renderReportBanner();
@@ -1378,199 +1375,6 @@ function openQuoteModal(){
     };}
   };
   showModal('📝 自定义语录',renderQuoteBody,null,null,{hideConfirm:true});
-}
-
-function renderTasks(){
-  const today=td();const tasks=S.tasks.filter(t=>t.date===today);
-  const container=document.getElementById('taskList');
-  if(!tasks.length){container.innerHTML='<div class="empty" data-icon="✅">今天还没有任务<br>点击下方添加</div>';return;}
-  container.innerHTML=tasks.map(t=>renderTaskItem(t,0)).join('');
-}
-function isTaskDone(t){
-  if(t.children&&t.children.length)return t.children.every(isTaskDone);
-  if(t.total>0)return (t.doneCount||0)>=t.total;
-  return !!t.done;
-}
-let collapsedTasks=new Set();
-function toggleTaskCollapse(id){if(collapsedTasks.has(id))collapsedTasks.delete(id);else collapsedTasks.add(id);renderTasks();}
-function renderTaskItem(t,level){
-  level=level||0;
-  const hasChildren=t.children&&t.children.length>0;
-  const isCollapsed=collapsedTasks.has(t.id);
-  const childDone=hasChildren?t.children.filter(isTaskDone).length:0;
-  const isCounter=!hasChildren&&t.total>0;
-  const done=hasChildren?(childDone===t.children.length):(isCounter?(t.doneCount||0)>=t.total:t.done);
-  return`<div class="ti ${done?'done':''}" style="display:flex;flex-direction:column;align-items:stretch;gap:6px;${level>0?'margin-left:'+Math.min(level,4)*14+'px;':''}">
-    <div style="display:flex;align-items:center;gap:8px;">
-      ${hasChildren?
-        `<span onclick="toggleTaskCollapse('${t.id}')" style="cursor:pointer;font-size:11px;color:var(--ink3);width:14px;flex-shrink:0;user-select:none;">${isCollapsed?'▶':'▼'}</span><div class="chk" style="font-size:9px;">${childDone}/${t.children.length}</div>`
-        :isCounter?
-        `<span style="width:14px;flex-shrink:0;"></span><div class="chk" style="font-size:9px;${done?'background:var(--g);color:#fff;':''}">${t.doneCount||0}/${t.total}</div>`
-        :`<span style="width:14px;flex-shrink:0;"></span><div class="chk ${t.done?'on':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>`}
-      <div style="flex:1">
-        <div class="tn" style="${done?'text-decoration:line-through':''}">${esc(t.name)}</div>
-        ${t.taskType||t.note?`<div style="font-size:11px;color:var(--ink3);margin-top:2px">${t.taskType?`<span style="background:var(--g-light);color:var(--g);padding:1px 8px;border-radius:10px;margin-right:5px;font-weight:500">${t.taskType}</span>`:''}${t.note?esc(t.note):''}</div>`:''}
-        ${hasChildren?`<div style="background:var(--g-xlight);border-radius:6px;height:5px;margin-top:6px;overflow:hidden;"><div style="background:var(--g);height:100%;width:${Math.round(childDone/t.children.length*100)}%;"></div></div>`:''}
-        ${isCounter?`<div style="background:var(--g-xlight);border-radius:6px;height:5px;margin-top:6px;overflow:hidden;"><div style="background:var(--g);height:100%;width:${Math.min(100,Math.round((t.doneCount||0)/t.total*100))}%;"></div></div>`:''}
-      </div>
-      <div class="priority-${t.priority||'green'}"></div>
-    </div>
-    <div style="display:flex;gap:2px;justify-content:flex-end;flex-wrap:wrap;">
-      ${isCounter?`<button class="tree-action-btn accent" onclick="checkInTask('${t.id}')" ${done?'style="opacity:.4;pointer-events:none;"':''}>✅ 打卡 +1</button>${(t.doneCount||0)>0?`<button class="tree-action-btn" onclick="undoCheckInTask('${t.id}')">↩️ 撤销</button>`:''}`:''}
-      <button class="tree-action-btn" onclick="openAddChildTaskModal('${t.id}')">➕ 子任务</button>
-      <button class="tree-action-btn" onclick="editTask('${t.id}')">✏️ 编辑</button>
-      <button class="tree-action-btn danger" onclick="delTaskConfirm('${t.id}')">🗑️</button>
-    </div>
-    ${!isCollapsed&&hasChildren?`<div>${t.children.map(c=>renderTaskItem(c,level+1)).join('')}</div>`:(hasChildren?`<div style="font-size:11px;color:var(--ink3);padding:2px 0 2px 22px;">▶ ${t.children.length} 项子任务（已折叠）</div>`:'')}
-  </div>`;
-}
-function checkInTask(id){
-  const t=findTaskItem(id);if(!t)return;
-  if(t.children&&t.children.length)return;
-  if(t.total>0&&(t.doneCount||0)>=t.total){toast('已完成全部目标！');return;}
-  t.doneCount=(t.doneCount||0)+1;
-  save();renderTasks();toast(`+1 ${t.name}`);
-}
-function undoCheckInTask(id){
-  const t=findTaskItem(id);if(!t)return;
-  if(!t.doneCount||t.doneCount<=0)return;
-  t.doneCount--;
-  save();renderTasks();toast('已撤销');
-}
-function findTaskItem(id,list){
-  list=list||S.tasks;
-  for(const t of list){
-    if(t.id===id)return t;
-    if(t.children&&t.children.length){
-      const found=findTaskItem(id,t.children);
-      if(found)return found;
-    }
-  }
-  return null;
-}
-function findTaskParentArray(id,list){
-  list=list||S.tasks;
-  for(let i=0;i<list.length;i++){
-    if(list[i].id===id)return list;
-    if(list[i].children&&list[i].children.length){
-      const found=findTaskParentArray(id,list[i].children);
-      if(found)return found;
-    }
-  }
-  return null;
-}
-function openAddChildTaskModal(parentId){
-  const body=`<div class="note-field-group"><div class="note-field-label">子任务名称</div><input id="childTaskName" placeholder="例如：第一步"></div>
-    <div class="note-field-group"><div class="note-field-label">目标次数（0表示普通打勾任务，不填数量）</div><input id="childTaskTotal" type="number" min="0" placeholder="例如：10"></div>
-    <div class="note-field-group"><div class="note-field-label">备注（可选）</div><textarea id="childTaskNote" rows="2"></textarea></div>`;
-  showModal('添加子任务',body,()=>{
-    const name=document.getElementById('childTaskName').value.trim();if(!name){toast('请输入名称');return;}
-    const note=document.getElementById('childTaskNote').value.trim();
-    const total=parseInt(document.getElementById('childTaskTotal').value)||0;
-    const parent=findTaskItem(parentId);if(!parent)return;
-    if(!parent.children)parent.children=[];
-    parent.children.push({id:uid(),name,note,done:false,children:[],total,doneCount:0});
-    collapsedTasks.delete(parentId);
-    save();closeModal();renderTasks();toast('已添加子任务 ✓');
-  });
-  setTimeout(()=>{const el=document.getElementById('childTaskName');if(el)el.focus();},100);
-}
-
-function toggleTask(id){const t=findTaskItem(id);if(t){if(t.children&&t.children.length)return;t.done=!t.done;t.completedAt=t.done?Date.now():null;save();renderTasks();}}
-function delTaskConfirm(id){confirmDel(()=>{const arr=findTaskParentArray(id);if(arr){const idx=arr.findIndex(t=>t.id===id);if(idx>-1)arr.splice(idx,1);}save();renderTasks();});}
-function editTask(id){
-  const t=findTaskItem(id);if(!t)return;
-  const body=(container)=>{
-    container.innerHTML=`
-      <div class="note-field-group"><div class="note-field-label">任务名称</div><input id="editTaskName" value="${esc(t.name)}"></div>
-      <div class="note-field-group"><div class="note-field-label">日期</div><input type="date" id="editTaskDate" value="${t.date||td()}"></div>
-      <div class="note-field-group"><div class="note-field-label">类型</div><div style="display:flex;flex-wrap:wrap;gap:6px" id="editTaskTypeSelector">${S.taskTypes.map(tp=>`<div class="sbtn edit-task-type-opt${t.taskType===tp?' selected':''}" data-type="${tp}" style="${t.taskType===tp?'background:var(--g);color:#fff':''}">${tp}</div>`).join('')}<div class="sbtn" style="border:1px dashed var(--g-mid);background:transparent" onclick="manageTaskTypes()">⚙️ 管理</div></div></div>
-      <div class="note-field-group"><div class="note-field-label">优先级</div><div class="priority-selector"><div class="priority-option p-red ${t.priority==='red'?'selected':''}" data-p="red">🔴 高</div><div class="priority-option p-orange ${t.priority==='orange'?'selected':''}" data-p="orange">🟠 中</div><div class="priority-option p-green ${t.priority==='green'||!t.priority?'selected':''}" data-p="green">🟢 低</div></div></div>
-      <div class="note-field-group"><div class="note-field-label">目标次数（0表示普通打勾任务，不填数量）</div><input id="editTaskTotal" type="number" min="0" value="${t.total||0}"></div>
-      <div class="note-field-group"><div class="note-field-label">备注</div><textarea id="editTaskNote" rows="3">${esc(t.note||'')}</textarea></div>`;
-    container.querySelectorAll('.edit-task-type-opt').forEach(opt=>{opt.onclick=()=>{container.querySelectorAll('.edit-task-type-opt').forEach(o=>{o.classList.remove('selected');o.style.background='';o.style.color='';});opt.classList.add('selected');opt.style.background='var(--g)';opt.style.color='#fff';};});
-    container.querySelectorAll('.priority-option').forEach(opt=>{opt.onclick=()=>{container.querySelectorAll('.priority-option').forEach(o=>o.classList.remove('selected'));opt.classList.add('selected');};});
-  };
-  showModal('编辑任务',body,()=>{
-    const name=document.getElementById('editTaskName').value.trim();if(!name)return;
-    const typeSel=document.querySelector('.edit-task-type-opt.selected');
-    const priSel=document.querySelector('.priority-option.selected');
-    const total=parseInt(document.getElementById('editTaskTotal').value)||0;
-    t.name=name;t.date=document.getElementById('editTaskDate').value||t.date||td();t.taskType=typeSel?typeSel.dataset.type:(S.taskTypes[S.taskTypes.length-1]||'其他');t.priority=priSel?priSel.dataset.p:'green';t.note=document.getElementById('editTaskNote').value.trim();
-    t.total=total;if(t.doneCount===undefined)t.doneCount=0;
-    save();closeModal();renderTasks();toast('已保存');
-  });
-}
-
-function openAddTaskModal(){
-  const body=(container)=>{
-    container.innerHTML=`
-      <div class="note-field-group"><div class="note-field-label">任务名称</div><input id="newTaskName" placeholder="今天要做什么…"></div>
-      <div class="note-field-group"><div class="note-field-label">日期</div><input type="date" id="newTaskDate" value="${td()}"></div>
-      <div class="note-field-group"><div class="note-field-label">类型</div><div style="display:flex;flex-wrap:wrap;gap:6px" id="taskTypeSelector">${S.taskTypes.map((t,i)=>`<div class="sbtn task-type-opt${i===S.taskTypes.length-1?' selected':''}" data-type="${t}" style="${i===S.taskTypes.length-1?'background:var(--g);color:#fff':''}">${t}</div>`).join('')}<div class="sbtn" style="border:1px dashed var(--g-mid);background:transparent" onclick="manageTaskTypes()">⚙️ 管理</div></div></div>
-      <div class="note-field-group"><div class="note-field-label">优先级</div><div class="priority-selector"><div class="priority-option p-red" data-p="red">🔴 高</div><div class="priority-option p-orange" data-p="orange">🟠 中</div><div class="priority-option p-green selected" data-p="green">🟢 低</div></div></div>
-      <div class="note-field-group"><div class="note-field-label">目标次数（0表示普通打勾任务，不填数量）</div><input id="newTaskTotal" type="number" min="0" placeholder="例如：10"></div>
-      <div class="note-field-group"><div class="note-field-label">备注</div><textarea id="newTaskNote" rows="3" placeholder="可选备注…"></textarea></div>`;
-    container.querySelectorAll('.task-type-opt').forEach(opt=>{opt.onclick=()=>{container.querySelectorAll('.task-type-opt').forEach(o=>{o.classList.remove('selected');o.style.background='';o.style.color='';});opt.classList.add('selected');opt.style.background='var(--g)';opt.style.color='#fff';};});
-    container.querySelectorAll('.priority-option').forEach(opt=>{opt.onclick=()=>{container.querySelectorAll('.priority-option').forEach(o=>o.classList.remove('selected'));opt.classList.add('selected');};});
-  };
-  showModal('添加任务',body,()=>{
-    const name=document.getElementById('newTaskName').value.trim();if(!name)return;
-    const date=document.getElementById('newTaskDate').value||td();
-    const typeSel=document.querySelector('.task-type-opt.selected');
-    const taskType=typeSel?typeSel.dataset.type:(S.taskTypes[S.taskTypes.length-1]||'其他');
-    const priSel=document.querySelector('.priority-option.selected');
-    const priority=priSel?priSel.dataset.p:'green';
-    const note=document.getElementById('newTaskNote').value.trim();
-    const total=parseInt(document.getElementById('newTaskTotal').value)||0;
-    S.tasks.push({id:uid(),date,name,taskType,priority,note,done:false,total,doneCount:0,children:[]});
-    save();closeModal();renderTasks();toast(date===td()?'任务已添加 ✓':`已添加到 ${fmtDateShort(date)} ✓`);
-  });
-  setTimeout(()=>{const el=document.getElementById('newTaskName');if(el)el.focus();},100);
-}
-
-function manageTaskTypes(){
-  const body=(container)=>{
-    const render=()=>{
-      container.innerHTML=`
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <input id="newTaskTypeInput" placeholder="新类型名称（可加emoji）" style="flex:1">
-          <button class="pbtn" id="addTaskTypeBtn">添加</button>
-        </div>
-        <div id="taskTypeManageList"></div>`;
-      let html='';
-      S.taskTypes.forEach((t,i)=>{
-        html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(61,139,94,.06)">
-          <span style="font-size:13px">${esc(t)}</span>
-          <div style="display:flex;gap:6px"><button class="sbtn" data-edtt="${i}">✏️</button><button class="delbtn" data-dtt="${i}">🗑️</button></div>
-        </div>`;
-      });
-      if(!html)html='<div style="color:var(--ink3);font-size:12px;padding:4px 0">还没有任务类型</div>';
-      container.querySelector('#taskTypeManageList').innerHTML=html;
-      container.querySelector('#addTaskTypeBtn').onclick=()=>{
-        const v=container.querySelector('#newTaskTypeInput').value.trim();
-        if(!v)return;
-        if(S.taskTypes.includes(v)){toast('该类型已存在');return;}
-        S.taskTypes.push(v);save();toast('已添加');render();
-      };
-      container.querySelectorAll('[data-dtt]').forEach(btn=>{
-        btn.onclick=()=>{const i=parseInt(btn.dataset.dtt);confirmDel(()=>{S.taskTypes.splice(i,1);save();render();});};
-      });
-      container.querySelectorAll('[data-edtt]').forEach(btn=>{
-        btn.onclick=()=>{
-          const i=parseInt(btn.dataset.edtt);
-          prompt1('编辑任务类型','类型名称',S.taskTypes[i],(val)=>{
-            const oldType=S.taskTypes[i];
-            S.taskTypes[i]=val;
-            S.tasks.forEach(t=>{if(t.taskType===oldType)t.taskType=val;});
-            save();render();
-          });
-        };
-      });
-    };
-    render();
-  };
-  showModal('管理任务类型',body,null,null,{hideConfirm:true});
 }
 
 
@@ -1995,21 +1799,6 @@ function formatPlanPeriodLabel(type,key){
   if(type==='year')return `${key}年`;
   return key;
 }
-// 把"今日任务"的结构转换回计划条目的结构，用于把已挪去今日任务的日计划条目重新收进存档
-function convertTaskShapeToPlanItem(t){
-  return{
-    id:t.id,
-    title:t.name,
-    text:t.name,
-    note:t.note||'',
-    done:!!t.done,
-    completedAt:t.completedAt||null,
-    total:t.total||0,
-    doneCount:t.doneCount||0,
-    reflection:t.reflection||'',
-    children:(t.children||[]).map(convertTaskShapeToPlanItem)
-  };
-}
 function rolloverPlanPeriods(){
   if(!S.planPeriodKeys)S.planPeriodKeys={};
   const t=td();
@@ -2022,19 +1811,18 @@ function rolloverPlanPeriods(){
     }
     if(lastKey!==curKey){
       let items=(S.plans[type]||[]).slice();
+      let carryOver=[];
       if(type==='day'){
-        // 那天挪去"今日任务"的日计划条目，也要在这里一起收进同一份存档，不然就找不到了
-        const movedTasks=S.tasks.filter(tk=>tk.fromPlan==='day'&&tk.date===lastKey);
-        if(movedTasks.length){
-          items=items.concat(movedTasks.map(convertTaskShapeToPlanItem));
-          S.tasks=S.tasks.filter(tk=>!(tk.fromPlan==='day'&&tk.date===lastKey));
-        }
+        // 截止日期还没到的条目（比如今天写的是"明天"的计划）先不整理归档，留到到期那天再处理，
+        // 不然写了第二天的计划，还没到第二天就被当天的整理直接清空了
+        carryOver=items.filter(it=>it.due&&it.due>lastKey);
+        items=items.filter(it=>!(it.due&&it.due>lastKey));
       }
       if(items.length){
         if(!S.planArchives)S.planArchives=[];
         S.planArchives.unshift({id:uid(),type,periodLabel:formatPlanPeriodLabel(type,lastKey),archivedAt:Date.now(),items:JSON.parse(JSON.stringify(items))});
       }
-      S.plans[type]=[];
+      S.plans[type]=carryOver;
       S.planPeriodKeys[type]=curKey;
       changed=true;
     }
@@ -2066,13 +1854,12 @@ function renderPlan(){
     </div>
     <div class="plan-outer-tab" data-pt="archive" style="width:100%;text-align:center;margin-bottom:8px;">${ARCHIVE_TAB.icon} ${ARCHIVE_TAB.label}</div>
     <button id="planFixedAddBtn" class="plan-outer-tab" style="width:100%;text-align:center;background:var(--g);color:#fff;border-color:var(--g);cursor:pointer;margin-bottom:12px;">＋ 添加</button>
-    <div class="notebook-wrap" id="planNotebook">
-      <div class="notebook-rings">${Array(6).fill('<div class="notebook-ring"></div>').join('')}</div>
-      <div class="notebook-header">
-        <div class="notebook-title" id="planNbTitle">📝 日计划</div>
-        <div class="notebook-date" id="planNbDate">${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日</div>
+    <div class="plan-card-wrap" id="planNotebook">
+      <div class="plan-card-header">
+        <div class="plan-card-title" id="planNbTitle">📝 日计划</div>
+        <div class="plan-card-date" id="planNbDate">${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日</div>
       </div>
-      <div class="notebook-body" id="planNbBody"></div>
+      <div class="plan-card-body" id="planNbBody"></div>
     </div>`;
 
   document.getElementById('planFixedAddBtn').addEventListener('click',()=>addNbPlanItem());
@@ -2113,7 +1900,7 @@ function renderPlanNbItems(){
   const progress=calcPlanProgress(items);
   body.innerHTML=`
     <div style="padding:8px 0 6px;">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:11px;color:var(--nb-ink3);margin-bottom:5px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:11px;color:var(--ink3);margin-bottom:5px;">
         <span>完成 ${topDone}/${checkableItems.length} 项</span>
         <span style="font-weight:700;color:var(--g);font-size:15px;">${progress.percent}%</span>
       </div>
@@ -2136,7 +1923,7 @@ function renderPlanArchiveList(body){
     const progress=calcPlanProgress(a.items);
     const isOpen=expandedArchiveIds.has(a.id);
     return`<div class="nb-item" style="align-items:flex-start;">
-      <div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;cursor:pointer;" onclick="togglePlanArchiveExpand('${a.id}')">${isOpen?'▼':'▶'}</div>
+      <div class="nb-check" style="border-color:var(--g-mid);color:var(--ink3);font-size:9px;cursor:pointer;" onclick="togglePlanArchiveExpand('${a.id}')">${isOpen?'▼':'▶'}</div>
       <div class="nb-content">
         <div class="nb-item-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
           <span>${typeLabel[a.type]||a.type} · ${esc(a.periodLabel||'')}</span>
@@ -2176,13 +1963,19 @@ function copyArchiveToCurrentPlan(id){
   toast(`已复制到当前${typeLabel[arc.type]||'计划'} ✓`);
   switchPlanTab(arc.type);
 }
+// 三级字体：第一级（主计划）用隶书，第二级（子计划）用宋体，第三级及以下（孙计划）用楷体
+function planLevelFontStyle(level){
+  if(level<=0)return `font-family:'LiSu','STLiti','隶书',serif;font-size:16px;font-weight:700;`;
+  if(level===1)return `font-family:'SimSun','STSong','宋体',serif;font-size:14px;font-weight:600;color:var(--ink2);`;
+  return `font-family:'KaiTi','STKaiti','楷体',serif;font-size:13px;font-weight:600;color:var(--ink2);`;
+}
 function renderArchiveItemReadonly(item,level){
   if(item.kind==='note'){
     const isChild=level>0;
     return`<div class="nb-item${isChild?' nb-item-child':''}">
-      <div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:11px;pointer-events:none;">📝</div>
+      <div class="nb-check" style="border-color:var(--g-mid);color:var(--ink3);font-size:11px;pointer-events:none;">📝</div>
       <div class="nb-content">
-        ${item.title?`<div class="nb-item-title" style="font-size:${isChild?12:14}px;">${esc(item.title)}</div>`:''}
+        ${item.title?`<div class="nb-item-title" style="${planLevelFontStyle(level)}">${esc(item.title)}</div>`:''}
         <div style="margin:4px 0;border:1px solid var(--g-mid);border-radius:8px;overflow:hidden;max-width:180px;cursor:pointer;" onclick="viewPlanSketchImage(this.querySelector('img').src)"><img src="${item.image}" style="width:100%;display:block;"></div>
       </div>
     </div>`;
@@ -2194,7 +1987,7 @@ function renderArchiveItemReadonly(item,level){
   return`<div class="nb-item${isChild?' nb-item-child':''}">
     <div class="nb-check${done?' done':''}" style="${checkStyle}pointer-events:none;">${done?'✓':''}</div>
     <div class="nb-content">
-      <div class="nb-item-title${done?' done':''}" style="font-size:${isChild?'12px':'14px'};${isChild?'font-weight:500;color:var(--nb-ink2);':''}">${esc(item.title||item.text||'')}${item.total>0?` (${item.doneCount||0}/${item.total})`:''}</div>
+      <div class="nb-item-title${done?' done':''}" style="${planLevelFontStyle(level)}">${esc(item.title||item.text||'')}${item.total>0?` (${item.doneCount||0}/${item.total})`:''}</div>
       ${hasChildren?item.children.map(c=>renderArchiveItemReadonly(c,level+1)).join(''):''}
     </div>
   </div>`;
@@ -2227,18 +2020,17 @@ function renderNbItem(item,level){
   const isCounter=!hasChildren&&item.total>0;
   const itemDone=hasChildren?allChildDone:(isCounter?(item.doneCount||0)>=item.total:item.done);
   const isChild=level>0;
-  const titleSize=isChild?13:15;
   const checkSize=isChild?14:18;
   const checkStyle=`width:${checkSize}px;height:${checkSize}px;${isChild?'margin-top:5px;':''}`;
   const showActions=openPlanActionIds.has(item.id);
   return`<div class="nb-item${itemDone?' done-nb':''}${isChild?' nb-item-child':''}">
     ${hasChildren?
-      `<div class="nb-check" style="${checkStyle}border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;cursor:pointer;" onclick="togglePlanCollapse('${item.id}')" title="${isCollapsed?'展开':'收起'}子项">${isCollapsed?childDone+'/'+item.children.length:'▼'}</div>`
+      `<div class="nb-check" style="${checkStyle}border-color:var(--g-mid);color:var(--ink3);font-size:9px;cursor:pointer;" onclick="togglePlanCollapse('${item.id}')" title="${isCollapsed?'展开':'收起'}子项">${isCollapsed?childDone+'/'+item.children.length:'▼'}</div>`
       :isCounter?
-      `<div class="nb-check" style="${checkStyle}border-color:var(--g-mid);color:var(--nb-ink3);font-size:9px;">${item.doneCount||0}/${item.total}</div>`
+      `<div class="nb-check" style="${checkStyle}border-color:var(--g-mid);color:var(--ink3);font-size:9px;">${item.doneCount||0}/${item.total}</div>`
       :`<div class="nb-check${item.done?' done':''}" style="${checkStyle}" onclick="toggleNbPlan('${item.id}')">${item.done?'✓':''}</div>`}
     <div class="nb-content">
-      <div class="nb-item-title${itemDone?' done':''}" style="font-size:${titleSize}px;${isChild?'font-weight:500;color:var(--nb-ink2);':''}">${esc(item.title||item.text||'')}</div>
+      <div class="nb-item-title${itemDone?' done':''}" style="${planLevelFontStyle(level)}">${esc(item.title||item.text||'')}</div>
       ${hasNote?`<div class="nb-item-note">${esc(item.note)}</div>`:''}
       ${item.reflection?`<div class="nb-item-note" style="font-style:italic;color:var(--g-dark);">💭 ${esc(item.reflection)}</div>`:''}
       ${hasDue?`<div class="nb-item-meta">⏰ 截止 ${fmtDateShort(item.due)}</div>`:''}
@@ -2251,18 +2043,17 @@ function renderNbItem(item,level){
         <div style="background:var(--g-xlight);border-radius:6px;height:5px;margin:6px 0;overflow:hidden;"><div style="background:var(--g);height:100%;width:${Math.min(100,Math.round((item.doneCount||0)/item.total*100))}%;"></div></div>`:''}
       <div style="display:flex;align-items:center;gap:6px;margin:2px 0;">
         ${isCounter?`<button class="tree-action-btn accent" onclick="checkInPlanItem('${item.id}')" ${itemDone?'style="opacity:.4;pointer-events:none;"':''}>✅ +1</button>`:''}
-        <button class="tree-action-btn" onclick="togglePlanActions('${item.id}')" style="color:var(--nb-ink3);${isCounter?'':'margin-left:0;'}margin-left:auto;padding:3px 9px;">⋯</button>
+        <button class="tree-action-btn" onclick="togglePlanActions('${item.id}')" style="color:var(--ink3);${isCounter?'':'margin-left:0;'}margin-left:auto;padding:3px 9px;">⋯</button>
       </div>
       ${showActions?`<div class="nb-item-actions" style="margin:0 0 4px;flex-wrap:wrap;height:auto;">
         ${isCounter&&(item.doneCount||0)>0?`<button class="tree-action-btn" onclick="undoCheckInPlanItem('${item.id}')">↩️ 撤销</button>`:''}
         <button class="tree-action-btn" onclick="openAddChildPlanModal('${item.id}')">➕ 子项</button>
-        ${!isChild&&_planType==='day'?`<button class="tree-action-btn" onclick="movePlanItemToToday('${item.id}')" title="挪到今日任务">↗️ 今日</button>`:''}
         <button class="tree-action-btn" onclick="editNbPlan('${item.id}')">✏️ 编辑</button>
         <button class="tree-action-btn" onclick="editPlanReflection('${item.id}')">💭 ${item.reflection?'改感想':'写感想'}</button>
         ${hasChildren&&allChildDone?`<button class="tree-action-btn accent" onclick="archiveWholePlan('${item.id}')">✓ 全部完成</button>`:''}
         <button class="tree-action-btn danger" onclick="deleteNbPlan('${item.id}')">🗑️ 删除</button>
       </div>`:''}
-      ${!isCollapsed&&hasChildren?item.children.map(c=>renderNbItem(c,level+1)).join(''):(hasChildren?`<div style="font-size:11px;color:var(--nb-ink3);padding:2px 0;">▶ ${item.children.length} 项子任务（已折叠，点左边圆圈展开）</div>`:'')}
+      ${!isCollapsed&&hasChildren?item.children.map(c=>renderNbItem(c,level+1)).join(''):(hasChildren?`<div style="font-size:11px;color:var(--ink3);padding:2px 0;">▶ ${item.children.length} 项子任务（已折叠，点左边圆圈展开）</div>`:'')}
     </div>
   </div>`;
 }
@@ -2271,14 +2062,14 @@ function renderNbNoteItem(item,level){
   const isChild=level>0;
   const showActions=openPlanActionIds.has(item.id);
   return`<div class="nb-item${isChild?' nb-item-child':''}">
-    <div class="nb-check" style="border-color:var(--g-mid);color:var(--nb-ink3);font-size:11px;${isChild?'width:14px;height:14px;margin-top:5px;':''}">📝</div>
+    <div class="nb-check" style="border-color:var(--g-mid);color:var(--ink3);font-size:11px;${isChild?'width:14px;height:14px;margin-top:5px;':''}">📝</div>
     <div class="nb-content">
-      ${item.title?`<div class="nb-item-title" style="font-size:${isChild?13:15}px;${isChild?'font-weight:500;color:var(--nb-ink2);':''}">${esc(item.title)}</div>`:''}
+      ${item.title?`<div class="nb-item-title" style="${planLevelFontStyle(level)}">${esc(item.title)}</div>`:''}
       <div style="margin:6px 0;border:1px solid var(--g-mid);border-radius:8px;overflow:hidden;max-width:220px;cursor:pointer;" onclick="viewPlanSketchImage('${item.id}')">
         <img src="${item.image}" style="width:100%;display:block;">
       </div>
       <div style="display:flex;align-items:center;gap:6px;margin:2px 0;">
-        <button class="tree-action-btn" onclick="togglePlanActions('${item.id}')" style="color:var(--nb-ink3);margin-left:auto;padding:3px 9px;">⋯</button>
+        <button class="tree-action-btn" onclick="togglePlanActions('${item.id}')" style="color:var(--ink3);margin-left:auto;padding:3px 9px;">⋯</button>
       </div>
       ${showActions?`<div class="nb-item-actions" style="margin:0 0 4px;flex-wrap:wrap;height:auto;">
         <button class="tree-action-btn" onclick="editNbPlan('${item.id}')">✏️ 编辑</button>
@@ -2551,31 +2342,6 @@ function undoCheckInPlanItem(id){
   save();renderPlanNbItems();toast('已撤销');
 }
 
-// 把日计划里的一项（含子项）挪到"今日任务"，不用重新手动录入一遍
-function convertPlanItemToTaskShape(item){
-  return{
-    id:uid(),
-    name:item.title||item.text||'未命名任务',
-    note:item.note||'',
-    date:td(),
-    taskType:S.taskTypes[S.taskTypes.length-1]||'💭 其他',
-    priority:'orange',
-    done:false,
-    total:item.total||0,
-    doneCount:0,
-    reflection:item.reflection||'',
-    fromPlan:'day', // 标记这条任务是从"日计划"挪过来的，第二天存档的时候要把它一起收进去
-    children:(item.children||[]).map(convertPlanItemToTaskShape)
-  };
-}
-function movePlanItemToToday(id){
-  const item=findPlanItem(id);if(!item)return;
-  const arr=findPlanParentArray(id);
-  S.tasks.push(convertPlanItemToTaskShape(item));
-  if(arr){const idx=arr.findIndex(i=>i.id===id);if(idx>-1)arr.splice(idx,1);}
-  save();renderPlanNbItems();toast('已挪到今日任务 ✓（明天过完还是会存档）');
-}
-
 function deleteNbPlan(id){
   confirmDel(()=>{
     const arr=findPlanParentArray(id);
@@ -2780,9 +2546,11 @@ function checkPhaseEndingReminder(){
 }
 // ---- 今日页：今天该做的习惯 ----
 function renderTodayHabitsSection(){
+  const section=document.getElementById('phaseScheduleSection');
   const el=document.getElementById('todayHabitsList');if(!el)return;
   const due=(S.goodH||[]).filter(h=>isHabitDueToday(h));
-  if(!due.length){el.innerHTML='<div style="font-size:12px;color:var(--ink3);padding:8px 0;">今天没有排到的习惯，休息一下 🌿</div>';return;}
+  if(!due.length){if(section)section.style.display='none';el.innerHTML='';return;}
+  if(section)section.style.display='';
   el.innerHTML=due.map(h=>{
     const extra=h.repeatType==='weeklyRotation'?`<button class="sbtn" style="padding:2px 8px;font-size:11px;" onclick="openMoveWeeklyDayModal('${h.id}')">🔀 换一天</button>`:'';
     return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--g-border);flex-wrap:wrap;">
@@ -2850,18 +2618,11 @@ function renderHabits(){
         <button class="tree-action-btn" onclick="openRestRangeModal('${h.id}')">🗓 请假一段</button>
         <button class="tree-action-btn" onclick="moveHabitUp(${idx})" ${idx===0?'style="opacity:.3;pointer-events:none;"':''}>↑</button>
         <button class="tree-action-btn" onclick="moveHabitDown(${idx})" ${idx===S.goodH.length-1?'style="opacity:.3;pointer-events:none;"':''}>↓</button>
-        <button class="tree-action-btn" onclick="moveHabitToToday('${h.id}')" title="挪到今日任务">↗️ 今日</button>
         <button class="tree-action-btn" onclick="editHabit('${h.id}')">✏️ 编辑</button>
         <button class="tree-action-btn danger" onclick="delHabitConfirm('${h.id}')">🗑️</button>
       </div>
     </div>`;
   }).join('');
-}
-// 把某个阶段日程习惯挪一份到"今日任务"里，方便当天写具体的时间/备注（阶段日程本身还在，不受影响）
-function moveHabitToToday(id){
-  const h=S.goodH.find(x=>x.id===id);if(!h)return;
-  S.tasks.push({id:uid(),name:h.name,note:'',date:td(),taskType:S.taskTypes[S.taskTypes.length-1]||'💭 其他',priority:'orange',done:false,children:[]});
-  save();toast('已挪到今日任务 ✓');
 }
 function moveHabitUp(idx){if(idx<=0)return;[S.goodH[idx-1],S.goodH[idx]]=[S.goodH[idx],S.goodH[idx-1]];save();renderHabits();}
 function moveHabitDown(idx){if(idx>=S.goodH.length-1)return;[S.goodH[idx],S.goodH[idx+1]]=[S.goodH[idx+1],S.goodH[idx]];save();renderHabits();}
@@ -3677,11 +3438,11 @@ loadFontSize();
 loadTheme();
 if(!S.fortuneMessages.length){S.fortuneMessages=['给明天的自己写一封信','整理手机里最近拍的照片','学一道新菜','给朋友发消息','读10页书','做15分钟运动','整理一个抽屉'];}
 save();
-_pageInited['today']=true;
-renderToday();
+_pageInited['plan']=true;
+renderPlan();
 const now=new Date();
 document.getElementById('hdrDate').innerHTML=`${now.getMonth()+1}月${now.getDate()}日 · 星期${'日一二三四五六'[now.getDay()]}`;
-switchPage('today');
+switchPage('plan');
 if(getSyncCode())startSyncListener(getSyncCode());
 </script>
 </body>
