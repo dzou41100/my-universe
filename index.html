@@ -321,6 +321,27 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .plan-outer-tab.on{background:var(--g);color:#fff;border-color:var(--g);}
 /* 添加按钮居中在本子外面（日记板块使用） */
 .nb-add-outer-btn{display:block;margin:12px auto 0;padding:10px 32px;background:var(--g);border:none;border-radius:20px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+
+/* ══ 考公备考板块 ══ */
+.kg-level-1{font-size:18px!important;font-weight:800!important;color:var(--ink)!important;line-height:1.4;}
+.kg-level-2{font-size:15px!important;font-weight:600!important;color:var(--ink2)!important;line-height:1.4;}
+.kg-level-3{font-size:13px!important;font-weight:400!important;color:var(--ink3)!important;line-height:1.4;}
+.kg-status-badge{display:inline-block;padding:3px 8px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.kg-status-red{background:#ffebee;color:#c62828;border:1.5px solid #ef9a9a;}
+.kg-status-yellow{background:#fffde7;color:#f57f17;border:1.5px solid #fff59d;}
+.kg-status-blue{background:#e3f2fd;color:#1565c0;border:1.5px solid #90caf9;}
+.kg-status-green{background:#e8f5e9;color:#2e7d32;border:1.5px solid #a5d6a7;}
+.kg-wall-card{background:linear-gradient(135deg,#1b5e20 0%,#2e7d32 100%);color:#fff;border-radius:var(--radius-md);padding:16px;margin-bottom:14px;}
+.kg-wall-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;}
+.kg-wall-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;}
+.kg-wall-box{background:rgba(255,255,255,.15);padding:10px 4px;border-radius:var(--radius-sm);}
+.kg-wall-val{font-size:18px;font-weight:800;margin-top:4px;}
+.kg-cat-item{background:var(--card);border-radius:var(--radius-md);padding:12px;margin-bottom:10px;border:1px solid var(--g-border);box-shadow:var(--shadow-sm);}
+.kg-cat-row{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.kg-cat-metrics{display:flex;gap:10px;font-size:12px;color:var(--ink2);margin-top:6px;flex-wrap:wrap;}
+.kg-empty-hint{color:var(--ink3);text-align:center;padding:40px 12px;font-size:13px;line-height:1.8;}
+.kg-trend-up{color:var(--g);font-weight:700;}
+.kg-trend-down{color:#c62828;font-weight:700;}
 </style>
 </head>
 <body>
@@ -334,10 +355,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 </div>
 
 <div id="pg-plan" class="pg active"><div id="planContent"></div></div>
-<div id="pg-today" class="pg"><div id="todayContent"></div></div>
 <div id="pg-record" class="pg"><div id="recordContent"></div></div>
 <div id="pg-grow" class="pg"><div id="growContent"></div></div>
 <div id="pg-note" class="pg"><div id="noteListPage"></div></div>
+<div id="pg-kg" class="pg"><div id="kgContent"></div></div>
 
 <div id="note-editor-page">
   <div class="note-editor-header">
@@ -366,9 +387,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 
 <div class="bnav">
   <div class="ni on" data-page="plan"><span class="ico">🗓</span><span class="lbl">计划</span></div>
-  <div class="ni" data-page="today"><span class="ico">🌤</span><span class="lbl">今日</span></div>
   <div class="ni" data-page="record"><span class="ico">📝</span><span class="lbl">日记</span></div>
-  <div class="ni" data-page="grow"><span class="ico">🌱</span><span class="lbl">成长</span></div>
+  <div class="ni" data-page="kg"><span class="ico">🏛️</span><span class="lbl">考公</span></div>
+  <div class="ni" data-page="grow"><span class="ico">🌱</span><span class="lbl">耕耘</span></div>
   <div class="ni" data-page="note"><span class="ico">📔</span><span class="lbl">笔记</span></div>
 </div>
 
@@ -496,6 +517,11 @@ function load(){
   // 日计划恢复为独立计划类型，不再自动搬进"今日任务"
   if(!S.lastBackupReminder)S.lastBackupReminder=0;
   if(!S.quoteIntervalMinutes)S.quoteIntervalMinutes=30;
+  // ==== 考公备考板块：数据初始化（体系按你给的图来，数值全部从0开始，等你真实录入） ====
+  if(!S.kg||!S.kg.tree){
+    S.kg={tree:kgDefaultTree(),logs:[]};
+  }
+  if(!Array.isArray(S.kg.logs))S.kg.logs=[];
   // ==== 第一批新功能：数据初始化 ====
   if(!S.memos)S.memos=[]; // 快速备忘（已废弃，仅保留兼容旧备份）：[{id,text,createdAt}]
   if(S.diaryDraft===undefined)S.diaryDraft='';
@@ -1063,14 +1089,14 @@ function switchPage(pageId){
   document.querySelectorAll('.pg').forEach(pg=>pg.classList.remove('active'));
   document.getElementById('pg-'+pageId).classList.add('active');
   document.querySelectorAll('.ni').forEach(nav=>{nav.classList.toggle('on',nav.dataset.page===pageId);});
-  if(pageId==='today'){
-    renderToday(); // 今日页每次都重新渲染，避免从计划/阶段日程"挪到今日"之后切回来看不到最新内容
+  if(pageId==='grow'){
+    renderGrow(); // 耕耘页（今日+阶段日程+成就）每次都重新渲染，保证"今日"这块（语录/倒数日/今天该做的）是最新的
   }else if(!_pageInited[pageId]){
     _pageInited[pageId]=true;
-    if(pageId==='grow')renderGrow();
     if(pageId==='record')renderRecord();
     if(pageId==='plan')renderPlan();
     if(pageId==='note')renderNoteList();
+    if(pageId==='kg')renderKg();
   }
 }
 document.querySelectorAll('.ni').forEach(nav=>{nav.onclick=()=>switchPage(nav.dataset.page);});
@@ -2144,11 +2170,13 @@ function openNbPlanModal(existingId,parentId){
     if(isEdit){
       Object.assign(item,{title,note,due,text:title,total});
       if(item.doneCount===undefined)item.doneCount=0;
+      openPlanActionIds.delete(existingId);
     }else if(parentId){
       const parent=findPlanItem(parentId);if(!parent)return;
       if(!parent.children)parent.children=[];
       parent.children.push({id:uid(),title,note,due,text:title,done:false,children:[],total,doneCount:0});
       collapsedPlanIds.delete(parentId);
+      openPlanActionIds.delete(parentId); // 加完子项后，上一级的展开面板也收回去，别留着
     }else{
       if(!S.plans[_planType])S.plans[_planType]=[];
       S.plans[_planType].push({id:uid(),title,note,due,text:title,done:false,children:[],total,doneCount:0});
@@ -2200,11 +2228,13 @@ function openPlanSketchModal(existingId,parentId){
     if(!image||image==='data:,'){toast('请先手写点什么，或上传一张截图');return;}
     if(isEdit){
       Object.assign(item,{title,image});
+      openPlanActionIds.delete(existingId);
     }else if(parentId){
       const parent=findPlanItem(parentId);if(!parent)return;
       if(!parent.children)parent.children=[];
       parent.children.push({id:uid(),kind:'note',title,image,children:[],done:false});
       collapsedPlanIds.delete(parentId);
+      openPlanActionIds.delete(parentId);
     }else{
       if(!S.plans[_planType])S.plans[_planType]=[];
       S.plans[_planType].push({id:uid(),kind:'note',title,image,children:[],done:false});
@@ -2284,6 +2314,7 @@ function initSketchCanvas(existingImage){
 function archiveWholePlan(id){
   const item=findPlanItem(id);if(!item)return;
   (function markAll(n){n.done=true;n.completedAt=Date.now();if(n.total>0)n.doneCount=n.total;(n.children||[]).forEach(markAll);})(item);
+  openPlanActionIds.delete(id);
   save();renderPlanNbItems();toast('✓ 整组已完成');
 }
 
@@ -2301,6 +2332,7 @@ function editPlanReflection(id){
   const body=`<textarea id="planReflectionTA" rows="4" placeholder="写点心得，什么都行…">${esc(item.reflection||'')}</textarea>`;
   showModal('💭 写心得',body,()=>{
     item.reflection=document.getElementById('planReflectionTA').value.trim();
+    openPlanActionIds.delete(id);
     save();closeModal();renderPlanNbItems();toast('已保存 ✓');
   });
 }
@@ -2326,21 +2358,30 @@ function deleteNbPlan(id){
   confirmDel(()=>{
     const arr=findPlanParentArray(id);
     if(arr){const idx=arr.findIndex(i=>i.id===id);if(idx>-1)arr.splice(idx,1);}
+    openPlanActionIds.delete(id);
     save();renderPlanNbItems();
   });
 }
 
 // ==================== 成长页面 ====================
 function showGrowTab(tab){
-  const tabs=['habit','ach'];
-  tabs.forEach(t=>{const el=document.getElementById('grow'+t.charAt(0).toUpperCase()+t.slice(1));if(el)el.style.display=t===tab?'':'none';});
+  const tabs=['today','habit','ach'];
+  tabs.forEach(t=>{const el=document.getElementById(t==='today'?'todayContent':'grow'+t.charAt(0).toUpperCase()+t.slice(1));if(el)el.style.display=t===tab?'':'none';});
   document.querySelectorAll('#growTabs [data-grow]').forEach(b=>{b.classList.toggle('on',b.dataset.grow===tab);});
 }
 function renderGrow(){
   const gc=document.getElementById('growContent');
-  gc.innerHTML=`<div class="top-tabs" id="growTabs"><button class="tab-main on" data-grow="habit">📅 阶段日程</button><button class="tab-main" data-grow="ach">🏆 成就</button></div><div id="growHabit"></div><div id="growAch" style="display:none"></div>`;
-  renderHabits();renderAchievements();
-  document.getElementById('growTabs').addEventListener('click',(e)=>{const btn=e.target.closest('[data-grow]');if(btn)showGrowTab(btn.dataset.grow);});
+  const wasTab=gc.dataset.activeTab||'today';
+  gc.innerHTML=`<div class="top-tabs" id="growTabs">
+    <button class="tab-main${wasTab==='today'?' on':''}" data-grow="today">🌤 今日</button>
+    <button class="tab-main${wasTab==='habit'?' on':''}" data-grow="habit">📅 阶段日程</button>
+    <button class="tab-main${wasTab==='ach'?' on':''}" data-grow="ach">🏆 成就</button>
+  </div>
+  <div id="todayContent" style="${wasTab==='today'?'':'display:none'}"></div>
+  <div id="growHabit" style="${wasTab==='habit'?'':'display:none'}"></div>
+  <div id="growAch" style="${wasTab==='ach'?'':'display:none'}"></div>`;
+  renderToday();renderHabits();renderAchievements();
+  document.getElementById('growTabs').addEventListener('click',(e)=>{const btn=e.target.closest('[data-grow]');if(btn){gc.dataset.activeTab=btn.dataset.grow;showGrowTab(btn.dataset.grow);}});
 }
 
 // ==================== 阶段日程系统 ====================
@@ -3410,6 +3451,422 @@ function migrateOldData(){
     if(old.clarityQs&&Array.isArray(old.clarityQs))old.clarityQs.forEach(q=>{if(!S.userClarityQs.includes(q))S.userClarityQs.push(q);});
     save();toast(`迁移完成！共迁移 ${count} 条数据 ✅`);setTimeout(()=>location.reload(),1500);
   }catch(e){toast('迁移出错：'+e.message);}
+}
+
+// ==================== 考公备考板块（树状体系，逻辑跟"项目"功能一样：子项进度会汇总到上一级） ====================
+function kgN(name,opts){
+  opts=opts||{};
+  return{id:uid(),name,unit:opts.unit||'题',count:0,target:opts.target||0,trackAcc:opts.trackAcc!==false,correct:0,prevAcc:null,trendUp:null,manualStatus:null,notes:[],children:opts.children||[]};
+}
+// 体系初始骨架：按你给的图搭的，数值全部是0，节点你都可以自己改名/加/删——这只是个起点
+function kgDefaultTree(){
+  return[
+    kgN('行测',{trackAcc:false,unit:'分',children:[
+      kgN('套题记录',{unit:'套'}),
+      kgN('言语理解与表达',{trackAcc:false,unit:'分',children:[
+        kgN('套题记录',{unit:'套'}),
+        kgN('逻辑填空',{children:[kgN('刷题'),kgN('积累词语',{trackAcc:false,unit:'个'}),kgN('笔记复盘',{trackAcc:false,unit:'次'})]}),
+        kgN('片段阅读',{trackAcc:false,unit:'分',children:[kgN('中心理解题'),kgN('细节判断题'),kgN('标题填入题'),kgN('词句理解题'),kgN('笔记复盘',{trackAcc:false,unit:'次'})]}),
+        kgN('语句表达',{trackAcc:false,unit:'分',children:[kgN('语句排序题'),kgN('语句填空题'),kgN('接语选择题')]})
+      ]}),
+      kgN('判断推理',{trackAcc:false,unit:'分',children:[
+        kgN('套题记录',{unit:'套'}),
+        kgN('图形推理',{trackAcc:false,children:[kgN('常规类'),kgN('空间类'),kgN('文字字母数字类')]}),
+        kgN('定义判断',{trackAcc:false,children:[kgN('单定义'),kgN('多定义')]}),
+        kgN('类比推理'),
+        kgN('逻辑判断',{trackAcc:false,children:[kgN('加强削弱'),kgN('翻译推理'),kgN('真假推理'),kgN('组合排列'),kgN('日常结论'),kgN('原因解释'),kgN('论证结构')]}),
+        kgN('笔记复盘',{trackAcc:false,unit:'次'})
+      ]}),
+      kgN('资料分析',{trackAcc:false,unit:'分',children:[
+        kgN('套题记录',{unit:'套'}),
+        kgN('公式',{trackAcc:false,unit:'遍'}),
+        kgN('计算',{trackAcc:false,unit:'次'}),
+        kgN('秒杀技巧',{trackAcc:false,unit:'个'}),
+        kgN('笔记复盘',{trackAcc:false,unit:'次'})
+      ]}),
+      kgN('政治理论',{trackAcc:false,unit:'分',children:[kgN('看专项课',{trackAcc:false,unit:'节'}),kgN('刷题'),kgN('笔记',{trackAcc:false,unit:'次'})]}),
+      kgN('数量关系',{trackAcc:false,unit:'分',children:[kgN('刷题'),kgN('笔记',{trackAcc:false,unit:'次'})]}),
+      kgN('常识判断',{trackAcc:false,unit:'分',children:[kgN('刷题')]})
+    ]}),
+    kgN('申论',{trackAcc:false,unit:'分',children:[
+      kgN('套题记录',{unit:'套'}),
+      kgN('刷题'),
+      kgN('大作文素材',{trackAcc:false,unit:'个'}),
+      kgN('应用文框架积累',{trackAcc:false,unit:'个'}),
+      kgN('笔记晚上与复盘',{trackAcc:false,unit:'次'})
+    ]})
+  ];
+}
+function kgFindNode(id,list){list=list||S.kg.tree;for(const n of list){if(n.id===id)return n;if(n.children&&n.children.length){const f=kgFindNode(id,n.children);if(f)return f;}}return null;}
+function kgFindParentArray(id,list){
+  list=list||S.kg.tree;
+  for(const n of list){
+    if(n.children&&n.children.some(c=>c.id===id))return n.children;
+    if(n.children&&n.children.length){const f=kgFindParentArray(id,n.children);if(f)return f;}
+  }
+  return null;
+}
+function kgFindSiblings(id,list){
+  list=list||S.kg.tree;
+  for(let i=0;i<list.length;i++){
+    if(list[i].id===id)return{siblings:list,index:i};
+    if(list[i].children&&list[i].children.length){const r=kgFindSiblings(id,list[i].children);if(r)return r;}
+  }
+  return null;
+}
+function kgPercent(n){
+  if(n.children&&n.children.length){
+    const sum=n.children.reduce((s,c)=>s+kgPercent(c),0);
+    return Math.round(sum/n.children.length);
+  }
+  if(n.target>0)return Math.min(100,Math.round(n.count/n.target*100));
+  return n.count>0?100:0;
+}
+// 风险值：正确率越低、覆盖度（刷得够不够）越低，风险越高；有子项目就取子项目风险的平均值（自己的数字不算，纯汇总）
+function kgRisk(n){
+  if(n.children&&n.children.length){
+    const sum=n.children.reduce((s,c)=>s+kgRisk(c),0);
+    return sum/n.children.length;
+  }
+  const coverage=n.target>0?Math.min(100,n.count/n.target*100):(n.count>0?100:0);
+  if(n.count===0)return 100;
+  if(n.trackAcc){
+    const acc=n.count>0?(n.correct/n.count*100):0;
+    return (100-acc)*0.6+(100-coverage)*0.4;
+  }
+  return 100-coverage;
+}
+function kgAutoStatus(n){
+  const risk=kgRisk(n);
+  if(risk>=55)return'red';
+  if(risk>=35)return'yellow';
+  if(risk>=18)return'blue';
+  return'green';
+}
+function kgStatus(n){return n.manualStatus||kgAutoStatus(n);}
+function kgSumSubtree(n){
+  let count=n.count||0,correct=n.trackAcc?(n.correct||0):0,trackedCount=n.trackAcc?(n.count||0):0;
+  (n.children||[]).forEach(c=>{const s=kgSumSubtree(c);count+=s.count;correct+=s.correct;trackedCount+=s.trackedCount;});
+  return{count,correct,trackedCount};
+}
+let kgCollapsed=new Set();
+let kgOpenActions=new Set();
+function kgToggleCollapse(id){if(kgCollapsed.has(id))kgCollapsed.delete(id);else kgCollapsed.add(id);kgRenderTree();}
+function kgToggleActions(id){if(kgOpenActions.has(id))kgOpenActions.delete(id);else kgOpenActions.add(id);kgRenderTree();}
+function kgToggleManualStatus(id){
+  const n=kgFindNode(id);if(!n)return;
+  const seq=[null,'red','yellow','blue','green'];
+  n.manualStatus=seq[(seq.indexOf(n.manualStatus)+1)%seq.length];
+  save();kgRenderTree();
+}
+function kgMoveNode(id,dir){
+  const r=kgFindSiblings(id);if(!r)return;
+  const{siblings,index}=r;const ni=index+dir;
+  if(ni<0||ni>=siblings.length)return;
+  [siblings[index],siblings[ni]]=[siblings[ni],siblings[index]];
+  save();kgRenderTree();
+}
+const KG_STATUS_MAP={red:{label:'🔴',class:'kg-status-red'},yellow:{label:'🟡',class:'kg-status-yellow'},blue:{label:'🔵',class:'kg-status-blue'},green:{label:'🟢',class:'kg-status-green'}};
+function kgRenderTree(){
+  const listDiv=document.getElementById('kgTreeList');if(!listDiv)return;
+  if(!S.kg.tree.length){listDiv.innerHTML='<div class="kg-empty-hint">还没有任何模块，点下面"创建模块"开始搭建你的体系吧</div>';return;}
+  function renderNode(n,level,idx,siblingsLen){
+    const hasChildren=n.children&&n.children.length>0;
+    const percent=kgPercent(n);
+    const isCollapsed=hasChildren&&kgCollapsed.has(n.id);
+    const toggleIcon=hasChildren?(isCollapsed?'▶':'▼'):'';
+    const st=kgStatus(n);
+    const cardClass=level===0?'project-card-root':(level===1?'project-card-child':'project-card-grandchild');
+    const acc=n.trackAcc&&n.count>0?Math.round(n.correct/n.count*100):null;
+    const trendArrow=n.trendUp===null?'':(n.trendUp?'<span class="kg-trend-up">↑</span>':'<span class="kg-trend-down">↓</span>');
+    const showActions=kgOpenActions.has(n.id);
+    const movebtns=siblingsLen>1?`
+      <button class="tree-action-btn" onclick="kgMoveNode('${n.id}',-1)" style="${idx===0?'opacity:.3;pointer-events:none;':''}">↑</button>
+      <button class="tree-action-btn" onclick="kgMoveNode('${n.id}',1)" style="${idx===siblingsLen-1?'opacity:.3;pointer-events:none;':''}">↓</button>`:'';
+    return`<div class="${cardClass}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        ${hasChildren?`<span onclick="kgToggleCollapse('${n.id}')" style="font-size:11px;color:var(--ink3);cursor:pointer;width:16px;flex-shrink:0;user-select:none;">${toggleIcon}</span>`:'<span style="width:16px;flex-shrink:0;"></span>'}
+        <span style="flex:1;font-weight:${level===0?'700':'600'};font-size:${level===0?'16px':'15px'};cursor:${hasChildren?'pointer':'default'};" onclick="${hasChildren?`kgToggleCollapse('${n.id}')`:''}">${level===0?'📁 ':''}${esc(n.name)}</span>
+        <span class="kg-status-badge ${KG_STATUS_MAP[st].class}" onclick="kgToggleManualStatus('${n.id}')">${KG_STATUS_MAP[st].label}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:2px;">
+        完成 ${percent}%${hasChildren?'':` · ${n.count}${n.target>0?'/'+n.target:''} ${esc(n.unit)}`}${acc!==null?` · 正确率 ${acc}% ${trendArrow}`:''}
+      </div>
+      <div style="display:flex;gap:2px;margin:6px 0 0;flex-wrap:wrap;align-items:center;">
+        ${movebtns}
+        ${hasChildren?'':`<button class="tree-action-btn accent" onclick="kgOpenCheckInModal('${n.id}')">✅ 打卡</button>`}
+        ${(!hasChildren&&n.notes.length>0)?`<button class="tree-action-btn" onclick="kgUndoCheckIn('${n.id}')">↩️ 撤销</button>`:''}
+        <button class="tree-action-btn" onclick="kgOpenAddChildModal('${n.id}')">➕ 子项</button>
+        <button class="tree-action-btn" onclick="kgToggleActions('${n.id}')" style="margin-left:auto;">⋯</button>
+      </div>
+      ${showActions?`<div class="nb-item-actions" style="margin:4px 0 0;flex-wrap:wrap;height:auto;">
+        ${(!hasChildren&&n.notes.length>0)?`<button class="tree-action-btn" onclick="kgViewHistory('${n.id}')">📜 记录</button>`:''}
+        <button class="tree-action-btn" onclick="kgOpenEditModal('${n.id}')">✏️ 编辑</button>
+        <button class="tree-action-btn danger" onclick="kgDeleteNode('${n.id}')">🗑️ 删除</button>
+      </div>`:''}
+      ${!isCollapsed&&hasChildren?`<div>${n.children.map((c,ci)=>renderNode(c,level+1,ci,n.children.length)).join('')}</div>`:(hasChildren?`<div style="font-size:11px;color:var(--ink3);padding:4px 0 2px;">▶ ${n.children.length} 个子项（已折叠）</div>`:'')}
+    </div>`;
+  }
+  listDiv.innerHTML=S.kg.tree.map((n,i)=>renderNode(n,0,i,S.kg.tree.length)).join('');
+}
+function kgOpenAddRootModal(){
+  showModal('创建模块',`
+    <label style="font-size:12px;color:var(--ink3);">模块名称</label>
+    <input type="text" id="kgNewName" placeholder="例如：行测 / 申论">
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">单位（刷题用"题"，默写用"遍"，都行）</label>
+    <input type="text" id="kgNewUnit" placeholder="题" value="题">
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">目标数量（0=不限）</label>
+    <input type="number" id="kgNewTarget" value="0" min="0">
+    <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="kgNewAcc" checked style="width:auto;margin:0;"> 需要记录正确率</label>
+  `,()=>{
+    const name=document.getElementById('kgNewName').value.trim();if(!name){toast('请填写名称');return;}
+    const unit=document.getElementById('kgNewUnit').value.trim()||'题';
+    const target=parseInt(document.getElementById('kgNewTarget').value)||0;
+    const trackAcc=document.getElementById('kgNewAcc').checked;
+    S.kg.tree.push(kgN(name,{unit,target,trackAcc}));
+    save();closeModal();kgRenderTree();kgRenderWall();toast('已创建 ✓');
+  });
+}
+function kgOpenAddChildModal(parentId){
+  showModal('添加子项',`
+    <label style="font-size:12px;color:var(--ink3);">名称</label>
+    <input type="text" id="kgNewName" placeholder="例如：逻辑填空">
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">单位</label>
+    <input type="text" id="kgNewUnit" placeholder="题" value="题">
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">目标数量（0=不限）</label>
+    <input type="number" id="kgNewTarget" value="0" min="0">
+    <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="kgNewAcc" checked style="width:auto;margin:0;"> 需要记录正确率</label>
+  `,()=>{
+    const name=document.getElementById('kgNewName').value.trim();if(!name){toast('请填写名称');return;}
+    const parent=kgFindNode(parentId);if(!parent)return;
+    if(!parent.children)parent.children=[];
+    const unit=document.getElementById('kgNewUnit').value.trim()||'题';
+    const target=parseInt(document.getElementById('kgNewTarget').value)||0;
+    const trackAcc=document.getElementById('kgNewAcc').checked;
+    parent.children.push(kgN(name,{unit,target,trackAcc}));
+    kgCollapsed.delete(parentId);
+    save();closeModal();kgRenderTree();kgRenderWall();toast('已添加 ✓');
+  });
+}
+function kgOpenEditModal(id){
+  const n=kgFindNode(id);if(!n)return;
+  showModal('编辑',`
+    <label style="font-size:12px;color:var(--ink3);">名称</label>
+    <input type="text" id="kgEName" value="${esc(n.name)}">
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">单位</label>
+    <input type="text" id="kgEUnit" value="${esc(n.unit)}">
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">目标数量（0=不限）</label>
+    <input type="number" id="kgETarget" value="${n.target||0}" min="0">
+    <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="kgEAcc" ${n.trackAcc?'checked':''} style="width:auto;margin:0;"> 需要记录正确率</label>
+  `,()=>{
+    const name=document.getElementById('kgEName').value.trim();if(!name){toast('请填写名称');return;}
+    n.name=name;
+    n.unit=document.getElementById('kgEUnit').value.trim()||'题';
+    n.target=parseInt(document.getElementById('kgETarget').value)||0;
+    n.trackAcc=document.getElementById('kgEAcc').checked;
+    save();closeModal();kgRenderTree();kgRenderWall();toast('已保存 ✓');
+  });
+}
+function kgDeleteNode(id){
+  confirmDel(()=>{
+    const arr=kgFindParentArray(id)||S.kg.tree;
+    const idx=arr.findIndex(n=>n.id===id);
+    if(idx>-1)arr.splice(idx,1);
+    save();kgRenderTree();kgRenderWall();
+  });
+}
+function kgOpenCheckInModal(id){
+  const n=kgFindNode(id);if(!n)return;
+  showModal(`✅ ${esc(n.name)} 打卡`,`
+    <label style="font-size:12px;color:var(--ink3);">本次数量（${esc(n.unit)}）</label>
+    <input type="number" id="kgCiCount" value="1" min="1">
+    ${n.trackAcc?`<label style="font-size:12px;color:var(--ink3);margin-top:8px;">其中做对了几个</label><input type="number" id="kgCiCorrect" value="0" min="0">`:''}
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">备注（最多30字，随手写写就行）</label>
+    <input type="text" id="kgCiNote" maxlength="30" placeholder="做了什么…">
+  `,()=>{
+    const count=parseInt(document.getElementById('kgCiCount').value)||0;
+    if(count<=0){toast('数量要大于0');return;}
+    const correct=n.trackAcc?Math.min(count,parseInt(document.getElementById('kgCiCorrect').value)||0):count;
+    const note=document.getElementById('kgCiNote').value.trim().slice(0,30);
+    const oldAcc=n.trackAcc&&n.count>0?n.correct/n.count*100:null;
+    n.count+=count;
+    if(n.trackAcc)n.correct+=correct;
+    if(n.trackAcc){
+      const newAcc=n.count>0?n.correct/n.count*100:0;
+      n.trendUp=oldAcc===null?null:(newAcc>=oldAcc);
+    }
+    n.lastDelta={count,correct:n.trackAcc?correct:count};
+    n.notes.push({id:uid(),date:nowStr(),note});
+    S.kg.logs.push({date:td(),nodeId:id,name:kgPathLabel(id),count,correct:n.trackAcc?correct:null});
+    save();closeModal();kgRenderTree();kgRenderWall();toast(`+${count} ${n.unit} ✓`);
+  });
+}
+function kgUndoCheckIn(id){
+  const n=kgFindNode(id);if(!n||!n.notes.length)return;
+  showModal('撤销上一次打卡','<p style="color:var(--ink2);font-size:14px;line-height:1.6;">会去掉最近一次打卡的数量和备注，确定吗？</p>',()=>{
+    const delta=n.lastDelta||{count:0,correct:0};
+    n.count=Math.max(0,n.count-delta.count);
+    if(n.trackAcc)n.correct=Math.max(0,n.correct-delta.correct);
+    n.notes.pop();
+    n.trendUp=null;
+    // 同步去掉全局日志里最近一条对应记录
+    for(let i=S.kg.logs.length-1;i>=0;i--){if(S.kg.logs[i].nodeId===id){S.kg.logs.splice(i,1);break;}}
+    save();closeModal();kgRenderTree();kgRenderWall();toast('已撤销');
+  },null,{showCancel:true});
+}
+function kgViewHistory(id){
+  const n=kgFindNode(id);if(!n)return;
+  const body=`<div style="max-height:240px;overflow-y:auto;text-align:left;">
+    ${[...n.notes].reverse().map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--g-border);font-size:13px;">
+      <span style="color:var(--ink3);font-size:11px;display:block;">⏱️ ${e.date}</span>
+      ${e.note?`<span style="display:block;margin-top:3px;color:var(--ink2);">${esc(e.note)}</span>`:''}
+    </div>`).join('')||'<div style="color:var(--ink3);">还没有记录</div>'}
+  </div>`;
+  showModal(`📜 ${esc(n.name)} - 打卡记录`,body,null,null,{hideConfirm:true,showCancel:true,cancelText:'关闭'});
+}
+
+// ==== 成就墙 ====
+function kgRenderWall(){
+  const el=document.getElementById('kgAchTab');if(!el)return;
+  const grand=S.kg.tree.reduce((acc,n)=>{const s=kgSumSubtree(n);acc.count+=s.count;acc.correct+=s.correct;acc.trackedCount+=s.trackedCount;return acc;},{count:0,correct:0,trackedCount:0});
+  const overallAcc=grand.trackedCount>0?Math.round(grand.correct/grand.trackedCount*100):0;
+  // 大分类：行测下面的一级子项 + 申论本身
+  const xingceNode=S.kg.tree.find(n=>n.name==='行测');
+  const branches=[...(xingceNode?xingceNode.children:[]),...S.kg.tree.filter(n=>n.name!=='行测')];
+  const branchHtml=branches.map(b=>{
+    const s=kgSumSubtree(b);
+    const acc=s.trackedCount>0?Math.round(s.correct/s.trackedCount*100):null;
+    const st=kgStatus(b);
+    return`<div class="kg-cat-item">
+      <div class="kg-cat-row">
+        <span style="font-weight:700;font-size:14px;">${esc(b.name)}</span>
+        <span class="kg-status-badge ${KG_STATUS_MAP[st].class}">${acc!==null?acc+'% 正确率':'还没数据'}</span>
+      </div>
+      <div class="kg-cat-metrics">
+        <span>累计: <b>${s.count} ${esc(b.unit||'题')}</b></span>
+        <span>完成度: <b>${kgPercent(b)}%</b></span>
+      </div>
+    </div>`;
+  }).join('');
+  el.innerHTML=`
+    <div class="kg-wall-card">
+      <div class="kg-wall-head"><span style="font-weight:800;font-size:15px;">📊 备考战果总览</span></div>
+      <div class="kg-wall-grid">
+        <div class="kg-wall-box"><div style="font-size:11px;opacity:.85;">累计总刷题</div><div class="kg-wall-val">${grand.count}</div></div>
+        <div class="kg-wall-box"><div style="font-size:11px;opacity:.85;">整体正确率</div><div class="kg-wall-val">${overallAcc}%</div></div>
+        <div class="kg-wall-box"><div style="font-size:11px;opacity:.85;">整体完成度</div><div class="kg-wall-val">${S.kg.tree.length?Math.round(S.kg.tree.reduce((s,n)=>s+kgPercent(n),0)/S.kg.tree.length):0}%</div></div>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px;">📚 各大分类刷题与正确率</div>
+    ${branches.length?branchHtml:'<div class="kg-empty-hint">还没有任何模块，先去"成长"标签建几个吧</div>'}`;
+}
+
+// ==== 日报/周报/月报：按日期区间筛选 S.kg.logs ====
+function kgPeriodRange(period){
+  const now=new Date();
+  const end=td();
+  if(period==='day')return{start:end,end,label:'今日日报'};
+  if(period==='week'){
+    const day=now.getDay();
+    const diffToMon=day===0?-6:1-day;
+    const monday=new Date(now);monday.setDate(now.getDate()+diffToMon);
+    return{start:formatDate(monday),end,label:'本周周报'};
+  }
+  const first=new Date(now.getFullYear(),now.getMonth(),1);
+  return{start:formatDate(first),end,label:'本月月报'};
+}
+function kgNodePath(id,list,trail){
+  list=list||S.kg.tree;trail=trail||[];
+  for(const n of list){
+    const newTrail=[...trail,n.name];
+    if(n.id===id)return newTrail;
+    if(n.children&&n.children.length){const r=kgNodePath(id,n.children,newTrail);if(r)return r;}
+  }
+  return null;
+}
+// 叶子节点很多叫"刷题"/"笔记"这种重名，报告里得带上路径才知道是哪一块
+function kgPathLabel(id){const p=kgNodePath(id);return p?p.slice(-2).join('·'):'';}
+function kgAllNodesFlat(list,out){
+  out=out||[];list=list||S.kg.tree;
+  list.forEach(n=>{out.push(n);if(n.children&&n.children.length)kgAllNodesFlat(n.children,out);});
+  return out;
+}
+function kgGenerateReport(period){
+  const{start,end,label}=kgPeriodRange(period);
+  const periodLogs=S.kg.logs.filter(l=>l.date>=start&&l.date<=end);
+  const perNode={};
+  periodLogs.forEach(l=>{
+    if(!perNode[l.nodeId])perNode[l.nodeId]={name:l.name,count:0,correct:0,hasAcc:l.correct!==null};
+    perNode[l.nodeId].count+=l.count;
+    if(l.correct!==null)perNode[l.nodeId].correct+=l.correct;
+  });
+  const progressLines=[],regressLines=[];
+  Object.keys(perNode).forEach(id=>{
+    const n=kgFindNode(id);if(!n||!n.trackAcc)return;
+    const p=perNode[id];if(!p.hasAcc||p.count===0)return;
+    const beforeCount=n.count-p.count,beforeCorrect=n.correct-p.correct;
+    const accBefore=beforeCount>0?Math.round(beforeCorrect/beforeCount*100):null;
+    const accPeriod=Math.round(p.correct/p.count*100);
+    if(accBefore===null)progressLines.push(`【${esc(p.name)}】期间内新刷了 ${p.count} ${esc(n.unit)}，正确率 ${accPeriod}%，算是刚开始攻克。`);
+    else if(accPeriod>accBefore)progressLines.push(`【${esc(p.name)}】期间正确率 ${accPeriod}%，比之前的 ${accBefore}% 有提升 👍`);
+    else if(accPeriod<accBefore)regressLines.push(`【${esc(p.name)}】期间正确率 ${accPeriod}%，比之前的 ${accBefore}% 有所下滑`);
+  });
+  const allNodes=kgAllNodesFlat().filter(n=>!(n.children&&n.children.length)); // 只看叶子节点，避免父级重复计入
+  let redCats=[],greenCats=[];
+  allNodes.forEach(n=>{
+    const st=kgStatus(n);
+    if(st==='red'&&(n.count>0||n.target>0))redCats.push(kgPathLabel(n.id));
+    if(st==='green')greenCats.push(kgPathLabel(n.id));
+  });
+  const periodTotalQ=periodLogs.reduce((s,l)=>s+l.count,0);
+  const touchedNames=[...new Set(Object.values(perNode).map(p=>p.name))];
+  const html=`
+    <h4 style="font-size:15px;border-bottom:1px solid var(--g-border);padding-bottom:6px;margin-bottom:10px;">📋 考公备考【${label}】（${start} ~ ${end}）</h4>
+    ${periodTotalQ>0?`<p><b>📈 本期战况：</b> 共打卡 <b>${periodTotalQ}</b> 次，覆盖了 <span style="color:var(--g);">${touchedNames.map(esc).join('、')}</span>。</p>`
+      :`<p style="color:var(--ink3);">这段时间还没有打卡记录，先去"成长"标签打个卡再来看报告会更有意思～</p>`}
+    ${progressLines.length?`<p style="margin-top:8px;"><b>🚀 进步：</b></p><ul style="padding-left:18px;color:var(--ink2);">${progressLines.map(l=>`<li>${l}</li>`).join('')}</ul>`:''}
+    ${regressLines.length?`<p style="margin-top:8px;"><b>📉 需要留意：</b></p><ul style="padding-left:18px;color:#c62828;">${regressLines.map(l=>`<li>${l}</li>`).join('')}</ul>`:''}
+    <p style="margin-top:8px;"><b>🏆 目前的优势项：</b> <span style="color:var(--g);font-weight:700;">${greenCats.slice(0,6).map(esc).join('、')||'暂无（继续加油）'}${greenCats.length>6?' 等':''}</span></p>
+    <p style="margin-top:8px;"><b>⚠️ 目前的薄弱重灾区：</b> <span style="color:#c62828;font-weight:700;">${redCats.slice(0,6).map(esc).join('、')||'全线良好'}${redCats.length>6?' 等':''}</span></p>
+    <p style="margin-top:8px;"><b>🎯 建议努力方向：</b></p>
+    <ul style="padding-left:18px;margin-top:4px;color:var(--ink2);">
+      ${redCats.length>0?`<li>重点突击【${esc(redCats[0])}】，建议这段时间针对性专项训练，多刷、控制单题用时，并梳理错题笔记。</li>`:'<li>各模块状态都不错，维持手感，可以开始安排全真模拟定时训练了。</li>'}
+      <li>刷题量偏少（覆盖度低）的项要优先补量，不然正确率再高也不算真的攻克。</li>
+    </ul>`;
+  document.getElementById('kgReportContainer').innerHTML=html;
+}
+
+function renderKg(){
+  const el=document.getElementById('kgContent');
+  el.innerHTML=`
+    <div class="top-tabs" id="kgTabs">
+      <button class="tab-main on" onclick="kgSwitchTab(this,'kgGrowTab')">🌱 成长</button>
+      <button class="tab-main" onclick="kgSwitchTab(this,'kgAchTab')">🏆 成就墙</button>
+      <button class="tab-main" onclick="kgSwitchTab(this,'kgReportTab')">📊 日/周/月报</button>
+    </div>
+    <div id="kgGrowTab">
+      <div id="kgTreeList"></div>
+      <button class="fab-btn" id="kgAddRootBtn">➕ 创建模块</button>
+    </div>
+    <div id="kgAchTab" style="display:none;"></div>
+    <div id="kgReportTab" style="display:none;">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <button class="pbtn" style="flex:1;min-width:90px;" onclick="kgGenerateReport('day')">今日日报</button>
+        <button class="pbtn" style="flex:1;min-width:90px;background:var(--ink2);" onclick="kgGenerateReport('week')">本周周报</button>
+        <button class="pbtn" style="flex:1;min-width:90px;background:var(--g-dark);" onclick="kgGenerateReport('month')">本月月报</button>
+      </div>
+      <div id="kgReportContainer" style="background:var(--card);padding:14px;border-radius:12px;border:1px solid var(--g-border);min-height:160px;font-size:13px;line-height:1.6;">
+        <div class="kg-empty-hint">点击上方按钮生成对应周期的备考报告分析</div>
+      </div>
+    </div>`;
+  document.getElementById('kgAddRootBtn').onclick=kgOpenAddRootModal;
+  kgRenderTree();kgRenderWall();
+}
+function kgSwitchTab(el,tabId){
+  document.querySelectorAll('#kgTabs .tab-main').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  ['kgGrowTab','kgAchTab','kgReportTab'].forEach(id=>{document.getElementById(id).style.display=id===tabId?'block':'none';});
 }
 
 // ==================== 初始化 ====================
