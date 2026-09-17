@@ -3607,6 +3607,7 @@ function kgRowHtml(n,depth,catIndex){
   const accGoalTxt=n.trackAcc&&n.targetAcc>0?`（目标${n.targetAcc}%）`:'';
   const lastScore=n.trackScore&&n.scores.length?n.scores[n.scores.length-1]:null;
   const avgScorePct=n.trackScore&&n.scores.length?Math.round(n.scores.reduce((s,x)=>s+(x.total>0?x.score/x.total*100:0),0)/n.scores.length):null;
+  const totalQCount=n.trackScore?n.scores.reduce((s,x)=>s+(x.qcount||0),0):0;
   let html=`<div class="kg-row" style="margin-left:${depth*12}px;${depth<=1?'margin-top:10px;':''}">
     <div class="kg-row-head">
       <span class="kg-dot" style="background:${dot};" onclick="kgToggleManualStatus('${n.id}')" title="点一下切换状态"></span>
@@ -3619,7 +3620,8 @@ function kgRowHtml(n,depth,catIndex){
       <span>${n.count}${n.target>0?'/'+n.target:''} ${esc(n.unit)}</span>
       ${acc!==null?`<span>正确率 ${acc}%${accGoalTxt} ${trendArrow}</span>`:''}
       ${n.timeMinutes>0?`<span>⏱ 累计${n.timeMinutes}分钟</span>`:''}
-      ${lastScore?`<span>📝 最近${lastScore.score}/${lastScore.total}分（均分${avgScorePct}%）${trendArrow}</span>`:''}
+      ${lastScore?`<span>📝 最近${lastScore.score}/${lastScore.total}分${lastScore.qcount?`（${lastScore.qcount}题）`:''}（均分${avgScorePct}%）${trendArrow}</span>`:''}
+      ${totalQCount>0?`<span>🧮 累计刷题 ${totalQCount} 题</span>`:''}
     </div>`;
   }
   html+=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center;">
@@ -3720,7 +3722,11 @@ function kgOpenCheckInModal(id){
   const n=kgFindNode(id);if(!n)return;
   if(n.trackScore){
     showModal(`✅ ${esc(n.name)} 打卡`,`
-      <label style="font-size:12px;color:var(--ink3);">本次得分</label>
+      <label style="font-size:12px;color:var(--ink3);">打卡日期（补录以前的就改成对应日期，之后正常按当天记录）</label>
+      <input type="date" id="kgCiDate" value="${td()}" max="${td()}">
+      <label style="font-size:12px;color:var(--ink3);margin-top:8px;">本套题量（选填，比如这套是40题还是20题）</label>
+      <input type="number" id="kgCiQCount" placeholder="如：40" min="0">
+      <label style="font-size:12px;color:var(--ink3);margin-top:8px;">本次得分</label>
       <input type="number" id="kgCiScore" placeholder="如：72">
       <label style="font-size:12px;color:var(--ink3);margin-top:8px;">满分（默认100）</label>
       <input type="number" id="kgCiTotal" value="100">
@@ -3732,22 +3738,26 @@ function kgOpenCheckInModal(id){
       const score=parseFloat(document.getElementById('kgCiScore').value);
       if(isNaN(score)){toast('请填写本次得分');return;}
       const total=parseFloat(document.getElementById('kgCiTotal').value)||100;
+      const qcount=parseInt(document.getElementById('kgCiQCount').value)||0;
       const mins=parseFloat(document.getElementById('kgCiTime').value)||0;
       const note=document.getElementById('kgCiNote').value.trim().slice(0,30);
+      const dateVal=document.getElementById('kgCiDate').value||td();
       const prevScore=n.scores.length?n.scores[n.scores.length-1]:null;
-      n.scores.push({date:td(),score,total});
+      n.scores.push({date:dateVal,score,total,qcount:qcount||null});
       n.trendUp=prevScore?(score/total>=prevScore.score/prevScore.total):null;
       n.count+=1;
       n.timeMinutes+=mins;
       n.lastDelta={count:1,correct:0,mins};
-      n.notes.push({id:uid(),date:nowStr(),note:note||`得分 ${score}/${total}`});
-      S.kg.logs.push({date:td(),nodeId:id,name:kgPathLabel(id),count:1,correct:null});
+      n.notes.push({id:uid(),date:dateVal,note:note||`得分 ${score}/${total}${qcount?`（${qcount}题）`:''}`});
+      S.kg.logs.push({date:dateVal,nodeId:id,name:kgPathLabel(id),count:1,correct:null});
       save();closeModal();kgRenderTree();kgRenderWall();toast(`已记录 ${score}/${total} ✓`);
     });
     return;
   }
   showModal(`✅ ${esc(n.name)} 打卡`,`
-    <label style="font-size:12px;color:var(--ink3);">本次数量（${esc(n.unit)}）</label>
+    <label style="font-size:12px;color:var(--ink3);">打卡日期（补录以前的就改成对应日期，之后正常按当天记录）</label>
+    <input type="date" id="kgCiDate" value="${td()}" max="${td()}">
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">本次数量（${esc(n.unit)}）</label>
     <input type="number" id="kgCiCount" value="1" min="1">
     ${n.trackAcc?`<label style="font-size:12px;color:var(--ink3);margin-top:8px;">其中做对了几个</label><input type="number" id="kgCiCorrect" value="0" min="0">`:''}
     <label style="font-size:12px;color:var(--ink3);margin-top:8px;">用时（分钟，选填）</label>
@@ -3760,6 +3770,7 @@ function kgOpenCheckInModal(id){
     const correct=n.trackAcc?Math.min(count,parseInt(document.getElementById('kgCiCorrect').value)||0):count;
     const mins=parseFloat(document.getElementById('kgCiTime').value)||0;
     const note=document.getElementById('kgCiNote').value.trim().slice(0,30);
+    const dateVal=document.getElementById('kgCiDate').value||td();
     const oldAcc=n.trackAcc&&n.count>0?n.correct/n.count*100:null;
     n.count+=count;
     if(n.trackAcc)n.correct+=correct;
@@ -3769,8 +3780,8 @@ function kgOpenCheckInModal(id){
       n.trendUp=oldAcc===null?null:(newAcc>=oldAcc);
     }
     n.lastDelta={count,correct:n.trackAcc?correct:count,mins};
-    n.notes.push({id:uid(),date:nowStr(),note});
-    S.kg.logs.push({date:td(),nodeId:id,name:kgPathLabel(id),count,correct:n.trackAcc?correct:null});
+    n.notes.push({id:uid(),date:dateVal,note});
+    S.kg.logs.push({date:dateVal,nodeId:id,name:kgPathLabel(id),count,correct:n.trackAcc?correct:null});
     save();closeModal();kgRenderTree();kgRenderWall();toast(`+${count} ${n.unit} ✓`);
   });
 }
