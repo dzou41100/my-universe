@@ -351,7 +351,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .period-btn{background:var(--card);color:var(--ink2);border:1.5px solid var(--g-mid);}
 .period-btn.on{background:var(--g);color:#fff;border-color:rgba(255,255,255,.45);}
 .kg-row-head{display:flex;align-items:center;gap:8px;}
-.kg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;cursor:pointer;box-shadow:0 0 0 2px rgba(255,255,255,.5);}
+.kg-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;cursor:pointer;box-shadow:0 0 0 2px rgba(255,255,255,.6),0 1px 3px rgba(0,0,0,.15);}
 </style>
 </head>
 <body>
@@ -3537,20 +3537,22 @@ function kgFindParentArray(id,list){
   }
   return null;
 }
-function kgPercent(n){
-  if(n.children&&n.children.length){
-    const sum=n.children.reduce((s,c)=>s+kgPercent(c),0);
-    return Math.round(sum/n.children.length);
-  }
+// 单个节点自己的完成度，不看子项——叶子节点用这个，大类自己直接打卡时也用这个
+function kgOwnPercent(n){
   if(n.target>0)return Math.min(100,Math.round(n.count/n.target*100));
   return n.count>0?100:0;
 }
-// 风险值：正确率/考试得分率越低、覆盖度（刷得够不够）越低，风险越高；有子项目就取子项目风险的平均值
-function kgRisk(n){
+function kgPercent(n){
   if(n.children&&n.children.length){
-    const sum=n.children.reduce((s,c)=>s+kgRisk(c),0);
-    return sum/n.children.length;
+    const parts=n.children.map(c=>kgPercent(c));
+    if(n.count>0)parts.push(kgOwnPercent(n)); // 大类自己也有直接打卡记录时，把它也算进平均里
+    const sum=parts.reduce((a,b)=>a+b,0);
+    return Math.round(sum/parts.length);
   }
+  return kgOwnPercent(n);
+}
+// 风险值：正确率/考试得分率越低、覆盖度（刷得够不够）越低，风险越高；有子项目就取子项目风险的平均值
+function kgOwnRisk(n){
   const coverage=n.target>0?Math.min(100,n.count/n.target*100):(n.count>0?100:0);
   if(n.trackScore){
     if(!n.scores.length)return 100;
@@ -3564,6 +3566,15 @@ function kgRisk(n){
   }
   return 100-coverage;
 }
+function kgRisk(n){
+  if(n.children&&n.children.length){
+    const parts=n.children.map(c=>kgRisk(c));
+    if(n.count>0)parts.push(kgOwnRisk(n)); // 大类自己也有直接打卡记录时，把它也算进平均里
+    const sum=parts.reduce((a,b)=>a+b,0);
+    return sum/parts.length;
+  }
+  return kgOwnRisk(n);
+}
 function kgAutoStatus(n){
   const risk=kgRisk(n);
   if(risk>=55)return'red';
@@ -3573,9 +3584,9 @@ function kgAutoStatus(n){
 }
 function kgStatus(n){return n.manualStatus||kgAutoStatus(n);}
 function kgSumSubtree(n){
-  let count=n.count||0,correct=n.trackAcc?(n.correct||0):0,trackedCount=n.trackAcc?(n.count||0):0;
-  (n.children||[]).forEach(c=>{const s=kgSumSubtree(c);count+=s.count;correct+=s.correct;trackedCount+=s.trackedCount;});
-  return{count,correct,trackedCount};
+  let count=n.count||0,correct=n.trackAcc?(n.correct||0):0,trackedCount=n.trackAcc?(n.count||0):0,timeMinutes=n.timeMinutes||0;
+  (n.children||[]).forEach(c=>{const s=kgSumSubtree(c);count+=s.count;correct+=s.correct;trackedCount+=s.trackedCount;timeMinutes+=s.timeMinutes;});
+  return{count,correct,trackedCount,timeMinutes};
 }
 let kgOpenActions=new Set();
 function kgToggleActions(id){if(kgOpenActions.has(id))kgOpenActions.delete(id);else kgOpenActions.add(id);kgRenderTree();}
@@ -3602,7 +3613,7 @@ function kgRowHtml(n,depth,catIndex){
   const fs=kgDepthStyle(depth);
   const percent=kgPercent(n);
   const showActions=kgOpenActions.has(n.id);
-  const acc=n.trackAcc&&n.count>0?Math.round(n.correct/n.count*100):null;
+  const acc=(()=>{const sub=kgSumSubtree(n);return sub.trackedCount>0?Math.round(sub.correct/sub.trackedCount*100):null;})();
   const trendArrow=n.trendUp===null?'':(n.trendUp?'<span class="kg-trend-up">↑</span>':'<span class="kg-trend-down">↓</span>');
   const accGoalTxt=n.trackAcc&&n.targetAcc>0?`（目标${n.targetAcc}%）`:'';
   const lastScore=n.trackScore&&n.scores.length?n.scores[n.scores.length-1]:null;
@@ -3615,23 +3626,24 @@ function kgRowHtml(n,depth,catIndex){
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0;">${percent}%</span>
     </div>
     <div class="progress-bar" style="margin:5px 0 0;"><div class="progress-fill" style="width:${percent}%"></div></div>`;
-  if(!hasChildren){
+  if(!hasChildren||n.count>0||acc!==null){
     html+=`<div style="font-size:11px;color:var(--ink3);display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
-      <span>${n.count}${n.target>0?'/'+n.target:''} ${esc(n.unit)}</span>
-      ${acc!==null?`<span>正确率 ${acc}%${accGoalTxt} ${trendArrow}</span>`:''}
-      ${n.timeMinutes>0?`<span>⏱ 累计${n.timeMinutes}分钟</span>`:''}
-      ${lastScore?`<span>📝 最近${lastScore.score}/${lastScore.total}分${lastScore.qcount?`（${lastScore.qcount}题）`:''}（均分${avgScorePct}%）${trendArrow}</span>`:''}
-      ${totalQCount>0?`<span>🧮 累计刷题 ${totalQCount} 题</span>`:''}
+      ${(hasChildren&&n.count>0)?'<span style="color:var(--ink2);font-weight:600;">🔹本类自身：</span>':''}
+      ${(!hasChildren||n.count>0)?`<span>${n.count}${n.target>0?'/'+n.target:''} ${esc(n.unit)}</span>`:''}
+      ${acc!==null?`<span>正确率 ${acc}%${hasChildren?'（含子类汇总）':''}${accGoalTxt} ${trendArrow}</span>`:''}
+      ${(!hasChildren||n.count>0)&&n.timeMinutes>0?`<span>⏱ 累计${n.timeMinutes}分钟</span>`:''}
+      ${(!hasChildren||n.count>0)&&lastScore?`<span>📝 最近${lastScore.score}/${lastScore.total}分${lastScore.qcount?`（${lastScore.qcount}题）`:''}（均分${avgScorePct}%）${trendArrow}</span>`:''}
+      ${(!hasChildren||n.count>0)&&totalQCount>0?`<span>🧮 累计刷题 ${totalQCount} 题</span>`:''}
     </div>`;
   }
   html+=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center;">
-    ${!hasChildren?`<button class="tree-action-btn accent" onclick="kgOpenCheckInModal('${n.id}')">✅ 打卡</button>`:''}
-    ${(!hasChildren&&(n.notes.length>0))?`<button class="tree-action-btn" onclick="kgUndoCheckIn('${n.id}')">↩️ 撤销</button>`:''}
+    <button class="tree-action-btn accent" onclick="kgOpenCheckInModal('${n.id}')">✅ ${hasChildren?'打卡（不分子类的混合练习）':'打卡'}</button>
+    ${n.notes.length>0?`<button class="tree-action-btn" onclick="kgUndoCheckIn('${n.id}')">↩️ 撤销</button>`:''}
     <button class="tree-action-btn" onclick="kgToggleActions('${n.id}')" style="margin-left:auto;">⋯</button>
   </div>`;
   if(showActions){
     html+=`<div class="nb-item-actions" style="margin:4px 0 0;flex-wrap:wrap;height:auto;">
-      ${(!hasChildren&&n.notes.length>0)?`<button class="tree-action-btn" onclick="kgViewHistory('${n.id}')">📜 记录</button>`:''}
+      ${n.notes.length>0?`<button class="tree-action-btn" onclick="kgViewHistory('${n.id}')">📜 记录</button>`:''}
       <button class="tree-action-btn" onclick="kgOpenAddChildModal('${n.id}')">➕ 子项</button>
       <button class="tree-action-btn" onclick="kgOpenEditModal('${n.id}')">✏️ 编辑</button>
       <button class="tree-action-btn danger" onclick="kgDeleteNode('${n.id}')">🗑️ 删除</button>
