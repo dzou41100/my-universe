@@ -59,6 +59,10 @@ body.t-jiaotang-kafei{background:linear-gradient(160deg,#B79777 0%,#3C281E 100%)
 body.t-haiyan-bingcha{background:linear-gradient(160deg,#BED7F3 0%,#FFE8A3 100%);--g:#687686;--g-light:#ffebb1;--g-mid:#FFE8A3;--g-dark:#4b5560;--g-xlight:rgba(104,118,134,0.08);--g-border:rgba(104,118,134,0.22);--bg:#edf4fc;--white:#ffffff;--card:#ffffff;--ink:#1f2328;--ink2:#687686;--ink3:#848f9b;--nb-bg:var(--card);--nb-line:rgba(255,232,163,0.4);--nb-ring:#687686;--nb-ink:#1f2328;--nb-ink2:#4b5560;--nb-ink3:#96988e;}
 body.t-wumeng-hua{background:linear-gradient(160deg,#F8CDED 0%,#A198A8 100%);--g:#887182;--g-light:#afa7b5;--g-mid:#A198A8;--g-dark:#62515e;--g-xlight:rgba(136,113,130,0.08);--g-border:rgba(136,113,130,0.22);--bg:#fdf1fa;--white:#ffffff;--card:#ffffff;--ink:#292227;--ink2:#887182;--ink3:#9e8a99;--nb-bg:var(--card);--nb-line:rgba(161,152,168,0.4);--nb-ring:#887182;--nb-ink:#292227;--nb-ink2:#62515e;--nb-ink3:#907d8e;}
 
+/* 渐变主题的背景固定跟视口走，不随页面总高度拉伸——这样内容很长的页面（比如考公）
+   顶部到底部也能在一屏内看完整条渐变，不用往下滑才看到变色 */
+body{background-attachment:fixed!important;}
+
 *{box-sizing:border-box;margin:0;padding:0;}
 /* 让页面内容跟随字体大小设置 */
 .pg, .pg div, .pg span, .pg p, .pg button, .pg input, .pg textarea, .pg select, .pg label{font-size:inherit;}
@@ -82,7 +86,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .top-tabs{display:flex;justify-content:flex-start;gap:6px;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid var(--g-border);overflow-x:auto;scrollbar-width:none;}
 .countdown-carousel{display:flex;align-items:center;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:16px 42vw;margin:0 -20px 4px;scrollbar-width:none;}
 .countdown-card{flex-shrink:0;scroll-snap-align:center;background:var(--card);border:1px solid var(--g-border);border-radius:var(--radius-md);padding:14px 18px;text-align:center;width:140px;transition:transform .25s,opacity .25s;opacity:.55;transform:scale(.8);cursor:pointer;}
-.countdown-card.active{opacity:1;transform:scale(1.08);background:linear-gradient(135deg,var(--g),var(--g-dark));color:#fff;border-color:transparent;box-shadow:0 8px 20px rgba(0,0,0,.18);}
+.countdown-card.active{opacity:1;transform:scale(1.08);background:linear-gradient(135deg,var(--g),var(--g-dark));color:#fff;border-color:rgba(255,255,255,.4);box-shadow:0 8px 20px rgba(0,0,0,.18);}
 .countdown-card .cd-title{font-size:13px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
 .countdown-card .cd-days{font-size:13px;}
 .countdown-card .cd-days small{font-size:11px;opacity:.85;font-weight:400;}
@@ -90,7 +94,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .countdown-card.active .cd-num{font-size:32px;}
 .top-tabs::-webkit-scrollbar{display:none;}
 .tab-main{background:rgba(255,255,255,.65);border:none;font-size:14px;font-family:inherit;cursor:pointer;padding:7px 14px;border-radius:30px;color:var(--ink2);display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s;font-weight:500;}
-.tab-main.on{color:#fff;font-weight:700;background:var(--g);}
+.tab-main.on{color:#fff;font-weight:700;background:var(--g);border:1px solid rgba(255,255,255,.45);}
 .quote-box{background:linear-gradient(135deg,var(--nb-bg) 0%,var(--card) 100%);border-radius:var(--radius-md);padding:16px 18px;margin-bottom:18px;box-shadow:var(--shadow-md);border:1px solid var(--nb-line);position:relative;overflow:hidden;}
 .quote-box::before{content:'"';position:absolute;top:-10px;left:10px;font-size:72px;color:var(--nb-line);font-family:serif;line-height:1;pointer-events:none;}
 .quote-txt{font-size:14px;color:var(--ink2);line-height:1.7;font-style:italic;padding-right:40px;}
@@ -102,7 +106,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .report-banner-title{font-size:14px;font-weight:700;}
 .report-banner-desc{font-size:11px;opacity:.85;margin-top:2px;}
 .report-banner-arrow{color:#fff;font-size:18px;opacity:.85;}
-.report-card{background:linear-gradient(165deg,var(--g) 0%,var(--g-dark) 100%);border-radius:20px;padding:26px 20px;color:#fff;position:relative;overflow:hidden;}
+.report-card{background:linear-gradient(165deg,var(--g) 0%,var(--g-dark) 100%);border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:26px 20px;color:#fff;position:relative;overflow:hidden;}
 .report-card-header{text-align:center;margin-bottom:20px;}
 .report-card-title{font-size:22px;font-weight:800;letter-spacing:1px;}
 .report-card-period{font-size:12px;opacity:.85;margin-top:4px;}
@@ -116,7 +120,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .ti{background:var(--card);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:7px;display:flex;align-items:center;gap:10px;border:1px solid var(--g-border);box-shadow:var(--shadow-sm);transition:opacity .2s,background .2s;}
 .ti.done{opacity:.55;background:var(--g-light);}
 .chk{width:24px;height:24px;border:2px solid var(--g-mid);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;transition:all .15s;}
-.chk.on{background:var(--g);border-color:var(--g);color:#fff;}
+.chk.on{background:var(--g);border-color:var(--g);color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.5) inset;}
 .tn{flex:1;font-size:15px;font-weight:600;}
 .priority-red{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;}
 .priority-orange{width:8px;height:8px;border-radius:50%;background:var(--orange);flex-shrink:0;}
@@ -134,11 +138,11 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .ach-slogan{font-size:14px;color:var(--g);font-weight:600;margin-top:6px;cursor:pointer;letter-spacing:.5px;}
 .achi-card{background:linear-gradient(135deg,var(--white),var(--g-light));border-radius:var(--radius-md);padding:12px 14px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;box-shadow:var(--shadow-sm);}
 .addbtn{width:100%;padding:10px;background:var(--g-mid);border:1px solid var(--g-border);border-radius:var(--radius-sm);color:var(--g-dark);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;}
-.fab-btn{position:fixed;right:18px;bottom:96px;z-index:150;background:var(--g);color:#fff;border:none;border-radius:28px;padding:13px 20px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.22);display:flex;align-items:center;gap:6px;}
+.fab-btn{position:fixed;right:18px;bottom:96px;z-index:150;background:var(--g);color:#fff;border:1px solid rgba(255,255,255,.45);border-radius:28px;padding:13px 20px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.22);display:flex;align-items:center;gap:6px;}
 .fab-btn:active{opacity:.85;}
 #growHabit,#growProj,#growAch{padding-bottom:70px;}
 .addbtn:active{opacity:.8;}
-.pbtn{padding:8px 16px;background:var(--g);color:#fff;border:none;border-radius:var(--radius-sm);font-weight:600;cursor:pointer;font-size:13px;transition:background .15s;box-shadow:0 2px 8px var(--g-border);}
+.pbtn{padding:8px 16px;background:var(--g);color:#fff;border:1px solid rgba(255,255,255,.45);border-radius:var(--radius-sm);font-weight:600;cursor:pointer;font-size:13px;transition:background .15s;box-shadow:0 2px 8px var(--g-border);}
 .pbtn:active{background:var(--g-dark);}
 .sbtn{padding:4px 11px;background:var(--g-light);color:var(--g);border:none;border-radius:10px;font-size:11px;cursor:pointer;font-weight:500;}
 .delbtn{background:transparent;border:none;color:#c97c5a;font-size:17px;cursor:pointer;padding:4px;}
@@ -161,7 +165,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .modal-buttons{display:flex;gap:10px;margin-top:18px;justify-content:flex-end;}
 .modal-buttons button{padding:9px 20px;border-radius:var(--radius-sm);cursor:pointer;font-size:14px;font-weight:500;}
 .modal-cancel{background:var(--bg);border:1px solid var(--g-border);color:var(--ink2);}
-.modal-confirm{background:var(--g);border:none;color:#fff;box-shadow:0 2px 8px var(--g-border);}
+.modal-confirm{background:var(--g);border:1px solid rgba(255,255,255,.45);color:#fff;box-shadow:0 2px 8px var(--g-border);}
 .priority-selector{display:flex;gap:8px;margin-top:6px;}
 .priority-option{flex:1;padding:9px 6px;border-radius:var(--radius-sm);border:2px solid transparent;cursor:pointer;text-align:center;font-size:12px;background:var(--bg);transition:all .15s;font-weight:500;}
 .priority-option.selected{border-color:var(--g);background:var(--g-light);}
@@ -203,7 +207,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .note-editor-title{font-size:17px;font-weight:700;}
 .note-editor-close,.note-editor-save{padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;}
 .note-editor-close{background:var(--g-light);color:var(--g);border:none;}
-.note-editor-save{background:var(--g);color:white;border:none;margin-left:8px;box-shadow:0 2px 8px var(--g-border);}
+.note-editor-save{background:var(--g);color:white;border:1px solid rgba(255,255,255,.45);margin-left:8px;box-shadow:0 2px 8px var(--g-border);}
 .note-field-group{margin-bottom:14px;}
 .note-field-label{font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px;letter-spacing:.3px;}
 .note-input,.note-select{width:100%;padding:10px 12px;background:var(--bg);border:1.5px solid var(--g-border);border-radius:var(--radius-sm);font-size:14px;}
@@ -224,7 +228,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .quad-item .qi-del{color:var(--ink3);cursor:pointer;flex-shrink:0;font-size:12px;padding:0 2px;}
 .quad-add-row{display:flex;gap:4px;margin-top:6px;}
 .quad-add-row input{flex:1;min-width:0;border:1px solid var(--g-border);border-radius:8px;padding:4px 6px;font-size:12px;background:var(--white);}
-.quad-add-row button{background:var(--g);color:#fff;border:none;border-radius:8px;padding:4px 8px;font-size:12px;flex-shrink:0;}
+.quad-add-row button{background:var(--g);color:#fff;border:1px solid rgba(255,255,255,.45);border-radius:8px;padding:4px 8px;font-size:12px;flex-shrink:0;}
 .checklist-item{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--g-xlight);}
 .checklist-item.done .ci-text{opacity:.5;text-decoration:line-through;}
 .checklist-item input[type=checkbox]{width:18px;height:18px;flex-shrink:0;accent-color:var(--g);}
@@ -232,10 +236,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .checklist-item .ci-del{color:var(--ink3);cursor:pointer;flex-shrink:0;font-size:16px;padding:0 4px;}
 .checklist-add-row{display:flex;gap:8px;margin-top:12px;}
 .checklist-add-row input{flex:1;min-width:0;border:1.5px solid var(--g-border);border-radius:8px;padding:9px 12px;font-size:14px;background:var(--white);}
-.checklist-add-row button{background:var(--g);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;flex-shrink:0;}
+.checklist-add-row button{background:var(--g);color:#fff;border:1px solid rgba(255,255,255,.45);border-radius:8px;padding:9px 16px;font-size:13px;flex-shrink:0;}
 .numlist-style-row{display:flex;gap:8px;margin-bottom:12px;}
 .numlist-style-opt{flex:1;text-align:center;padding:7px 4px;border-radius:8px;border:1.5px solid var(--g-border);font-size:13px;color:var(--ink3);cursor:pointer;background:var(--card);}
-.numlist-style-opt.on{background:var(--g);color:#fff;border-color:var(--g);}
+.numlist-style-opt.on{background:var(--g);color:#fff;border-color:rgba(255,255,255,.45);}
 .numlist-row{display:flex;gap:8px;align-items:flex-start;padding:5px 0;}
 .numlist-marker{flex-shrink:0;min-width:24px;text-align:right;font-size:14px;color:var(--ink2);font-weight:700;padding-top:3px;user-select:none;}
 .numlist-input{flex:1;min-width:0;border:none;background:transparent;resize:none;font-family:inherit;font-size:14px;color:var(--nb-ink);outline:none;line-height:1.6;padding:2px 0;overflow:hidden;}
@@ -263,7 +267,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .note-tab-bar{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
 .note-tab-bar::-webkit-scrollbar{display:none;}
 .note-tab-btn{padding:7px 16px;background:var(--bg);border:none;border-radius:30px;font-size:13px;color:var(--ink3);white-space:nowrap;cursor:pointer;font-weight:500;flex-shrink:0;transition:all .15s;}
-.note-tab-btn.on{background:var(--g);color:white;box-shadow:0 2px 8px var(--g-border);}
+.note-tab-btn.on{background:var(--g);color:white;border:1px solid rgba(255,255,255,.45);box-shadow:0 2px 8px var(--g-border);}
 .list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
 .list-count{font-size:12px;color:var(--ink2);font-weight:600;background:var(--card);padding:5px 11px;border-radius:12px;box-shadow:var(--shadow-sm);}
 .new-note-btn{background:var(--g-dark);border:none;padding:7px 16px;border-radius:24px;font-size:12px;color:white;cursor:pointer;font-weight:500;}
@@ -274,7 +278,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 
 .backup-reminder{background:linear-gradient(135deg,#fff8f0,#ffeedd);border:1.5px solid #f0c080;border-radius:var(--radius-md);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;}
 .backup-reminder-text{flex:1;font-size:13px;color:#7a4a10;}
-.backup-now-btn{background:#e8a030;border:none;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap;}
+.backup-now-btn{background:#e8a030;border:1px solid rgba(255,255,255,.45);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap;}
 /* ===== 日记条目样式 ===== */
 /* ══ 主题选择器 ══ */
 .th-grid{display:flex;flex-wrap:wrap;gap:16px 12px;}
@@ -307,7 +311,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .nb-item:last-child{border-bottom:none;}
 .nb-item-child{margin-left:16px;padding-left:14px;margin-top:0;border-left:2px solid var(--g-border);}
 .nb-check{width:18px;height:18px;border:1.5px solid var(--g-mid);border-radius:4px;flex-shrink:0;margin-top:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink2);background:var(--white);}
-.nb-check.done{background:var(--g);border-color:var(--g);color:#fff;}
+.nb-check.done{background:var(--g);border-color:rgba(255,255,255,.45);color:#fff;}
 .nb-content{flex:1;min-width:0;}
 /* 三级字体：第一级（主计划/隶书）、第二级（子计划/宋体）、第三级（孙计划/楷体），字体族由 JS 按层级内联指定 */
 .nb-item-title{font-size:15px;font-weight:600;color:var(--ink);line-height:1.5;min-height:auto;padding:4px 0;}
@@ -318,15 +322,15 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .nb-item-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px;}
 /* tab在卡片外面 */
 .plan-outer-tab{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;color:var(--ink3);background:var(--card);border:1.5px solid var(--g-mid);cursor:pointer;transition:all .15s;}
-.plan-outer-tab.on{background:var(--g);color:#fff;border-color:var(--g);}
+.plan-outer-tab.on{background:var(--g);color:#fff;border-color:rgba(255,255,255,.45);}
 /* 添加按钮居中在本子外面（日记板块使用） */
-.nb-add-outer-btn{display:block;margin:12px auto 0;padding:10px 32px;background:var(--g);border:none;border-radius:20px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.nb-add-outer-btn{display:block;margin:12px auto 0;padding:10px 32px;background:var(--g);border:1px solid rgba(255,255,255,.45);border-radius:20px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
 
 /* ══ 考公备考板块 ══ */
 .kg-level-1{font-size:18px!important;font-weight:800!important;color:var(--ink)!important;line-height:1.4;}
 .kg-level-2{font-size:15px!important;font-weight:600!important;color:var(--ink2)!important;line-height:1.4;}
 .kg-level-3{font-size:13px!important;font-weight:400!important;color:var(--ink3)!important;line-height:1.4;}
-.kg-wall-card{background:linear-gradient(135deg,#1b5e20 0%,#2e7d32 100%);color:#fff;border-radius:var(--radius-md);padding:16px;margin-bottom:14px;}
+.kg-wall-card{background:linear-gradient(135deg,#1b5e20 0%,#2e7d32 100%);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:var(--radius-md);padding:16px;margin-bottom:14px;}
 .kg-wall-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;}
 .kg-wall-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;}
 .kg-wall-box{background:rgba(255,255,255,.15);padding:10px 4px;border-radius:var(--radius-sm);}
@@ -339,6 +343,13 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .kg-trend-up{color:#2e7d32;font-weight:700;}
 .kg-trend-down{color:#c62828;font-weight:700;}
 .kg-row{background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:6px;}
+/* 大类分组：每个一级大类（言语理解、判断推理…）包一层，相邻大类背景交替、之间加分隔线，视觉上分清楚 */
+.kg-cat-block{border-radius:12px;padding:2px 2px 4px;}
+.kg-cat-block.sep{border-top:2px dashed var(--g-border);margin-top:14px;padding-top:12px;}
+.kg-cat-block.tint{--bg:color-mix(in srgb, var(--bg) 82%, var(--g) 18%);}
+/* 日报/周报/月报切换按钮：默认都是同一种中性色，点了哪个哪个才变成主题色，其余的立刻恢复中性色 */
+.period-btn{background:var(--card);color:var(--ink2);border:1.5px solid var(--g-mid);}
+.period-btn.on{background:var(--g);color:#fff;border-color:rgba(255,255,255,.45);}
 .kg-row-head{display:flex;align-items:center;gap:8px;}
 .kg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;cursor:pointer;box-shadow:0 0 0 2px rgba(255,255,255,.5);}
 </style>
@@ -3584,7 +3595,7 @@ function kgDepthStyle(depth){
 }
 let kgActiveRoot=null; // 当前选中的大类 tab（行测/申论/...）
 function kgSetActiveRoot(id){kgActiveRoot=id;kgRenderTree();}
-function kgRowHtml(n,depth){
+function kgRowHtml(n,depth,catIndex){
   const hasChildren=n.children&&n.children.length>0;
   const st=kgStatus(n);
   const dot=KG_DOT_COLOR[st];
@@ -3625,7 +3636,13 @@ function kgRowHtml(n,depth){
     </div>`;
   }
   html+=`</div>`;
-  if(hasChildren)html+=n.children.map(c=>kgRowHtml(c,depth+1)).join('');
+  if(hasChildren)html+=n.children.map((c,i)=>kgRowHtml(c,depth+1,depth===0?i:catIndex)).join('');
+  // depth===1 就是"大类"（言语理解、判断推理…这一级）：把它自己和它下面所有子项包成一块，
+  // 相邻大类背景交替 + 顶部加分隔线，跟前后大类分清楚
+  if(depth===1){
+    const cls='kg-cat-block'+(catIndex>0?' sep':'')+(catIndex%2===1?' tint':'');
+    return`<div class="${cls}">${html}</div>`;
+  }
   return html;
 }
 function kgRenderTree(){
@@ -3862,6 +3879,11 @@ function kgAllNodesFlat(list,out){
   list.forEach(n=>{out.push(n);if(n.children&&n.children.length)kgAllNodesFlat(n.children,out);});
   return out;
 }
+function kgSetReportPeriod(el,period){
+  document.querySelectorAll('#kgReportTab .period-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  kgGenerateReport(period);
+}
 function kgGenerateReport(period){
   const{start,end,label}=kgPeriodRange(period);
   const periodLogs=S.kg.logs.filter(l=>l.date>=start&&l.date<=end);
@@ -3923,9 +3945,9 @@ function renderKg(){
     <div id="kgAchTab" style="display:none;"></div>
     <div id="kgReportTab" style="display:none;">
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-        <button class="pbtn" style="flex:1;min-width:90px;" onclick="kgGenerateReport('day')">今日日报</button>
-        <button class="pbtn" style="flex:1;min-width:90px;background:var(--ink2);" onclick="kgGenerateReport('week')">本周周报</button>
-        <button class="pbtn" style="flex:1;min-width:90px;background:var(--g-dark);" onclick="kgGenerateReport('month')">本月月报</button>
+        <button class="pbtn period-btn" style="flex:1;min-width:90px;" onclick="kgSetReportPeriod(this,'day')">今日日报</button>
+        <button class="pbtn period-btn" style="flex:1;min-width:90px;" onclick="kgSetReportPeriod(this,'week')">本周周报</button>
+        <button class="pbtn period-btn" style="flex:1;min-width:90px;" onclick="kgSetReportPeriod(this,'month')">本月月报</button>
       </div>
       <div id="kgReportContainer" style="background:var(--card);padding:14px;border-radius:12px;border:1px solid var(--g-border);min-height:160px;font-size:13px;line-height:1.6;">
         <div class="kg-empty-hint">点击上方按钮生成对应周期的备考报告分析</div>
