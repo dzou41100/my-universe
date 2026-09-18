@@ -3498,6 +3498,7 @@ function kgN(name,opts){
     unit:trackScore?(opts.unit||'套'):(opts.unit||'题'),
     count:0,target:opts.target||0,
     trackAcc:trackScore?false:(opts.trackAcc!==false),
+    qTotal:0,
     correct:0,targetAcc:opts.targetAcc||0,prevAcc:null,trendUp:null,
     trackScore,scores:[],entries:[],
     timeMinutes:0,
@@ -3551,6 +3552,7 @@ function kgMigrateNode(n){
   if(!Array.isArray(n.scores))n.scores=[];
   if(!Array.isArray(n.entries))n.entries=[]; // 每次打卡的单条记录，用来算"最近几次"的正确率
   if(n.timeMinutes===undefined)n.timeMinutes=0;
+  if(n.qTotal===undefined)n.qTotal=0;
   if(n.lastDelta===undefined)n.lastDelta=null;
   if(n.trackScore&&n.scores.length){
     // 套题记录的进度以前是按"打卡次数"算的（1次=1，不管这套多少题），
@@ -3593,7 +3595,7 @@ function kgAutoStatus(n){
 }
 function kgStatus(n){return n.manualStatus||kgAutoStatus(n);}
 function kgSumSubtree(n){
-  let count=n.count||0,correct=n.trackAcc?(n.correct||0):0,trackedCount=n.trackAcc?(n.count||0):0,timeMinutes=n.timeMinutes||0,target=n.target||0;
+  let count=n.count||0,correct=n.trackAcc?(n.correct||0):0,trackedCount=n.trackAcc?(n.qTotal||0):0,timeMinutes=n.timeMinutes||0,target=n.target||0;
   (n.children||[]).forEach(c=>{const s=kgSumSubtree(c);count+=s.count;correct+=s.correct;trackedCount+=s.trackedCount;timeMinutes+=s.timeMinutes;target+=s.target;});
   return{count,correct,trackedCount,timeMinutes,target};
 }
@@ -3698,6 +3700,7 @@ function kgRowHtml(n,depth,catIndex){
   if(!hasChildren||n.count>0){
     html+=`<div style="font-size:11px;color:${dimColor};display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
       <span>${n.count}${n.target>0?'/'+n.target:''} ${esc(n.unit)}</span>
+      ${n.trackAcc&&n.qTotal>0?`<span>共${n.qTotal}题</span>`:''}
       ${acc!==null?`<span>正确率 ${acc}%（最近${KG_RECENT_WINDOW}次）${accGoalTxt} ${trendArrow}</span>`:''}
       ${n.timeMinutes>0?`<span>⏱ 累计${Math.round(n.timeMinutes*100)/100}分钟</span>`:''}
       ${lastScore?`<span>📝 最近${lastScore.score}/${lastScore.total}分${lastScore.qcount?`（${lastScore.qcount}题）`:''}（均分${avgScorePct}%）${trendArrow}</span>`:''}
@@ -3895,9 +3898,15 @@ function kgOpenCheckInModal(id){
   showModal(`✅ ${esc(n.name)} 打卡`,`
     <label style="font-size:12px;color:var(--ink3);">打卡日期（补录以前的就改成对应日期，之后正常按当天记录）</label>
     <input type="date" id="kgCiDate" value="${td()}" max="${td()}">
+    ${n.trackAcc?`
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">这次（1${esc(n.unit)}）一共多少道题</label>
+    <input type="number" id="kgCiQCount" value="" min="1" placeholder="如：10">
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">其中做对了几道</label>
+    <input type="number" id="kgCiCorrect" value="0" min="0">
+    `:`
     <label style="font-size:12px;color:var(--ink3);margin-top:8px;">本次数量（${esc(n.unit)}）</label>
     <input type="number" id="kgCiCount" value="1" min="1" placeholder="这次一共做了多少${esc(n.unit)}">
-    ${n.trackAcc?`<label style="font-size:12px;color:var(--ink3);margin-top:8px;">其中做对了几个</label><input type="number" id="kgCiCorrect" value="0" min="0">`:''}
+    `}
     ${n.trackAcc?kgDiffPickerHtml():''}
     <label style="font-size:12px;color:var(--ink3);margin-top:8px;">用时</label>
     <div style="display:flex;gap:8px;">
@@ -3907,25 +3916,36 @@ function kgOpenCheckInModal(id){
     <label style="font-size:12px;color:var(--ink3);margin-top:8px;">备注</label>
     <input type="text" id="kgCiNote" maxlength="30" placeholder="做了什么…">
   `,()=>{
-    const count=parseInt(document.getElementById('kgCiCount').value)||0;
-    if(count<=0){toast('数量要大于0');return;}
-    const correct=n.trackAcc?Math.min(count,parseInt(document.getElementById('kgCiCorrect').value)||0):count;
-    const difficulty=n.trackAcc?kgReadDiff():'medium';
     const mins=(parseFloat(document.getElementById('kgCiTimeMin').value)||0)+(parseFloat(document.getElementById('kgCiTimeSec').value)||0)/60;
     const note=document.getElementById('kgCiNote').value.trim().slice(0,30);
     const dateVal=document.getElementById('kgCiDate').value||td();
-    const oldAcc=n.trackAcc&&n.count>0?n.correct/n.count*100:null;
-    n.count+=count;
-    if(n.trackAcc)n.correct+=correct;
-    n.timeMinutes=Math.round((n.timeMinutes+mins)*100)/100;
     if(n.trackAcc){
-      const newAcc=n.count>0?n.correct/n.count*100:0;
+      const qcount=parseInt(document.getElementById('kgCiQCount').value)||0;
+      if(qcount<=0){toast('请填写这次的题量');return;}
+      const correct=Math.min(qcount,parseInt(document.getElementById('kgCiCorrect').value)||0);
+      const difficulty=kgReadDiff();
+      const oldAcc=n.qTotal>0?n.correct/n.qTotal*100:null;
+      n.count+=1;
+      n.qTotal=(n.qTotal||0)+qcount;
+      n.correct+=correct;
+      n.timeMinutes=Math.round((n.timeMinutes+mins)*100)/100;
+      const newAcc=n.qTotal>0?n.correct/n.qTotal*100:0;
       n.trendUp=oldAcc===null?null:(newAcc>=oldAcc);
+      n.lastDelta={count:1,qcount,correct,mins};
+      n.entries.push({date:dateVal,count:qcount,correct,difficulty});
+      n.notes.push({id:uid(),date:dateVal,note:note||`第${n.count}${n.unit}，${correct}/${qcount}题`});
+      S.kg.logs.push({date:dateVal,nodeId:id,name:kgPathLabel(id),count:qcount,correct});
+      save();closeModal();kgRenderTree();kgRenderWall();toast(`+1${n.unit}（${correct}/${qcount}题）✓`);
+      return;
     }
-    n.lastDelta={count,correct:n.trackAcc?correct:count,mins};
-    if(n.trackAcc)n.entries.push({date:dateVal,count,correct,difficulty});
+    const count=parseInt(document.getElementById('kgCiCount').value)||0;
+    if(count<=0){toast('数量要大于0');return;}
+    const mins2=mins;
+    n.count+=count;
+    n.timeMinutes=Math.round((n.timeMinutes+mins2)*100)/100;
+    n.lastDelta={count,correct:count,mins:mins2};
     n.notes.push({id:uid(),date:dateVal,note});
-    S.kg.logs.push({date:dateVal,nodeId:id,name:kgPathLabel(id),count,correct:n.trackAcc?correct:null});
+    S.kg.logs.push({date:dateVal,nodeId:id,name:kgPathLabel(id),count,correct:null});
     save();closeModal();kgRenderTree();kgRenderWall();toast(`+${count} ${n.unit} ✓`);
   });
 }
@@ -3949,7 +3969,11 @@ function kgUndoCheckIn(id){
   showModal('撤销上一次打卡','<p style="color:var(--ink2);font-size:14px;line-height:1.6;">会去掉最近一次打卡的数量和备注，确定吗？</p>',()=>{
     const delta=n.lastDelta||{count:0,correct:0,mins:0};
     n.count=Math.max(0,n.count-delta.count);
-    if(n.trackAcc){n.correct=Math.max(0,n.correct-delta.correct);if(n.entries.length)n.entries.pop();}
+    if(n.trackAcc){
+      n.correct=Math.max(0,n.correct-delta.correct);
+      n.qTotal=Math.max(0,(n.qTotal||0)-(delta.qcount||0));
+      if(n.entries.length)n.entries.pop();
+    }
     if(delta.mins)n.timeMinutes=Math.round(Math.max(0,n.timeMinutes-delta.mins)*100)/100;
     n.notes.pop();
     n.trendUp=null;
