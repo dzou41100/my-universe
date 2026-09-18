@@ -557,6 +557,7 @@ function load(){
     S.kg={tree:kgDefaultTree(),logs:[]};
   }
   if(!Array.isArray(S.kg.logs))S.kg.logs=[];
+  if(S.kg.weaknessNotes===undefined)S.kg.weaknessNotes='';
   S.kg.tree.forEach(kgMigrateNode);
   // ==== 第一批新功能：数据初始化 ====
   if(!S.memos)S.memos=[]; // 快速备忘（已废弃，仅保留兼容旧备份）：[{id,text,createdAt}]
@@ -3761,8 +3762,8 @@ function kgRenderTree(){
   const root=kgFindNode(kgActiveRoot);if(!root){listDiv.innerHTML='';return;}
   listDiv.innerHTML=kgRowHtml(root,0);
 }
-function kgAddFormFields(prefix,defaults){
-  defaults=defaults||{};
+function kgAddFormFields(prefix,defaults,opts){
+  defaults=defaults||{};opts=opts||{};
   return`
     <label style="font-size:12px;color:var(--ink3);">名称</label>
     <input type="text" id="${prefix}Name" value="${esc(defaults.name||'')}" placeholder="例如：逻辑填空">
@@ -3773,16 +3774,34 @@ function kgAddFormFields(prefix,defaults){
     <label style="font-size:12px;color:var(--ink3);margin-top:8px;">目标正确率%</label>
     <input type="number" id="${prefix}TargetAcc" value="${defaults.targetAcc||0}" min="0" max="100">
     <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="${prefix}Acc" ${defaults.trackAcc!==false?'checked':''} style="width:auto;margin:0;"> 需要记录正确率</label>
-    <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="${prefix}Score" ${defaults.trackScore?'checked':''} style="width:auto;margin:0;"> 这是"套题"类型</label>`;
+    <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="${prefix}Score" ${defaults.trackScore?'checked':''} style="width:auto;margin:0;"> 这是"套题"类型</label>
+    ${opts.showCount?`
+    <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);">
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">下面是当前已累计的数字，改单位/类型不会自动换算，数字不对可以在这里直接改</div>
+      <label style="font-size:12px;color:var(--ink3);">当前进度（${esc(defaults.unit||'')}）</label>
+      <input type="number" id="${prefix}Count" value="${defaults.count||0}" min="0">
+      ${defaults.trackAcc||defaults.trackScore?`<label style="font-size:12px;color:var(--ink3);margin-top:8px;">累计题数</label><input type="number" id="${prefix}QTotal" value="${defaults.qTotal||0}" min="0">`:''}
+      ${defaults.trackAcc?`<label style="font-size:12px;color:var(--ink3);margin-top:8px;">累计做对题数</label><input type="number" id="${prefix}Correct" value="${defaults.correct||0}" min="0">`:''}
+    </div>`:''}`;
 }
-function kgReadFormFields(prefix){
+function kgReadFormFields(prefix,opts){
+  opts=opts||{};
   const name=document.getElementById(prefix+'Name').value.trim();
   const unit=document.getElementById(prefix+'Unit').value.trim()||'题';
   const target=parseInt(document.getElementById(prefix+'Target').value)||0;
   const targetAcc=parseInt(document.getElementById(prefix+'TargetAcc').value)||0;
   const trackScore=document.getElementById(prefix+'Score').checked;
   const trackAcc=trackScore?false:document.getElementById(prefix+'Acc').checked;
-  return{name,unit,target,targetAcc,trackAcc,trackScore};
+  const out={name,unit,target,targetAcc,trackAcc,trackScore};
+  if(opts.showCount){
+    const countEl=document.getElementById(prefix+'Count');
+    if(countEl)out.count=Math.max(0,parseInt(countEl.value)||0);
+    const qEl=document.getElementById(prefix+'QTotal');
+    if(qEl)out.qTotal=Math.max(0,parseInt(qEl.value)||0);
+    const cEl=document.getElementById(prefix+'Correct');
+    if(cEl)out.correct=Math.max(0,parseInt(cEl.value)||0);
+  }
+  return out;
 }
 function kgOpenAddRootModal(){
   showModal('新增大类',kgAddFormFields('kgNew',{name:'',unit:'题',trackAcc:true}),()=>{
@@ -3805,10 +3824,13 @@ function kgOpenAddChildModal(parentId){
 }
 function kgOpenEditModal(id){
   const n=kgFindNode(id);if(!n)return;
-  showModal('编辑',kgAddFormFields('kgE',n),()=>{
-    const f=kgReadFormFields('kgE');
+  showModal('编辑',kgAddFormFields('kgE',n,{showCount:true}),()=>{
+    const f=kgReadFormFields('kgE',{showCount:true});
     if(!f.name){toast('请填写名称');return;}
     n.name=f.name;n.unit=f.unit;n.target=f.target;n.targetAcc=f.targetAcc;n.trackAcc=f.trackAcc;n.trackScore=f.trackScore;
+    if(f.count!==undefined)n.count=f.count;
+    if(f.qTotal!==undefined)n.qTotal=f.qTotal;
+    if(f.correct!==undefined)n.correct=f.correct;
     kgOpenActions.delete(id);
     save();closeModal();kgRenderTree();kgRenderWall();toast('已保存 ✓');
   });
@@ -4121,8 +4143,9 @@ function renderKg(){
     <div id="kgGrowTab">
       <div class="top-tabs" id="kgRootTabs"></div>
       <div id="kgTreeList"></div>
-      <div style="text-align:center;margin:16px 0 6px;">
+      <div style="text-align:center;margin:16px 0 6px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
         <button class="tree-action-btn" onclick="kgOpenAddRootModal()">➕ 新增大类</button>
+        <button class="tree-action-btn danger" onclick="kgResetAllConfirm()">🔄 清空重来</button>
       </div>
     </div>
     <div id="kgAchTab" style="display:none;"></div>
@@ -4135,8 +4158,19 @@ function renderKg(){
       <div id="kgReportContainer" style="background:var(--card);padding:14px;border-radius:12px;border:1px solid var(--g-border);min-height:160px;font-size:13px;line-height:1.6;">
         <div class="kg-empty-hint"></div>
       </div>
+      <div style="margin-top:14px;">
+        <label style="font-size:12px;color:var(--ink3);">📝 薄弱点 / 复盘笔记（自己记，方便下次针对性攻克）</label>
+        <textarea id="kgWeaknessNotes" rows="6" placeholder="比如：资料分析里的比重计算总是错，下次专门练这个…" style="width:100%;margin-top:6px;">${esc(S.kg.weaknessNotes||'')}</textarea>
+      </div>
     </div>`;
   kgRenderTree();kgRenderWall();
+  bindDraftAutosave(document.getElementById('kgWeaknessNotes'),(val)=>{S.kg.weaknessNotes=val;save();});
+}
+function kgResetAllConfirm(){
+  showModal('清空重来','<p style="color:var(--ink2);font-size:14px;line-height:1.6;">会把"考公"这个板块下所有的分类、打卡记录、进度全部删掉，换成一套全新的默认结构（每次打卡=1套/次，套内题量和正确数分开记）。这个操作不能撤销，确定要清空吗？</p>',()=>{
+    S.kg={tree:kgDefaultTree(),logs:[],weaknessNotes:S.kg.weaknessNotes||''};
+    save();closeModal();renderKg();toast('已清空，重新开始 ✓');
+  },null,{showCancel:true});
 }
 function kgSwitchTab(el,tabId){
   document.querySelectorAll('#kgTabs .tab-main').forEach(t=>t.classList.remove('on'));
