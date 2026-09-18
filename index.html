@@ -3693,8 +3693,9 @@ function kgRowHtml(n,depth,catIndex){
       <span style="font-size:11px;color:${dimColor};flex-shrink:0;">${percent}%</span>
     </div>
     <div class="progress-bar" style="margin:5px 0 0;${isRoot?'background:rgba(255,255,255,.3);':''}"><div class="progress-fill" style="width:${percent}%;${isRoot?'background:#fff;':''}"></div></div>`;
-  // 大类（有子项的节点）只看汇总正确率，不显示自己的打卡数据——它本身不打卡，只是子项的容器
-  if(!hasChildren){
+  // 有子项的节点（大类）现在也能直接打卡：自己有过直接打卡记录时，照样显示自己的数据；
+  // 子项汇总的正确率另起一行显示，两者不冲突。
+  if(!hasChildren||n.count>0){
     html+=`<div style="font-size:11px;color:${dimColor};display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
       <span>${n.count}${n.target>0?'/'+n.target:''} ${esc(n.unit)}</span>
       ${acc!==null?`<span>正确率 ${acc}%（最近${KG_RECENT_WINDOW}次）${accGoalTxt} ${trendArrow}</span>`:''}
@@ -3702,35 +3703,22 @@ function kgRowHtml(n,depth,catIndex){
       ${lastScore?`<span>📝 最近${lastScore.score}/${lastScore.total}分${lastScore.qcount?`（${lastScore.qcount}题）`:''}（均分${avgScorePct}%）${trendArrow}</span>`:''}
       ${setAttempts>0?`<span>📦 已刷 ${setAttempts} 套</span>`:''}
     </div>`;
-  }else if(acc!==null){
+  }
+  if(hasChildren&&acc!==null&&n.count<=0){
     html+=`<div style="font-size:11px;color:${dimColor};margin-top:4px;">正确率 ${acc}%（子类最近${KG_RECENT_WINDOW}次汇总）</div>`;
   }
-  if(hasChildren){
-    // 大类/根节点：操作也跟叶子节点一样收在"⋯"里，不用一直露在外面
-    html+=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center;">
-      <button class="tree-action-btn" onclick="kgToggleActions('${n.id}')" style="${isRoot?'background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4);':''}">⋯</button>
+  html+=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center;">
+    <button class="tree-action-btn accent" onclick="kgOpenCheckInModal('${n.id}')" style="${isRoot?'background:rgba(255,255,255,.85);color:var(--g-dark);border-color:transparent;':''}">✅ 打卡</button>
+    ${n.notes.length>0?`<button class="tree-action-btn" onclick="kgUndoCheckIn('${n.id}')">↩️ 撤销</button>`:''}
+    <button class="tree-action-btn" onclick="kgToggleActions('${n.id}')" style="margin-left:auto;${isRoot?'background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4);':''}">⋯</button>
+  </div>`;
+  if(kgOpenActions.has(n.id)){
+    html+=`<div class="nb-item-actions" style="margin:4px 0 0;flex-wrap:wrap;height:auto;">
+      ${n.notes.length>0?`<button class="tree-action-btn" onclick="kgViewHistory('${n.id}')">📜 记录</button>`:''}
+      <button class="tree-action-btn" onclick="kgOpenAddChildModal('${n.id}')">➕ 子项</button>
+      <button class="tree-action-btn" onclick="kgOpenEditModal('${n.id}')">✏️ 编辑</button>
+      <button class="tree-action-btn danger" onclick="kgDeleteNode('${n.id}')">🗑️ 删除</button>
     </div>`;
-    if(kgOpenActions.has(n.id)){
-      html+=`<div class="nb-item-actions" style="margin:4px 0 0;flex-wrap:wrap;height:auto;">
-        <button class="tree-action-btn" onclick="kgOpenAddChildModal('${n.id}')">➕ 子项</button>
-        <button class="tree-action-btn" onclick="kgOpenRenameModal('${n.id}')">✏️ 改名</button>
-        <button class="tree-action-btn danger" onclick="kgDeleteNode('${n.id}')">🗑️ 删除</button>
-      </div>`;
-    }
-  }else{
-    html+=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center;">
-      <button class="tree-action-btn accent" onclick="kgOpenCheckInModal('${n.id}')">✅ 打卡</button>
-      ${n.notes.length>0?`<button class="tree-action-btn" onclick="kgUndoCheckIn('${n.id}')">↩️ 撤销</button>`:''}
-      <button class="tree-action-btn" onclick="kgToggleActions('${n.id}')" style="margin-left:auto;">⋯</button>
-    </div>`;
-    if(kgOpenActions.has(n.id)){
-      html+=`<div class="nb-item-actions" style="margin:4px 0 0;flex-wrap:wrap;height:auto;">
-        ${n.notes.length>0?`<button class="tree-action-btn" onclick="kgViewHistory('${n.id}')">📜 记录</button>`:''}
-        <button class="tree-action-btn" onclick="kgOpenAddChildModal('${n.id}')">➕ 子项</button>
-        <button class="tree-action-btn" onclick="kgOpenEditModal('${n.id}')">✏️ 编辑</button>
-        <button class="tree-action-btn danger" onclick="kgDeleteNode('${n.id}')">🗑️ 删除</button>
-      </div>`;
-    }
   }
   html+=`</div>`;
   let childrenHtml='';
@@ -3875,8 +3863,11 @@ function kgOpenCheckInModal(id){
       <label style="font-size:12px;color:var(--ink3);margin-top:8px;">满分</label>
       <input type="number" id="kgCiTotal" value="100">
       ${kgDiffPickerHtml()}
-      <label style="font-size:12px;color:var(--ink3);margin-top:8px;">用时（分钟）</label>
-      <input type="number" id="kgCiTime">
+      <label style="font-size:12px;color:var(--ink3);margin-top:8px;">用时</label>
+      <div style="display:flex;gap:8px;">
+        <input type="number" id="kgCiTimeMin" placeholder="分钟" min="0" style="flex:1;">
+        <input type="number" id="kgCiTimeSec" placeholder="秒" min="0" max="59" style="flex:1;">
+      </div>
       <label style="font-size:12px;color:var(--ink3);margin-top:8px;">备注</label>
       <input type="text" id="kgCiNote" maxlength="30" placeholder="做了什么…">
     `,()=>{
@@ -3886,7 +3877,7 @@ function kgOpenCheckInModal(id){
       const qcount=parseInt(document.getElementById('kgCiQCount').value)||0;
       if(qcount<=0){toast('请填写这套的题量');return;}
       const difficulty=kgReadDiff();
-      const mins=parseFloat(document.getElementById('kgCiTime').value)||0;
+      const mins=(parseFloat(document.getElementById('kgCiTimeMin').value)||0)+(parseFloat(document.getElementById('kgCiTimeSec').value)||0)/60;
       const note=document.getElementById('kgCiNote').value.trim().slice(0,30);
       const dateVal=document.getElementById('kgCiDate').value||td();
       const prevScore=n.scores.length?n.scores[n.scores.length-1]:null;
@@ -3906,10 +3897,14 @@ function kgOpenCheckInModal(id){
     <input type="date" id="kgCiDate" value="${td()}" max="${td()}">
     <label style="font-size:12px;color:var(--ink3);margin-top:8px;">本次数量（${esc(n.unit)}）</label>
     <input type="number" id="kgCiCount" value="1" min="1">
+    ${n.trackAcc?`<div style="font-size:11px;color:var(--ink3);margin-top:2px;">填这次一共做了几${esc(n.unit)}，不是做了几遍</div>`:''}
     ${n.trackAcc?`<label style="font-size:12px;color:var(--ink3);margin-top:8px;">其中做对了几个</label><input type="number" id="kgCiCorrect" value="0" min="0">`:''}
     ${n.trackAcc?kgDiffPickerHtml():''}
-    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">用时（分钟）</label>
-    <input type="number" id="kgCiTime">
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">用时</label>
+    <div style="display:flex;gap:8px;">
+      <input type="number" id="kgCiTimeMin" placeholder="分钟" min="0" style="flex:1;">
+      <input type="number" id="kgCiTimeSec" placeholder="秒" min="0" max="59" style="flex:1;">
+    </div>
     <label style="font-size:12px;color:var(--ink3);margin-top:8px;">备注</label>
     <input type="text" id="kgCiNote" maxlength="30" placeholder="做了什么…">
   `,()=>{
@@ -3917,7 +3912,7 @@ function kgOpenCheckInModal(id){
     if(count<=0){toast('数量要大于0');return;}
     const correct=n.trackAcc?Math.min(count,parseInt(document.getElementById('kgCiCorrect').value)||0):count;
     const difficulty=n.trackAcc?kgReadDiff():'medium';
-    const mins=parseFloat(document.getElementById('kgCiTime').value)||0;
+    const mins=(parseFloat(document.getElementById('kgCiTimeMin').value)||0)+(parseFloat(document.getElementById('kgCiTimeSec').value)||0)/60;
     const note=document.getElementById('kgCiNote').value.trim().slice(0,30);
     const dateVal=document.getElementById('kgCiDate').value||td();
     const oldAcc=n.trackAcc&&n.count>0?n.correct/n.count*100:null;
