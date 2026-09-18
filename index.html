@@ -3699,7 +3699,7 @@ function kgRowHtml(n,depth,catIndex){
     html+=`<div style="font-size:11px;color:${dimColor};display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
       <span>${n.count}${n.target>0?'/'+n.target:''} ${esc(n.unit)}</span>
       ${acc!==null?`<span>正确率 ${acc}%（最近${KG_RECENT_WINDOW}次）${accGoalTxt} ${trendArrow}</span>`:''}
-      ${n.timeMinutes>0?`<span>⏱ 累计${n.timeMinutes}分钟</span>`:''}
+      ${n.timeMinutes>0?`<span>⏱ 累计${Math.round(n.timeMinutes*100)/100}分钟</span>`:''}
       ${lastScore?`<span>📝 最近${lastScore.score}/${lastScore.total}分${lastScore.qcount?`（${lastScore.qcount}题）`:''}（均分${avgScorePct}%）${trendArrow}</span>`:''}
       ${setAttempts>0?`<span>📦 已刷 ${setAttempts} 套</span>`:''}
     </div>`;
@@ -3884,7 +3884,7 @@ function kgOpenCheckInModal(id){
       n.scores.push({date:dateVal,score,total,qcount,difficulty});
       n.trendUp=prevScore?(score/total>=prevScore.score/prevScore.total):null;
       n.count+=qcount;
-      n.timeMinutes+=mins;
+      n.timeMinutes=Math.round((n.timeMinutes+mins)*100)/100;
       n.lastDelta={count:qcount,correct:0,mins};
       n.notes.push({id:uid(),date:dateVal,note:note||`得分 ${score}/${total}（${qcount}题）`});
       S.kg.logs.push({date:dateVal,nodeId:id,name:kgPathLabel(id),count:qcount,correct:null});
@@ -3896,8 +3896,7 @@ function kgOpenCheckInModal(id){
     <label style="font-size:12px;color:var(--ink3);">打卡日期（补录以前的就改成对应日期，之后正常按当天记录）</label>
     <input type="date" id="kgCiDate" value="${td()}" max="${td()}">
     <label style="font-size:12px;color:var(--ink3);margin-top:8px;">本次数量（${esc(n.unit)}）</label>
-    <input type="number" id="kgCiCount" value="1" min="1">
-    ${n.trackAcc?`<div style="font-size:11px;color:var(--ink3);margin-top:2px;">填这次一共做了几${esc(n.unit)}，不是做了几遍</div>`:''}
+    <input type="number" id="kgCiCount" value="1" min="1" placeholder="这次一共做了多少${esc(n.unit)}">
     ${n.trackAcc?`<label style="font-size:12px;color:var(--ink3);margin-top:8px;">其中做对了几个</label><input type="number" id="kgCiCorrect" value="0" min="0">`:''}
     ${n.trackAcc?kgDiffPickerHtml():''}
     <label style="font-size:12px;color:var(--ink3);margin-top:8px;">用时</label>
@@ -3918,7 +3917,7 @@ function kgOpenCheckInModal(id){
     const oldAcc=n.trackAcc&&n.count>0?n.correct/n.count*100:null;
     n.count+=count;
     if(n.trackAcc)n.correct+=correct;
-    n.timeMinutes+=mins;
+    n.timeMinutes=Math.round((n.timeMinutes+mins)*100)/100;
     if(n.trackAcc){
       const newAcc=n.count>0?n.correct/n.count*100:0;
       n.trendUp=oldAcc===null?null:(newAcc>=oldAcc);
@@ -3938,7 +3937,7 @@ function kgUndoCheckIn(id){
       const popped=n.scores.pop();
       n.count=Math.max(0,n.count-(popped&&popped.qcount?popped.qcount:0));
       const delta=n.lastDelta;
-      if(delta&&delta.mins)n.timeMinutes=Math.max(0,n.timeMinutes-delta.mins);
+      if(delta&&delta.mins)n.timeMinutes=Math.round(Math.max(0,n.timeMinutes-delta.mins)*100)/100;
       n.notes.pop();
       n.trendUp=null;
       for(let i=S.kg.logs.length-1;i>=0;i--){if(S.kg.logs[i].nodeId===id){S.kg.logs.splice(i,1);break;}}
@@ -3951,7 +3950,7 @@ function kgUndoCheckIn(id){
     const delta=n.lastDelta||{count:0,correct:0,mins:0};
     n.count=Math.max(0,n.count-delta.count);
     if(n.trackAcc){n.correct=Math.max(0,n.correct-delta.correct);if(n.entries.length)n.entries.pop();}
-    if(delta.mins)n.timeMinutes=Math.max(0,n.timeMinutes-delta.mins);
+    if(delta.mins)n.timeMinutes=Math.round(Math.max(0,n.timeMinutes-delta.mins)*100)/100;
     n.notes.pop();
     n.trendUp=null;
     for(let i=S.kg.logs.length-1;i>=0;i--){if(S.kg.logs[i].nodeId===id){S.kg.logs.splice(i,1);break;}}
