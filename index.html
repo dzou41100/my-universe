@@ -407,9 +407,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 </div>
 
 <div class="bnav">
-  <div class="ni on" data-page="plan"><span class="ico">🗓</span><span class="lbl">计划</span></div>
+  <div class="ni on" data-page="kg"><span class="ico">🏛️</span><span class="lbl">考公</span></div>
+  <div class="ni" data-page="plan"><span class="ico">🗓</span><span class="lbl">计划</span></div>
   <div class="ni" data-page="record"><span class="ico">📝</span><span class="lbl">日记</span></div>
-  <div class="ni" data-page="kg"><span class="ico">🏛️</span><span class="lbl">考公</span></div>
   <div class="ni" data-page="grow"><span class="ico">🌱</span><span class="lbl">成长</span></div>
   <div class="ni" data-page="note"><span class="ico">📔</span><span class="lbl">笔记</span></div>
 </div>
@@ -4148,11 +4148,11 @@ loadFontSize();
 loadTheme();
 if(!S.fortuneMessages.length){S.fortuneMessages=['给明天的自己写一封信','整理手机里最近拍的照片','学一道新菜','给朋友发消息','读10页书','做15分钟运动','整理一个抽屉'];}
 save();
-_pageInited['plan']=true;
-renderPlan();
+_pageInited['kg']=true;
+renderKg();
 const now=new Date();
 document.getElementById('hdrDate').innerHTML=`${now.getMonth()+1}月${now.getDate()}日 · 星期${'日一二三四五六'[now.getDay()]}`;
-switchPage('plan');
+switchPage('kg');
 if(getSyncCode())startSyncListener(getSyncCode());
 </script>
 </body>
