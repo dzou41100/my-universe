@@ -3700,7 +3700,7 @@ function kgRowHtml(n,depth,catIndex){
   if(!hasChildren||n.count>0){
     html+=`<div style="font-size:11px;color:${dimColor};display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
       <span>${n.count}${n.target>0?'/'+n.target:''} ${esc(n.unit)}</span>
-      ${n.trackAcc&&n.qTotal>0?`<span>共${n.qTotal}题</span>`:''}
+      ${(n.trackAcc||n.trackScore)&&n.qTotal>0?`<span>共${n.qTotal}题</span>`:''}
       ${acc!==null?`<span>正确率 ${acc}%（最近${KG_RECENT_WINDOW}次）${accGoalTxt} ${trendArrow}</span>`:''}
       ${n.timeMinutes>0?`<span>⏱ 累计${Math.round(n.timeMinutes*100)/100}分钟</span>`:''}
       ${lastScore?`<span>📝 最近${lastScore.score}/${lastScore.total}分${lastScore.qcount?`（${lastScore.qcount}题）`:''}（均分${avgScorePct}%）${trendArrow}</span>`:''}
@@ -3886,12 +3886,13 @@ function kgOpenCheckInModal(id){
       const prevScore=n.scores.length?n.scores[n.scores.length-1]:null;
       n.scores.push({date:dateVal,score,total,qcount,difficulty});
       n.trendUp=prevScore?(score/total>=prevScore.score/prevScore.total):null;
-      n.count+=qcount;
+      n.count+=1;
+      n.qTotal=(n.qTotal||0)+qcount;
       n.timeMinutes=Math.round((n.timeMinutes+mins)*100)/100;
-      n.lastDelta={count:qcount,correct:0,mins};
+      n.lastDelta={count:1,qcount,correct:0,mins};
       n.notes.push({id:uid(),date:dateVal,note:note||`得分 ${score}/${total}（${qcount}题）`});
       S.kg.logs.push({date:dateVal,nodeId:id,name:kgPathLabel(id),count:qcount,correct:null});
-      save();closeModal();kgRenderTree();kgRenderWall();toast(`已记录 ${score}/${total}，+${qcount}题 ✓`);
+      save();closeModal();kgRenderTree();kgRenderWall();toast(`已记录 ${score}/${total}，+1${esc(n.unit)}（${qcount}题）✓`);
     });
     return;
   }
@@ -3955,7 +3956,8 @@ function kgUndoCheckIn(id){
     if(!n.scores.length)return;
     showModal('撤销上一次打卡','<p style="color:var(--ink2);font-size:14px;line-height:1.6;">会去掉最近一次的分数记录，确定吗？</p>',()=>{
       const popped=n.scores.pop();
-      n.count=Math.max(0,n.count-(popped&&popped.qcount?popped.qcount:0));
+      n.count=Math.max(0,n.count-1);
+      n.qTotal=Math.max(0,(n.qTotal||0)-(popped&&popped.qcount?popped.qcount:0));
       const delta=n.lastDelta;
       if(delta&&delta.mins)n.timeMinutes=Math.round(Math.max(0,n.timeMinutes-delta.mins)*100)/100;
       n.notes.pop();
