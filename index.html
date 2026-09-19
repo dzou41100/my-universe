@@ -3555,11 +3555,6 @@ function kgMigrateNode(n){
   if(n.timeMinutes===undefined)n.timeMinutes=0;
   if(n.qTotal===undefined)n.qTotal=0;
   if(n.lastDelta===undefined)n.lastDelta=null;
-  if(n.trackScore&&n.scores.length){
-    // 套题记录的进度以前是按"打卡次数"算的（1次=1，不管这套多少题），
-    // 现在改成按实际题量累加：每条记录有填题量的按题量算，老记录没填过题量的按1算，避免老数据跳变
-    n.count=n.scores.reduce((s,x)=>s+(x.qcount||1),0);
-  }
   (n.children||[]).forEach(kgMigrateNode);
 }
 function kgFindNode(id,list){list=list||S.kg.tree;for(const n of list){if(n.id===id)return n;if(n.children&&n.children.length){const f=kgFindNode(id,n.children);if(f)return f;}}return null;}
@@ -3705,7 +3700,7 @@ function kgRowHtml(n,depth,catIndex){
       ${acc!==null?`<span>正确率 ${acc}%（最近${KG_RECENT_WINDOW}次）${accGoalTxt} ${trendArrow}</span>`:''}
       ${n.timeMinutes>0?`<span>⏱ 累计${Math.round(n.timeMinutes*100)/100}分钟</span>`:''}
       ${lastScore?`<span>📝 最近${lastScore.score}/${lastScore.total}分${lastScore.qcount?`（${lastScore.qcount}题）`:''}（均分${avgScorePct}%）${trendArrow}</span>`:''}
-      ${setAttempts>0?`<span>📦 已刷 ${setAttempts} 套</span>`:''}
+      
     </div>`;
   }
   if(hasChildren&&acc!==null&&n.count<=0){
