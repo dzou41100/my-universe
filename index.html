@@ -3566,15 +3566,53 @@ function kgFindParentArray(id,list){
   }
   return null;
 }
+// 单个节点自己进度数字：不打勾类型直接用存的 count；记正确率/套题类型一律从"每次打卡记录"数出来，不会跟存的数字对不上
+function kgOwnCount(n){
+  if(n.trackScore)return(n.scores||[]).length;
+  if(n.trackAcc)return(n.entries||[]).length;
+  return n.count||0;
+}
+function kgQTotal(n){
+  if(n.trackScore)return(n.scores||[]).reduce((s,x)=>s+(x.qcount||0),0);
+  if(n.trackAcc)return(n.entries||[]).reduce((s,e)=>s+(e.count||0),0);
+  return 0;
+}
+function kgCorrectTotal(n){
+  if(n.trackAcc)return(n.entries||[]).reduce((s,e)=>s+(e.correct||0),0);
+  return 0;
+}
+function kgFmtSec(sec){
+  sec=Math.round(sec);
+  if(sec<60)return sec+'秒';
+  const m=Math.floor(sec/60),s=sec%60;
+  return s>0?`${m}分${s}秒`:`${m}分`;
+}
+// 每题用时：本次多少秒/题，跟"这之前"最近几次的平均比，比之前快还是慢一目了然
+function kgSpeedStats(n){
+  const list=n.trackScore?(n.scores||[]):(n.trackAcc?(n.entries||[]):[]);
+  if(!list.length)return null;
+  const rates=list.map(e=>{
+    if(!e.mins)return null; // 没填用时（或没存过）的记录不掺进平均里，不然会拉出假的"0秒/题"
+    const qty=n.trackScore?(e.qcount||0):(e.count||0);
+    const sec=e.mins*60;
+    return qty>0?sec/qty:null;
+  }).filter(v=>v!==null);
+  if(!rates.length)return null;
+  const latest=rates[rates.length-1];
+  const prevWindow=rates.slice(Math.max(0,rates.length-1-KG_RECENT_WINDOW),rates.length-1);
+  const prevAvg=prevWindow.length?prevWindow.reduce((a,b)=>a+b,0)/prevWindow.length:null;
+  return{latest,prevAvg};
+}
 // 单个节点自己的完成度，不看子项——叶子节点用这个，大类自己直接打卡时也用这个
 function kgOwnPercent(n){
-  if(n.target>0)return Math.min(100,Math.round(n.count/n.target*100));
-  return n.count>0?100:0;
+  const c=kgOwnCount(n);
+  if(n.target>0)return Math.min(100,Math.round(c/n.target*100));
+  return c>0?100:0;
 }
 function kgPercent(n){
   if(n.children&&n.children.length){
     const parts=n.children.map(c=>kgPercent(c));
-    if(n.count>0)parts.push(kgOwnPercent(n)); // 大类自己也有直接打卡记录时，把它也算进平均里
+    if(kgOwnCount(n)>0)parts.push(kgOwnPercent(n)); // 大类自己也有直接打卡记录时，把它也算进平均里
     const sum=parts.reduce((a,b)=>a+b,0);
     return Math.round(sum/parts.length);
   }
@@ -3591,7 +3629,7 @@ function kgAutoStatus(n){
 }
 function kgStatus(n){return n.manualStatus||kgAutoStatus(n);}
 function kgSumSubtree(n){
-  let count=n.count||0,correct=n.trackAcc?(n.correct||0):0,trackedCount=n.trackAcc?(n.qTotal||0):0,timeMinutes=n.timeMinutes||0,target=n.target||0;
+  let count=kgOwnCount(n),correct=kgCorrectTotal(n),trackedCount=n.trackAcc?kgQTotal(n):0,timeMinutes=n.timeMinutes||0,target=n.target||0;
   (n.children||[]).forEach(c=>{const s=kgSumSubtree(c);count+=s.count;correct+=s.correct;trackedCount+=s.trackedCount;timeMinutes+=s.timeMinutes;target+=s.target;});
   return{count,correct,trackedCount,timeMinutes,target};
 }
@@ -3682,7 +3720,9 @@ function kgRowHtml(n,depth,catIndex){
   const accGoalTxt=n.trackAcc&&n.targetAcc>0?`（目标${n.targetAcc}%）`:'';
   const lastScore=n.trackScore&&n.scores.length?n.scores[n.scores.length-1]:null;
   const avgScorePct=n.trackScore&&n.scores.length?Math.round(n.scores.reduce((s,x)=>s+(x.total>0?x.score/x.total*100:0),0)/n.scores.length):null;
-  const setAttempts=n.trackScore?n.scores.length:0;
+  const ownCount=kgOwnCount(n);
+  const qTotal=kgQTotal(n);
+  const speed=(n.trackAcc||n.trackScore)?kgSpeedStats(n):null;
   let html=`<div class="kg-row" style="margin-left:${(isRoot||depth===1)?0:depth*12}px;">
     <div class="kg-row-head">
       ${isCollapsible?`<span onclick="toggleKgCollapse('${n.id}')" style="font-size:11px;color:${dimColor};cursor:pointer;width:14px;flex-shrink:0;user-select:none;">${toggleIcon}</span>`:''}
@@ -3693,17 +3733,17 @@ function kgRowHtml(n,depth,catIndex){
     <div class="progress-bar" style="margin:5px 0 0;${isRoot?'background:rgba(255,255,255,.3);':''}"><div class="progress-fill" style="width:${percent}%;${isRoot?'background:#fff;':''}"></div></div>`;
   // 有子项的节点（大类）现在也能直接打卡：自己有过直接打卡记录时，照样显示自己的数据；
   // 子项汇总的正确率另起一行显示，两者不冲突。
-  if(!hasChildren||n.count>0){
+  if(!hasChildren||ownCount>0){
     html+=`<div style="font-size:11px;color:${dimColor};display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
-      <span>${n.count}${n.target>0?'/'+n.target:''} ${esc(n.unit)}</span>
-      ${(n.trackAcc||n.trackScore)&&n.qTotal>0?`<span>共${n.qTotal}题</span>`:''}
+      <span>${ownCount}${n.target>0?'/'+n.target:''} ${esc(n.unit)}</span>
+      ${(n.trackAcc||n.trackScore)&&qTotal>0?`<span>共${qTotal}题</span>`:''}
       ${acc!==null?`<span>正确率 ${acc}%（最近${KG_RECENT_WINDOW}次）${accGoalTxt} ${trendArrow}</span>`:''}
-      ${n.timeMinutes>0?`<span>⏱ 累计${Math.round(n.timeMinutes*100)/100}分钟</span>`:''}
+      ${speed?`<span>⏱ ${kgFmtSec(speed.latest)}/题${speed.prevAvg!==null?`（近${KG_RECENT_WINDOW}次均${kgFmtSec(speed.prevAvg)}/题 ${speed.latest<=speed.prevAvg?'<span class="kg-trend-up">更快</span>':'<span class="kg-trend-down">更慢</span>'}）`:''}</span>`:''}
+      ${(!n.trackAcc&&!n.trackScore&&n.timeMinutes>0)?`<span>⏱ 累计${Math.round(n.timeMinutes*100)/100}分钟</span>`:''}
       ${lastScore?`<span>📝 最近${lastScore.score}/${lastScore.total}分${lastScore.qcount?`（${lastScore.qcount}题）`:''}（均分${avgScorePct}%）${trendArrow}</span>`:''}
-      
     </div>`;
   }
-  if(hasChildren&&acc!==null&&n.count<=0){
+  if(hasChildren&&acc!==null&&ownCount<=0){
     html+=`<div style="font-size:11px;color:${dimColor};margin-top:4px;">正确率 ${acc}%（子类最近${KG_RECENT_WINDOW}次汇总）</div>`;
   }
   html+=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center;">
@@ -3770,14 +3810,16 @@ function kgAddFormFields(prefix,defaults,opts){
     <input type="number" id="${prefix}TargetAcc" value="${defaults.targetAcc||0}" min="0" max="100">
     <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="${prefix}Acc" ${defaults.trackAcc!==false?'checked':''} style="width:auto;margin:0;"> 需要记录正确率</label>
     <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="${prefix}Score" ${defaults.trackScore?'checked':''} style="width:auto;margin:0;"> 这是"套题"类型</label>
-    ${opts.showCount?`
+    ${opts.showCount?(
+      (defaults.trackAcc||defaults.trackScore)?`
+    <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:11px;color:var(--ink3);">这个类型的进度、题数、正确率都是自动从每次打卡记录里累加出来的，不需要也不能在这里手改；数字不对就去对应记录里"撤销"最近一次，或者用"清空重来"整个重置。</div>`
+      :`
     <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);">
-      <div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">下面是当前已累计的数字，改单位/类型不会自动换算，数字不对可以在这里直接改</div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">下面是当前已累计的数字，改单位不会自动换算，数字不对可以在这里直接改</div>
       <label style="font-size:12px;color:var(--ink3);">当前进度（${esc(defaults.unit||'')}）</label>
       <input type="number" id="${prefix}Count" value="${defaults.count||0}" min="0">
-      ${defaults.trackAcc||defaults.trackScore?`<label style="font-size:12px;color:var(--ink3);margin-top:8px;">累计题数</label><input type="number" id="${prefix}QTotal" value="${defaults.qTotal||0}" min="0">`:''}
-      ${defaults.trackAcc?`<label style="font-size:12px;color:var(--ink3);margin-top:8px;">累计做对题数</label><input type="number" id="${prefix}Correct" value="${defaults.correct||0}" min="0">`:''}
-    </div>`:''}`;
+    </div>`
+    ):''}`;
 }
 function kgReadFormFields(prefix,opts){
   opts=opts||{};
@@ -3788,13 +3830,9 @@ function kgReadFormFields(prefix,opts){
   const trackScore=document.getElementById(prefix+'Score').checked;
   const trackAcc=trackScore?false:document.getElementById(prefix+'Acc').checked;
   const out={name,unit,target,targetAcc,trackAcc,trackScore};
-  if(opts.showCount){
+  if(opts.showCount&&!trackAcc&&!trackScore){
     const countEl=document.getElementById(prefix+'Count');
     if(countEl)out.count=Math.max(0,parseInt(countEl.value)||0);
-    const qEl=document.getElementById(prefix+'QTotal');
-    if(qEl)out.qTotal=Math.max(0,parseInt(qEl.value)||0);
-    const cEl=document.getElementById(prefix+'Correct');
-    if(cEl)out.correct=Math.max(0,parseInt(cEl.value)||0);
   }
   return out;
 }
@@ -3824,8 +3862,6 @@ function kgOpenEditModal(id){
     if(!f.name){toast('请填写名称');return;}
     n.name=f.name;n.unit=f.unit;n.target=f.target;n.targetAcc=f.targetAcc;n.trackAcc=f.trackAcc;n.trackScore=f.trackScore;
     if(f.count!==undefined)n.count=f.count;
-    if(f.qTotal!==undefined)n.qTotal=f.qTotal;
-    if(f.correct!==undefined)n.correct=f.correct;
     kgOpenActions.delete(id);
     save();closeModal();kgRenderTree();kgRenderWall();toast('已保存 ✓');
   });
@@ -3900,13 +3936,11 @@ function kgOpenCheckInModal(id){
       const mins=(parseFloat(document.getElementById('kgCiTimeMin').value)||0)+(parseFloat(document.getElementById('kgCiTimeSec').value)||0)/60;
       const note=document.getElementById('kgCiNote').value.trim().slice(0,30);
       const dateVal=document.getElementById('kgCiDate').value||td();
-      const prevScore=n.scores.length?n.scores[n.scores.length-1]:null;
-      n.scores.push({date:dateVal,score,total,qcount,difficulty});
-      n.trendUp=prevScore?(score/total>=prevScore.score/prevScore.total):null;
-      n.count+=1;
-      n.qTotal=(n.qTotal||0)+qcount;
-      n.timeMinutes=Math.round((n.timeMinutes+mins)*100)/100;
-      n.lastDelta={count:1,qcount,correct:0,mins};
+      const prevPct=kgRecentScorePct(n);
+      n.scores.push({date:dateVal,score,total,qcount,difficulty,mins});
+      const newPct=kgRecentScorePct(n);
+      n.trendUp=prevPct===null?null:(newPct>=prevPct);
+      n.lastDelta={mins};
       n.notes.push({id:uid(),date:dateVal,note:note||`得分 ${score}/${total}（${qcount}题）`});
       S.kg.logs.push({date:dateVal,nodeId:id,name:kgPathLabel(id),count:qcount,correct:null});
       save();closeModal();kgRenderTree();kgRenderWall();toast(`已记录 ${score}/${total}，+1${esc(n.unit)}（${qcount}题）✓`);
@@ -3942,16 +3976,12 @@ function kgOpenCheckInModal(id){
       if(qcount<=0){toast('请填写这次的题量');return;}
       const correct=Math.min(qcount,parseInt(document.getElementById('kgCiCorrect').value)||0);
       const difficulty=kgReadDiff();
-      const oldAcc=n.qTotal>0?n.correct/n.qTotal*100:null;
-      n.count+=1;
-      n.qTotal=(n.qTotal||0)+qcount;
-      n.correct+=correct;
-      n.timeMinutes=Math.round((n.timeMinutes+mins)*100)/100;
-      const newAcc=n.qTotal>0?n.correct/n.qTotal*100:0;
+      const oldAcc=kgRecentAcc(n);
+      n.entries.push({date:dateVal,count:qcount,correct,difficulty,mins});
+      const newAcc=kgRecentAcc(n);
       n.trendUp=oldAcc===null?null:(newAcc>=oldAcc);
-      n.lastDelta={count:1,qcount,correct,mins};
-      n.entries.push({date:dateVal,count:qcount,correct,difficulty});
-      n.notes.push({id:uid(),date:dateVal,note:note||`第${n.count}${n.unit}，${correct}/${qcount}题`});
+      n.lastDelta={mins};
+      n.notes.push({id:uid(),date:dateVal,note:note||`第${n.entries.length}${n.unit}，${correct}/${qcount}题`});
       S.kg.logs.push({date:dateVal,nodeId:id,name:kgPathLabel(id),count:qcount,correct});
       save();closeModal();kgRenderTree();kgRenderWall();toast(`+1${n.unit}（${correct}/${qcount}题）✓`);
       return;
@@ -3972,11 +4002,7 @@ function kgUndoCheckIn(id){
   if(n.trackScore){
     if(!n.scores.length)return;
     showModal('撤销上一次打卡','<p style="color:var(--ink2);font-size:14px;line-height:1.6;">会去掉最近一次的分数记录，确定吗？</p>',()=>{
-      const popped=n.scores.pop();
-      n.count=Math.max(0,n.count-1);
-      n.qTotal=Math.max(0,(n.qTotal||0)-(popped&&popped.qcount?popped.qcount:0));
-      const delta=n.lastDelta;
-      if(delta&&delta.mins)n.timeMinutes=Math.round(Math.max(0,n.timeMinutes-delta.mins)*100)/100;
+      n.scores.pop();
       n.notes.pop();
       n.trendUp=null;
       for(let i=S.kg.logs.length-1;i>=0;i--){if(S.kg.logs[i].nodeId===id){S.kg.logs.splice(i,1);break;}}
@@ -3986,14 +4012,13 @@ function kgUndoCheckIn(id){
   }
   if(!n.notes.length)return;
   showModal('撤销上一次打卡','<p style="color:var(--ink2);font-size:14px;line-height:1.6;">会去掉最近一次打卡的数量和备注，确定吗？</p>',()=>{
-    const delta=n.lastDelta||{count:0,correct:0,mins:0};
-    n.count=Math.max(0,n.count-delta.count);
+    const delta=n.lastDelta||{count:0,mins:0};
     if(n.trackAcc){
-      n.correct=Math.max(0,n.correct-delta.correct);
-      n.qTotal=Math.max(0,(n.qTotal||0)-(delta.qcount||0));
       if(n.entries.length)n.entries.pop();
+    }else{
+      n.count=Math.max(0,n.count-(delta.count||0));
+      if(delta.mins)n.timeMinutes=Math.round(Math.max(0,n.timeMinutes-delta.mins)*100)/100;
     }
-    if(delta.mins)n.timeMinutes=Math.round(Math.max(0,n.timeMinutes-delta.mins)*100)/100;
     n.notes.pop();
     n.trendUp=null;
     for(let i=S.kg.logs.length-1;i>=0;i--){if(S.kg.logs[i].nodeId===id){S.kg.logs.splice(i,1);break;}}
@@ -4095,7 +4120,7 @@ function kgGenerateReport(period){
   Object.keys(perNode).forEach(id=>{
     const n=kgFindNode(id);if(!n||!n.trackAcc)return;
     const p=perNode[id];if(!p.hasAcc||p.count===0)return;
-    const beforeCount=n.count-p.count,beforeCorrect=n.correct-p.correct;
+    const beforeCount=kgQTotal(n)-p.count,beforeCorrect=kgCorrectTotal(n)-p.correct;
     const accBefore=beforeCount>0?Math.round(beforeCorrect/beforeCount*100):null;
     const accPeriod=Math.round(p.correct/p.count*100);
     if(accBefore===null)progressLines.push(`【${esc(p.name)}】期间内新刷了 ${p.count} ${esc(n.unit)}，正确率 ${accPeriod}%，算是刚开始攻克。`);
@@ -4106,7 +4131,7 @@ function kgGenerateReport(period){
   let redCats=[],greenCats=[];
   allNodes.forEach(n=>{
     const st=kgStatus(n);
-    if(st==='red'&&(n.count>0||n.target>0))redCats.push(kgPathLabel(n.id));
+    if(st==='red'&&(kgOwnCount(n)>0||n.target>0))redCats.push(kgPathLabel(n.id));
     if(st==='green')greenCats.push(kgPathLabel(n.id));
   });
   const periodTotalQ=periodLogs.reduce((s,l)=>s+l.count,0);
