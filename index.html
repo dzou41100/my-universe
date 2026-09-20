@@ -363,6 +363,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 .diff-btn.on{background:var(--g);color:#fff;border-color:rgba(255,255,255,.45);}
 .kg-row-head{display:flex;align-items:center;gap:8px;}
 .kg-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;cursor:pointer;box-shadow:0 0 0 2px rgba(255,255,255,.6),0 1px 3px rgba(0,0,0,.15);}
+.kg-target-badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;background:#fff3cd;color:#8a6300;border:1px solid #f0d489;flex-shrink:0;white-space:nowrap;}
+.kg-target-badge.met{background:#e3f3e6;color:#2e7d32;border-color:#a8d9b0;}
 </style>
 </head>
 <body>
@@ -3500,9 +3502,9 @@ function kgN(name,opts){
     count:0,target:opts.target||0,
     trackAcc:trackScore?false:(opts.trackAcc!==false),
     qTotal:0,
-    correct:0,targetAcc:opts.targetAcc||0,prevAcc:null,trendUp:null,
+    correct:0,targetAcc:opts.targetAcc||0,targetDenom:opts.targetDenom||0,prevAcc:null,trendUp:null,
     trackScore,scores:[],entries:[],
-    timeMinutes:0,
+    timeMinutes:0,weight:opts.weight!==undefined?opts.weight:1,
     manualStatus:null,notes:[],lastDelta:null,
     children:opts.children||[]
   };
@@ -3554,6 +3556,8 @@ function kgMigrateNode(n){
   if(!Array.isArray(n.entries))n.entries=[]; // 每次打卡的单条记录，用来算"最近几次"的正确率
   if(n.timeMinutes===undefined)n.timeMinutes=0;
   if(n.qTotal===undefined)n.qTotal=0;
+  if(n.targetDenom===undefined)n.targetDenom=0;
+  if(n.weight===undefined||n.weight===null||n.weight<=0)n.weight=1;
   if(n.lastDelta===undefined)n.lastDelta=null;
   (n.children||[]).forEach(kgMigrateNode);
 }
@@ -3611,10 +3615,12 @@ function kgOwnPercent(n){
 }
 function kgPercent(n){
   if(n.children&&n.children.length){
-    const parts=n.children.map(c=>kgPercent(c));
-    if(kgOwnCount(n)>0)parts.push(kgOwnPercent(n)); // 大类自己也有直接打卡记录时，把它也算进平均里
-    const sum=parts.reduce((a,b)=>a+b,0);
-    return Math.round(sum/parts.length);
+    const parts=n.children.map(c=>({pct:kgPercent(c),w:c.weight||1}));
+    if(kgOwnCount(n)>0)parts.push({pct:kgOwnPercent(n),w:1}); // 大类自己也有直接打卡记录时，把它也算进平均里（权重按1算）
+    const wsum=parts.reduce((a,p)=>a+p.w,0);
+    if(wsum<=0)return 0;
+    const sum=parts.reduce((a,p)=>a+p.pct*p.w,0);
+    return Math.round(sum/wsum);
   }
   return kgOwnPercent(n);
 }
@@ -3717,33 +3723,37 @@ function kgRowHtml(n,depth,catIndex){
   const dimColor=isRoot?'rgba(255,255,255,.85)':'var(--ink3)';
   const acc=kgRecentAcc(n);
   const trendArrow=n.trendUp===null?'':(n.trendUp?'<span class="kg-trend-up">↑</span>':'<span class="kg-trend-down">↓</span>');
-  const accGoalTxt=n.trackAcc&&n.targetAcc>0?`（目标${n.targetAcc}%）`:'';
   const lastScore=n.trackScore&&n.scores.length?n.scores[n.scores.length-1]:null;
   const avgScorePct=n.trackScore&&n.scores.length?Math.round(n.scores.reduce((s,x)=>s+(x.total>0?x.score/x.total*100:0),0)/n.scores.length):null;
   const ownCount=kgOwnCount(n);
   const qTotal=kgQTotal(n);
   const speed=(n.trackAcc||n.trackScore)?kgSpeedStats(n):null;
+  const hasTargetBadge=!isRoot&&n.trackAcc&&n.targetAcc>0;
+  const targetBadgeLabel=hasTargetBadge?(n.targetDenom>0?`${Math.round(n.targetAcc/100*n.targetDenom)}/${n.targetDenom}`:`${n.targetAcc}%`):'';
+  const targetMet=hasTargetBadge&&acc!==null&&acc>=n.targetAcc;
+  const targetBadge=hasTargetBadge?`<span class="kg-target-badge${targetMet?' met':''}">🎯${targetBadgeLabel}${targetMet?' ✓':''}</span>`:'';
   let html=`<div class="kg-row" style="margin-left:${(isRoot||depth===1)?0:depth*12}px;">
     <div class="kg-row-head">
       ${isCollapsible?`<span onclick="toggleKgCollapse('${n.id}')" style="font-size:11px;color:${dimColor};cursor:pointer;width:14px;flex-shrink:0;user-select:none;">${toggleIcon}</span>`:''}
       <span class="kg-dot" style="background:${dot};" onclick="kgToggleManualStatus('${n.id}')" title="点一下切换状态"></span>
       <span style="flex:1;font-family:${fs.family};font-size:${fs.size}px;font-weight:${fs.weight};color:${nameColor};cursor:${isCollapsible?'pointer':'default'};" ${isCollapsible?`onclick="toggleKgCollapse('${n.id}')"`:''}>${esc(n.name)}</span>
+      ${targetBadge}
       <span style="font-size:11px;color:${dimColor};flex-shrink:0;">${percent}%</span>
     </div>
     <div class="progress-bar" style="margin:5px 0 0;${isRoot?'background:rgba(255,255,255,.3);':''}"><div class="progress-fill" style="width:${percent}%;${isRoot?'background:#fff;':''}"></div></div>`;
   // 有子项的节点（大类）现在也能直接打卡：自己有过直接打卡记录时，照样显示自己的数据；
-  // 子项汇总的正确率另起一行显示，两者不冲突。
+  // 子项汇总的正确率另起一行显示，两者不冲突。行测/申论这种最顶层大卡片不显示正确率，只看进度。
   if(!hasChildren||ownCount>0){
     html+=`<div style="font-size:11px;color:${dimColor};display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
       <span>${ownCount}${n.target>0?'/'+n.target:''} ${esc(n.unit)}</span>
       ${(n.trackAcc||n.trackScore)&&qTotal>0?`<span>共${qTotal}题</span>`:''}
-      ${acc!==null?`<span>正确率 ${acc}%（最近${KG_RECENT_WINDOW}次）${accGoalTxt} ${trendArrow}</span>`:''}
+      ${(acc!==null&&!isRoot)?`<span>正确率 ${acc}%（最近${KG_RECENT_WINDOW}次）${trendArrow}</span>`:''}
       ${speed?`<span>⏱ ${kgFmtSec(speed.latest)}/题${speed.prevAvg!==null?`（近${KG_RECENT_WINDOW}次均${kgFmtSec(speed.prevAvg)}/题 ${speed.latest<=speed.prevAvg?'<span class="kg-trend-up">更快</span>':'<span class="kg-trend-down">更慢</span>'}）`:''}</span>`:''}
       ${(!n.trackAcc&&!n.trackScore&&n.timeMinutes>0)?`<span>⏱ 累计${Math.round(n.timeMinutes*100)/100}分钟</span>`:''}
       ${lastScore?`<span>📝 最近${lastScore.score}/${lastScore.total}分${lastScore.qcount?`（${lastScore.qcount}题）`:''}（均分${avgScorePct}%）${trendArrow}</span>`:''}
     </div>`;
   }
-  if(hasChildren&&acc!==null&&ownCount<=0){
+  if(hasChildren&&acc!==null&&ownCount<=0&&!isRoot){
     html+=`<div style="font-size:11px;color:${dimColor};margin-top:4px;">正确率 ${acc}%（子类最近${KG_RECENT_WINDOW}次汇总）</div>`;
   }
   html+=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center;">
@@ -3808,6 +3818,10 @@ function kgAddFormFields(prefix,defaults,opts){
     <input type="number" id="${prefix}Target" value="${defaults.target||0}" min="0">
     <label style="font-size:12px;color:var(--ink3);margin-top:8px;">目标正确率%</label>
     <input type="number" id="${prefix}TargetAcc" value="${defaults.targetAcc||0}" min="0" max="100">
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">目标满分是多少题（可不填；填了才会把目标换算成"5/10"这种样式，显眼地显示在卡片上）</label>
+    <input type="number" id="${prefix}TargetDenom" value="${defaults.targetDenom||''}" min="0" placeholder="如：10">
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">占上级整体进度的比重（同级默认都填1，数字越大占比越高，只在这个项目有兄弟项目时才有意义）</label>
+    <input type="number" id="${prefix}Weight" value="${defaults.weight||1}" min="0.1" step="0.1">
     <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="${prefix}Acc" ${defaults.trackAcc!==false?'checked':''} style="width:auto;margin:0;"> 需要记录正确率</label>
     <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="${prefix}Score" ${defaults.trackScore?'checked':''} style="width:auto;margin:0;"> 这是"套题"类型</label>
     ${opts.showCount?(
@@ -3827,9 +3841,11 @@ function kgReadFormFields(prefix,opts){
   const unit=document.getElementById(prefix+'Unit').value.trim()||'题';
   const target=parseInt(document.getElementById(prefix+'Target').value)||0;
   const targetAcc=parseInt(document.getElementById(prefix+'TargetAcc').value)||0;
+  const targetDenom=parseInt(document.getElementById(prefix+'TargetDenom').value)||0;
+  const weight=parseFloat(document.getElementById(prefix+'Weight').value)||1;
   const trackScore=document.getElementById(prefix+'Score').checked;
   const trackAcc=trackScore?false:document.getElementById(prefix+'Acc').checked;
-  const out={name,unit,target,targetAcc,trackAcc,trackScore};
+  const out={name,unit,target,targetAcc,targetDenom,weight,trackAcc,trackScore};
   if(opts.showCount&&!trackAcc&&!trackScore){
     const countEl=document.getElementById(prefix+'Count');
     if(countEl)out.count=Math.max(0,parseInt(countEl.value)||0);
@@ -3860,7 +3876,7 @@ function kgOpenEditModal(id){
   showModal('编辑',kgAddFormFields('kgE',n,{showCount:true}),()=>{
     const f=kgReadFormFields('kgE',{showCount:true});
     if(!f.name){toast('请填写名称');return;}
-    n.name=f.name;n.unit=f.unit;n.target=f.target;n.targetAcc=f.targetAcc;n.trackAcc=f.trackAcc;n.trackScore=f.trackScore;
+    n.name=f.name;n.unit=f.unit;n.target=f.target;n.targetAcc=f.targetAcc;n.targetDenom=f.targetDenom;n.weight=f.weight||1;n.trackAcc=f.trackAcc;n.trackScore=f.trackScore;
     if(f.count!==undefined)n.count=f.count;
     kgOpenActions.delete(id);
     save();closeModal();kgRenderTree();kgRenderWall();toast('已保存 ✓');
