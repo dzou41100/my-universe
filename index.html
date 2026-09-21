@@ -3728,9 +3728,10 @@ function kgRowHtml(n,depth,catIndex){
   const ownCount=kgOwnCount(n);
   const qTotal=kgQTotal(n);
   const speed=(n.trackAcc||n.trackScore)?kgSpeedStats(n):null;
-  const hasTargetBadge=!isRoot&&n.trackAcc&&n.targetAcc>0;
+  const hasTargetBadge=!isRoot&&(n.trackAcc||n.trackScore)&&n.targetAcc>0;
+  const badgeMetric=n.trackScore?kgRecentScorePct(n):acc;
   const targetBadgeLabel=hasTargetBadge?(n.targetDenom>0?`${Math.round(n.targetAcc/100*n.targetDenom)}/${n.targetDenom}`:`${n.targetAcc}%`):'';
-  const targetMet=hasTargetBadge&&acc!==null&&acc>=n.targetAcc;
+  const targetMet=hasTargetBadge&&badgeMetric!==null&&badgeMetric>=n.targetAcc;
   const targetBadge=hasTargetBadge?`<span class="kg-target-badge${targetMet?' met':''}">🎯${targetBadgeLabel}${targetMet?' ✓':''}</span>`:'';
   let html=`<div class="kg-row" style="margin-left:${(isRoot||depth===1)?0:depth*12}px;">
     <div class="kg-row-head">
@@ -3816,14 +3817,14 @@ function kgAddFormFields(prefix,defaults,opts){
     <input type="text" id="${prefix}Unit" value="${esc(defaults.unit||'题')}">
     <label style="font-size:12px;color:var(--ink3);margin-top:8px;">目标数量</label>
     <input type="number" id="${prefix}Target" value="${defaults.target||0}" min="0">
-    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">目标正确率%</label>
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">目标正确率/得分率%（"需要记录正确率"和"套题"两种类型都能用这个设目标）</label>
     <input type="number" id="${prefix}TargetAcc" value="${defaults.targetAcc||0}" min="0" max="100">
-    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">目标满分是多少题（可不填；填了才会把目标换算成"5/10"这种样式，显眼地显示在卡片上）</label>
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">目标满分是多少（可不填；填了才会把目标换算成"5/10"或者"23/30"这种样式，显眼地显示在卡片上）</label>
     <input type="number" id="${prefix}TargetDenom" value="${defaults.targetDenom||''}" min="0" placeholder="如：10">
     <label style="font-size:12px;color:var(--ink3);margin-top:8px;">占上级整体进度的比重（同级默认都填1，数字越大占比越高，只在这个项目有兄弟项目时才有意义）</label>
     <input type="number" id="${prefix}Weight" value="${defaults.weight||1}" min="0.1" step="0.1">
-    <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="${prefix}Acc" ${defaults.trackAcc!==false?'checked':''} style="width:auto;margin:0;"> 需要记录正确率</label>
-    <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="${prefix}Score" ${defaults.trackScore?'checked':''} style="width:auto;margin:0;"> 这是"套题"类型</label>
+    <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="${prefix}Acc" ${defaults.trackAcc!==false?'checked':''} onchange="if(this.checked)document.getElementById('${prefix}Score').checked=false;" style="width:auto;margin:0;"> 需要记录正确率（客观题，有对错之分）</label>
+    <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;color:var(--ink2);"><input type="checkbox" id="${prefix}Score" ${defaults.trackScore?'checked':''} onchange="if(this.checked)document.getElementById('${prefix}Acc').checked=false;" style="width:auto;margin:0;"> 这是"套题/主观题"类型（按得分/满分算，比如申论）</label>
     ${opts.showCount?(
       (defaults.trackAcc||defaults.trackScore)?`
     <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:11px;color:var(--ink3);">这个类型的进度、题数、正确率都是自动从每次打卡记录里累加出来的，不需要也不能在这里手改；数字不对就去对应记录里"撤销"最近一次，或者用"清空重来"整个重置。</div>`
