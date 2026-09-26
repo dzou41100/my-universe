@@ -2556,7 +2556,6 @@ function renderCalendar(){
   const startWeekday=first.getDay();
   const daysInMonth=new Date(y,m+1,0).getDate();
   const prevDaysInMonth=new Date(y,m,0).getDate();
-  const todayStr=td();
   let cells='';
   // 补齐这个月前面：上个月最后几天
   const prevY=m===0?y-1:y,prevM=m===0?12:m;
@@ -2574,8 +2573,7 @@ function renderCalendar(){
       <button class="sbtn" onclick="calNextMonth()">下月 ›</button>
     </div>
     <div class="cal-grid">${['日','一','二','三','四','五','六'].map(w=>`<div class="cal-weekday">${w}</div>`).join('')}</div>
-    <div class="cal-grid">${cells}</div>
-    <button class="fab-btn" style="margin-top:14px;" onclick="openCalDayModal('${todayStr}')">➕ 添加事件（今天）</button>`;
+    <div class="cal-grid">${cells}</div>`;
 }
 function openCalDayModal(dateStr){
   const body=(container)=>{
