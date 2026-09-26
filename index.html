@@ -132,6 +132,21 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang S
 .priority-green{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
 .habit-card{background:var(--card);border-radius:var(--radius-md);padding:14px;margin-bottom:12px;box-shadow:var(--shadow-sm);border:1px solid var(--g-border);}
 .habit-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+/* ══ 日历（成长 → 日历） ══ */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:5px;}
+.cal-weekday{text-align:center;font-size:12px;color:var(--ink3);font-weight:600;padding:2px 0 8px;}
+.cal-cell{background:var(--card);border:1px solid var(--g-border);border-radius:10px;min-height:78px;padding:6px 4px;cursor:pointer;display:flex;flex-direction:column;gap:1px;transition:transform .1s;}
+.cal-cell:active{transform:scale(.96);}
+.cal-cell-empty{background:transparent;border:none;cursor:default;}
+.cal-cell-outside{opacity:.4;}
+.cal-daynum{font-size:16px;color:var(--ink2);font-weight:700;}
+.cal-cell.is-today .cal-daynum{color:#fff;background:var(--g);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.cal-cell.has-event{border-color:var(--g);background:var(--g-xlight);}
+.cal-lunar-label{font-size:11px;color:var(--ink3);line-height:1.2;}
+.cal-festival-label{color:#e0645a;font-weight:600;}
+.cal-cell.has-festival{border-color:#f0b8b3;}
+.cal-ev-label{font-size:11px;color:var(--g-dark);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px;}
+.cal-ev-more{font-size:10px;color:var(--ink3);}
 .project-card-root{background:var(--card);border-radius:var(--radius-md);padding:14px;margin-bottom:12px;border-left:4px solid var(--g);box-shadow:var(--shadow-sm);}
 .project-card-child{border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;margin-left:20px;border-left:2px solid;}
 .project-card-grandchild{border-radius:8px;padding:8px 10px;margin-bottom:6px;margin-left:28px;border-left:1px dashed;}
@@ -409,10 +424,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--g);background:var(--w
 </div>
 
 <div class="bnav">
-  <div class="ni on" data-page="kg"><span class="ico">🏛️</span><span class="lbl">考公</span></div>
-  <div class="ni" data-page="plan"><span class="ico">🗓</span><span class="lbl">计划</span></div>
-  <div class="ni" data-page="record"><span class="ico">📝</span><span class="lbl">日记</span></div>
   <div class="ni" data-page="grow"><span class="ico">🌱</span><span class="lbl">成长</span></div>
+  <div class="ni" data-page="kg"><span class="ico">🏛️</span><span class="lbl">考公</span></div>
+  <div class="ni on" data-page="plan"><span class="ico">🗓</span><span class="lbl">计划</span></div>
+  <div class="ni" data-page="record"><span class="ico">📝</span><span class="lbl">日记</span></div>
   <div class="ni" data-page="note"><span class="ico">📔</span><span class="lbl">笔记</span></div>
 </div>
 
@@ -642,7 +657,7 @@ function generateRandomSyncCode(){
 }
 function updateSyncStatusUI(text){const el=document.getElementById('syncStatusText');if(el)el.innerText=text;}
 function refreshAllVisibleContent(){
-  try{renderToday();}catch(e){}
+  try{renderKg();}catch(e){}
   try{renderRecord();}catch(e){}
   try{renderPlan();}catch(e){}
   try{renderGrow();}catch(e){}
@@ -901,8 +916,8 @@ function checkBackupReminder(){
     <span style="font-size:22px">💾</span>
     <span class="backup-reminder-text">距上次备份已超过7天，建议导出一份备份保存到手机相册或文件夹</span>
     <button class="backup-now-btn" onclick="quickBackup()">立即备份</button>`;
-  const todayContent=document.getElementById('todayContent');
-  if(todayContent)todayContent.insertBefore(reminder,todayContent.firstChild);
+  const kgGrowTab=document.getElementById('kgGrowTab');
+  if(kgGrowTab)kgGrowTab.insertBefore(reminder,kgGrowTab.firstChild);
 }
 function quickBackup(){
   const a=document.createElement('a');
@@ -1129,39 +1144,53 @@ function switchPage(pageId){
   document.getElementById('pg-'+pageId).classList.add('active');
   document.querySelectorAll('.ni').forEach(nav=>{nav.classList.toggle('on',nav.dataset.page===pageId);});
   if(pageId==='grow'){
-    renderGrow(); // 耕耘页（今日+阶段日程+成就）每次都重新渲染，保证"今日"这块（语录/倒数日/今天该做的）是最新的
+    renderGrow(); // 成长页（阶段日程+成就）每次都重新渲染，保证进度是最新的
+  }else if(pageId==='kg'){
+    renderKg(); // 考公页每次都重新渲染，保证语录/倒数日/报告是最新的
   }else if(!_pageInited[pageId]){
     _pageInited[pageId]=true;
     if(pageId==='record')renderRecord();
     if(pageId==='plan')renderPlan();
     if(pageId==='note')renderNoteList();
-    if(pageId==='kg')renderKg();
   }
 }
 document.querySelectorAll('.ni').forEach(nav=>{nav.onclick=()=>switchPage(nav.dataset.page);});
 
-// ==================== 今日页面 ====================
+// ==================== 语录（现在放在"计划→日计划"） ====================
 let quoteRotateInterval=null;
 function getDisplayQuotes(){return[...S.userQuotes,...S.defaultQuotes];}
 function getQuoteInterval(){
-  // 单位：毫秒，默认30分钟
+  // 单位：毫秒；quoteIntervalMinutes===-1 表示"永久不换"（只能手动切换）
+  if(S.quoteIntervalMinutes===-1)return Infinity;
   return (S.quoteIntervalMinutes||30)*60*1000;
+}
+// 从存档里取出当前该显示哪一条：没到切换时间就继续显示上次那条，
+// 这样退出网站再打开也不会变，只有真的过了设定的间隔才会换一条新的
+function pickPersistedQuote(forceNew){
+  const qs=getDisplayQuotes();
+  if(!qs.length)return'这是我的课题，那是别人的课题。';
+  const interval=getQuoteInterval();
+  const now=Date.now();
+  const idxValid=S.quoteLastIndex!=null&&S.quoteLastIndex<qs.length;
+  if(!forceNew&&idxValid&&(interval===Infinity||now-(S.quoteLastSwitchAt||0)<interval)){
+    return qs[S.quoteLastIndex];
+  }
+  let idx=Math.floor(Math.random()*qs.length);
+  if(qs.length>=2&&idxValid&&idx===S.quoteLastIndex)idx=(idx+1)%qs.length;
+  S.quoteLastIndex=idx;S.quoteLastSwitchAt=now;save();
+  return qs[idx];
 }
 function startQuoteRotate(){
   if(quoteRotateInterval)clearInterval(quoteRotateInterval);
   const interval=getQuoteInterval();
-  let lastIdx=-1;
-  let lastSwitchAt=Date.now();
+  if(interval===Infinity)return; // 永久不换，不需要定时器
   quoteRotateInterval=setInterval(()=>{
-    if(Date.now()-lastSwitchAt<interval)return; // 还没到设定的切换间隔，先不换
-    lastSwitchAt=Date.now();
+    if(Date.now()-(S.quoteLastSwitchAt||0)<interval)return; // 还没到设定的切换间隔，先不换
     const qs=getDisplayQuotes();
     if(qs.length>=2){
-      let idx=Math.floor(Math.random()*qs.length);
-      if(idx===lastIdx)idx=(idx+1)%qs.length; // 避免连续两次抽到同一条
-      lastIdx=idx;
-      const q=document.getElementById('quoteEl');
-      if(q)q.innerHTML=`"${esc(qs[idx])}"`;
+      const q=pickPersistedQuote(true);
+      const el=document.getElementById('quoteEl');
+      if(el)el.innerHTML=`"${esc(q)}"`;
     }
   },Math.min(interval,60000)); // 最多每分钟检查一次是否到点该换了
 }
@@ -1264,26 +1293,16 @@ function showOracleRecords(){
   showModal('📜 抽卡记录',body,null,null,{hideConfirm:true});
 }
 
-function renderToday(){
-  checkAndGenerateReports();
-  const _dq=getDisplayQuotes();
-  const displayQuote=_dq.length?_dq[Math.floor(Math.random()*_dq.length)]:'这是我的课题，那是别人的课题。';
-  document.getElementById('todayContent').innerHTML=`
+// 语录卡片：现在放在"计划 → 日计划"页顶部
+function renderPlanQuoteBox(){
+  const el=document.getElementById('planQuoteBox');if(!el)return;
+  const displayQuote=pickPersistedQuote();
+  el.innerHTML=`
     <div class="quote-box">
       <div class="quote-txt" id="quoteEl">"${esc(displayQuote)}"</div>
       <button class="quote-edit-btn" onclick="openQuoteModal()">编辑</button>
-    </div>
-    <div id="reportBanner"></div>
-    <div id="countdownSection"></div>
-    <div class="task-section" id="phaseScheduleSection">
-      <div class="section-divider"><div class="stl">📅 今天该做的（阶段日程）</div></div>
-      <div id="todayHabitsList"></div>
     </div>`;
-  renderTodayHabitsSection();
-  renderCountdownSection();
-  renderReportBanner();
   if(getDisplayQuotes().length>=2)startQuoteRotate();
-  setTimeout(()=>{showInstallBanner();checkBackupReminder();checkPhaseEndingReminder();},300);
 }
 
 // ==================== 倒数日 ====================
@@ -1405,35 +1424,37 @@ function openQuoteModal(){
           <option value="120">2 小时</option>
           <option value="360">6 小时</option>
           <option value="720">12 小时</option>
+          <option value="-1">永久不换（只能手动切换）</option>
         </select>
         <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-top:10px;margin-bottom:8px;">📌 立即指定显示第几条</div>
         <div style="display:flex;gap:8px;">
           <input type="number" id="quotePinInput" min="1" placeholder="输入序号，如 1" style="flex:1;padding:8px;border-radius:8px;font-size:13px;">
           <button class="pbtn" id="quotePinBtn">显示</button>
         </div>
-        <div style="font-size:10px;color:var(--ink3);margin-top:4px;">序号从1开始，按下方列表顺序</div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:4px;">序号从1开始，按下方列表顺序；选好之后会一直显示这条，直到下次自动切换或手动改</div>
       </div>
-      <div style="font-size:10px;color:var(--ink3);margin-bottom:10px;">✨ 至少2条语录会自动切换</div>
+      <div style="font-size:10px;color:var(--ink3);margin-bottom:10px;">✨ 至少2条语录才会自动切换；关掉网页也不会重置，只有真的到了设定的间隔才会换</div>
       <div style="max-height:220px;overflow:auto" id="quoteListInner"></div>`;
     const listInner=container.querySelector('#quoteListInner');
     let html='';
     S.userQuotes.forEach((q,i)=>{html+=`<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--g-border);"><span style="font-size:13px"><b style="color:var(--ink3);margin-right:4px;">${i+1}.</b>${esc(q)}</span><button class="delbtn" data-qi="${i}">🗑️</button></div>`;});
     if(S.defaultQuotes.length){const base=S.userQuotes.length;html+=`<div style="padding:8px 0 4px;font-size:11px;color:var(--ink3);font-weight:600;">📌 默认语录</div>`;S.defaultQuotes.forEach((q,j)=>{html+=`<div style="padding:6px 0;font-size:13px;color:var(--ink3);"><b style="margin-right:4px;">${base+j+1}.</b>${esc(q)}</div>`;});}
     listInner.innerHTML=html;
-    listInner.querySelectorAll('[data-qi]').forEach(btn=>{btn.onclick=()=>{const i=parseInt(btn.dataset.qi);confirmDel(()=>{S.userQuotes.splice(i,1);save();if(getDisplayQuotes().length<2)clearInterval(quoteRotateInterval);openQuoteModal();});};});
+    listInner.querySelectorAll('[data-qi]').forEach(btn=>{btn.onclick=()=>{const i=parseInt(btn.dataset.qi);confirmDel(()=>{S.userQuotes.splice(i,1);S.quoteLastIndex=null;save();if(getDisplayQuotes().length<2)clearInterval(quoteRotateInterval);openQuoteModal();renderPlanQuoteBox();});};});
     container.querySelector('#addQuoteBtn').onclick=()=>{const txt=container.querySelector('#newQuoteInput').value.trim();if(txt){S.userQuotes.push(txt);save();toast('已添加');if(getDisplayQuotes().length>=2)startQuoteRotate();openQuoteModal();}};
     // 设置间隔选择器的当前值
     const sel=container.querySelector('#quoteIntervalSelect');
     if(sel){
-      sel.value=String(S.quoteIntervalMinutes||30);
-      sel.onchange=()=>{S.quoteIntervalMinutes=parseInt(sel.value);save();startQuoteRotate();toast('切换间隔已更新');};
+      sel.value=String(S.quoteIntervalMinutes===-1?-1:(S.quoteIntervalMinutes||30));
+      sel.onchange=()=>{S.quoteIntervalMinutes=parseInt(sel.value);save();startQuoteRotate();toast(sel.value==='-1'?'已设为永久不换':'切换间隔已更新');};
     }
-    // 指定显示某条
+    // 指定显示某条（手动指定后会持久保存，不会因为重新打开网页又变回随机）
     const pinBtn=container.querySelector('#quotePinBtn');
     if(pinBtn){pinBtn.onclick=()=>{
       const n=parseInt(container.querySelector('#quotePinInput').value);
       const qs=getDisplayQuotes();
       if(!n||n<1||n>qs.length){toast(`请输入1到${qs.length}之间的数字`);return;}
+      S.quoteLastIndex=n-1;S.quoteLastSwitchAt=Date.now();save();
       const q=document.getElementById('quoteEl');
       if(q)q.innerHTML=`"${esc(qs[n-1])}"`;
       toast(`已显示第${n}条语录`);
@@ -1904,6 +1925,10 @@ function switchPlanTab(key){
   if(titleEl&&found)titleEl.textContent=`${found.icon} ${found.label}`;
   const addBtn=document.getElementById('planFixedAddBtn');
   if(addBtn)addBtn.style.display=key==='archive'?'none':'';
+  const habitsWrap=document.getElementById('planTodayHabitsWrap');
+  if(habitsWrap){habitsWrap.style.display=key==='day'?'':'none';if(key==='day')renderTodayHabitsSection();}
+  const quoteWrap=document.getElementById('planQuoteWrap');
+  if(quoteWrap){quoteWrap.style.display=key==='day'?'':'none';if(key==='day')renderPlanQuoteBox();}
   renderPlanNbItems();
 }
 
@@ -1919,12 +1944,19 @@ function renderPlan(){
     </div>
     <div class="plan-outer-tab" data-pt="archive" style="width:100%;text-align:center;margin-bottom:8px;">${ARCHIVE_TAB.icon} ${ARCHIVE_TAB.label}</div>
     <button id="planFixedAddBtn" class="plan-outer-tab" style="width:100%;text-align:center;background:var(--g);color:#fff;border-color:var(--g);cursor:pointer;margin-bottom:12px;">＋ 添加</button>
+    <div id="planQuoteWrap"><div id="planQuoteBox" style="margin-bottom:10px;"></div></div>
     <div class="plan-card-wrap" id="planNotebook">
       <div class="plan-card-header">
         <div class="plan-card-title" id="planNbTitle">📝 日计划</div>
         <div class="plan-card-date" id="planNbDate">${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日</div>
       </div>
       <div class="plan-card-body" id="planNbBody"></div>
+    </div>
+    <div id="planTodayHabitsWrap">
+      <div class="task-section" id="phaseScheduleSection">
+        <div class="section-divider"><div class="stl">📅 今天该做的（阶段日程）</div></div>
+        <div id="todayHabitsList"></div>
+      </div>
     </div>`;
 
   document.getElementById('planFixedAddBtn').addEventListener('click',()=>addNbPlanItem());
@@ -1934,6 +1966,8 @@ function renderPlan(){
   });
 
   renderPlanNbItems();
+  renderTodayHabitsSection();
+  renderPlanQuoteBox();
 }
 
 // 递归统计完成进度，精确到最底层子项/数量打卡，而不是笼统按顶层条目算
@@ -2404,23 +2438,189 @@ function deleteNbPlan(id){
 
 // ==================== 成长页面 ====================
 function showGrowTab(tab){
-  const tabs=['today','habit','ach'];
-  tabs.forEach(t=>{const el=document.getElementById(t==='today'?'todayContent':'grow'+t.charAt(0).toUpperCase()+t.slice(1));if(el)el.style.display=t===tab?'':'none';});
+  const tabs=['habit','cal','ach'];
+  tabs.forEach(t=>{const el=document.getElementById('grow'+t.charAt(0).toUpperCase()+t.slice(1));if(el)el.style.display=t===tab?'':'none';});
   document.querySelectorAll('#growTabs [data-grow]').forEach(b=>{b.classList.toggle('on',b.dataset.grow===tab);});
 }
 function renderGrow(){
   const gc=document.getElementById('growContent');
-  const wasTab=gc.dataset.activeTab||'today';
+  const wasTab=gc.dataset.activeTab||'habit';
   gc.innerHTML=`<div class="top-tabs" id="growTabs">
-    <button class="tab-main${wasTab==='today'?' on':''}" data-grow="today">🌤 今日</button>
     <button class="tab-main${wasTab==='habit'?' on':''}" data-grow="habit">📅 阶段日程</button>
+    <button class="tab-main${wasTab==='cal'?' on':''}" data-grow="cal">🗓 日历</button>
     <button class="tab-main${wasTab==='ach'?' on':''}" data-grow="ach">🏆 成就</button>
   </div>
-  <div id="todayContent" style="${wasTab==='today'?'':'display:none'}"></div>
+  <div id="reportBanner"></div>
   <div id="growHabit" style="${wasTab==='habit'?'':'display:none'}"></div>
+  <div id="growCal" style="${wasTab==='cal'?'':'display:none'}"></div>
   <div id="growAch" style="${wasTab==='ach'?'':'display:none'}"></div>`;
-  renderToday();renderHabits();renderAchievements();
+  checkAndGenerateReports();renderHabits();renderCalendar();renderAchievements();renderReportBanner();
   document.getElementById('growTabs').addEventListener('click',(e)=>{const btn=e.target.closest('[data-grow]');if(btn){gc.dataset.activeTab=btn.dataset.grow;showGrowTab(btn.dataset.grow);}});
+}
+
+// ==================== 农历 + 节日（数据表版，1900-2100 年内准确；不含二十四节气——那个需要天文计算，简化公式常有±1天误差，为了不显示错误信息就不放了）====================
+const LUNAR_INFO=[0x04bd8,0x04ae0,0x0a570,0x054d5,0x0d260,0x0d950,0x16554,0x056a0,0x09ad0,0x055d2,
+0x04ae0,0x0a5b6,0x0a4d0,0x0d250,0x1d255,0x0b540,0x0d6a0,0x0ada2,0x095b0,0x14977,
+0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970,
+0x06566,0x0d4a0,0x0ea50,0x06e95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950,
+0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557,
+0x06ca0,0x0b550,0x15355,0x04da0,0x0a5d0,0x14573,0x052d0,0x0a9a8,0x0e950,0x06aa0,
+0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0,
+0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b5a0,0x195a6,
+0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60,0x09570,
+0x04af5,0x04970,0x064b0,0x074a3,0x0ea50,0x06b58,0x055c0,0x0ab60,0x096d5,0x092e0,
+0x0c960,0x0d954,0x0d4a0,0x0da50,0x07552,0x056a0,0x0abb7,0x025d0,0x092d0,0x0cab5,
+0x0a950,0x0b4a0,0x0baa4,0x0ad50,0x055d9,0x04ba0,0x0a5b0,0x15176,0x052b0,0x0a930,
+0x07954,0x06aa0,0x0ad50,0x05b52,0x04b60,0x0a6e6,0x0a4e0,0x0d260,0x0ea65,0x0d530,
+0x05aa0,0x076a3,0x096d0,0x04bd7,0x04ad0,0x0a4d0,0x1d0b6,0x0d250,0x0d520,0x0dd45,
+0x0b5a0,0x056d0,0x055b2,0x049b0,0x0a577,0x0a4b0,0x0aa50,0x1b255,0x06d20,0x0ada0,
+0x14b63,0x09370,0x049f8,0x04970,0x064b0,0x168a6,0x0ea50,0x06b20,0x1a6c4,0x0aae0,
+0x0a2e0,0x0d2e3,0x0c960,0x0d557,0x0d4a0,0x0da50,0x05d55,0x056a0,0x0a6d0,0x055d4,
+0x052d0,0x0a9b8,0x0a950,0x0b4a0,0x0b6a6,0x0ad50,0x055a0,0x0aba4,0x0a5b0,0x052b0,
+0x0b273,0x06930,0x07337,0x06aa0,0x0ad50,0x14b55,0x04b60,0x0a570,0x054e4,0x0d160,
+0x0e968,0x0d520,0x0daa0,0x16aa6,0x056d0,0x04ae0,0x0a9d4,0x0a2d0,0x0d150,0x0f252,
+0x0d520];
+function _lYearDays(y){let sum=348;for(let i=0x8000;i>0x8;i>>=1)sum+=(LUNAR_INFO[y-1900]&i)?1:0;return sum+_leapDays(y);}
+function _leapMonth(y){return LUNAR_INFO[y-1900]&0xf;}
+function _leapDays(y){if(_leapMonth(y))return(LUNAR_INFO[y-1900]&0x10000)?30:29;return 0;}
+function _monthDays(y,m){if(m>12||m<1)return -1;return(LUNAR_INFO[y-1900]&(0x10000>>m))?30:29;}
+function solar2lunar(y,m,d){
+  if(y<1900||y>2100)return null;
+  const baseDate=new Date(1900,0,31);
+  const objDate=new Date(y,m-1,d);
+  let offset=Math.floor((objDate.getTime()-baseDate.getTime())/86400000);
+  let lY=1900,temp=0;
+  for(lY=1900;lY<2101&&offset>0;lY++){temp=_lYearDays(lY);offset-=temp;}
+  if(offset<0){offset+=temp;lY--;}
+  const leapM=_leapMonth(lY);
+  let isLeapMonth=false,lM=1;
+  for(lM=1;lM<13&&offset>0;lM++){
+    if(leapM>0&&lM===(leapM+1)&&!isLeapMonth){--lM;isLeapMonth=true;temp=_leapDays(lY);}
+    else temp=_monthDays(lY,lM);
+    if(isLeapMonth&&lM===(leapM+1))isLeapMonth=false;
+    offset-=temp;
+  }
+  if(offset===0&&leapM>0&&lM===leapM+1){if(isLeapMonth){isLeapMonth=false;}else{isLeapMonth=true;--lM;}}
+  if(offset<0){offset+=temp;--lM;}
+  return{lYear:lY,lMonth:lM,lDay:offset+1,isLeap:isLeapMonth};
+}
+const CAL_MON_STR=['正','二','三','四','五','六','七','八','九','十','冬','腊'];
+const CAL_DAY_STR=['初一','初二','初三','初四','初五','初六','初七','初八','初九','初十',
+  '十一','十二','十三','十四','十五','十六','十七','十八','十九','二十',
+  '廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
+const SOLAR_FESTIVALS={'1-1':'元旦','2-14':'情人节','3-8':'妇女节','3-12':'植树节','4-1':'愚人节','5-1':'劳动节','5-4':'青年节','6-1':'儿童节','9-10':'教师节','10-1':'国庆节','12-24':'平安夜','12-25':'圣诞节'};
+const LUNAR_FESTIVALS={'1-1':'春节','1-15':'元宵节','5-5':'端午节','7-7':'七夕','7-15':'中元节','8-15':'中秋节','9-9':'重阳节','12-8':'腊八节'};
+// 某天的农历短标签：有节日就显示节日名，否则初一显示"X月"，其他显示"初X/廿X"
+function calLunarInfoFor(y,m,d){
+  const l=solar2lunar(y,m,d);
+  if(!l)return{label:'',festival:null};
+  const key=l.lMonth+'-'+l.lDay;
+  let festival=(!l.isLeap&&LUNAR_FESTIVALS[key])?LUNAR_FESTIVALS[key]:null;
+  if(!festival){const sk=m+'-'+d;if(SOLAR_FESTIVALS[sk])festival=SOLAR_FESTIVALS[sk];}
+  if(!festival){
+    // 除夕：明天是正月初一，说明今天是年三十/廿九
+    const nd=new Date(y,m-1,d+1);
+    const nl=solar2lunar(nd.getFullYear(),nd.getMonth()+1,nd.getDate());
+    if(nl&&nl.lMonth===1&&nl.lDay===1&&!nl.isLeap)festival='除夕';
+  }
+  const label=l.lDay===1?(l.isLeap?'闰':'')+CAL_MON_STR[l.lMonth-1]+'月':CAL_DAY_STR[l.lDay-1];
+  return{label,festival};
+}
+
+// ==================== 日历（成长 → 日历） ====================
+// S.calendarEvents: [{id,date:'YYYY-MM-DD',title,detail}]，一天可以有多条
+let calCurrentYear,calCurrentMonth; // month 0-11
+function calInit(){
+  if(calCurrentYear===undefined){const now=new Date();calCurrentYear=now.getFullYear();calCurrentMonth=now.getMonth();}
+}
+function calPrevMonth(){calInit();calCurrentMonth--;if(calCurrentMonth<0){calCurrentMonth=11;calCurrentYear--;}renderCalendar();}
+function calNextMonth(){calInit();calCurrentMonth++;if(calCurrentMonth>11){calCurrentMonth=0;calCurrentYear++;}renderCalendar();}
+function calEventsOn(dateStr){return(S.calendarEvents||[]).filter(e=>e.date===dateStr).sort((a,b)=>(a.id>b.id?1:-1));}
+function _calCellHtml(y,m,d,outside){
+  // m是1-12
+  const dateStr=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const evs=calEventsOn(dateStr);
+  const isToday=dateStr===td();
+  const li=calLunarInfoFor(y,m,d);
+  return`<div class="cal-cell${evs.length?' has-event':''}${isToday?' is-today':''}${outside?' cal-cell-outside':''}${li.festival?' has-festival':''}" onclick="openCalDayModal('${dateStr}')">
+      <div class="cal-daynum">${d}</div>
+      <div class="cal-lunar-label${li.festival?' cal-festival-label':''}">${esc(li.festival||li.label)}</div>
+      ${evs.length?`<div class="cal-ev-label">${esc(evs[0].title)}</div>${evs.length>1?`<div class="cal-ev-more">+${evs.length-1}</div>`:''}`:''}
+    </div>`;
+}
+function renderCalendar(){
+  const el=document.getElementById('growCal');if(!el)return;
+  calInit();
+  const y=calCurrentYear,m=calCurrentMonth; // m: 0-11
+  const first=new Date(y,m,1);
+  const startWeekday=first.getDay();
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const prevDaysInMonth=new Date(y,m,0).getDate();
+  const todayStr=td();
+  let cells='';
+  // 补齐这个月前面：上个月最后几天
+  const prevY=m===0?y-1:y,prevM=m===0?12:m;
+  for(let i=startWeekday;i>0;i--)cells+=_calCellHtml(prevY,prevM,prevDaysInMonth-i+1,true);
+  for(let d=1;d<=daysInMonth;d++)cells+=_calCellHtml(y,m+1,d,false);
+  // 补齐后面：凑满整行，用下个月的前几天
+  const totalSoFar=startWeekday+daysInMonth;
+  const trailing=(7-(totalSoFar%7))%7;
+  const nextY=m===11?y+1:y,nextM=m===11?1:m+2;
+  for(let d=1;d<=trailing;d++)cells+=_calCellHtml(nextY,nextM,d,true);
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <button class="sbtn" onclick="calPrevMonth()">‹ 上月</button>
+      <div style="font-weight:700;font-size:17px;">${y}年${m+1}月</div>
+      <button class="sbtn" onclick="calNextMonth()">下月 ›</button>
+    </div>
+    <div class="cal-grid">${['日','一','二','三','四','五','六'].map(w=>`<div class="cal-weekday">${w}</div>`).join('')}</div>
+    <div class="cal-grid">${cells}</div>
+    <button class="fab-btn" style="margin-top:14px;" onclick="openCalDayModal('${todayStr}')">➕ 添加事件（今天）</button>`;
+}
+function openCalDayModal(dateStr){
+  const body=(container)=>{
+    const render=()=>{
+      const evs=calEventsOn(dateStr);
+      const[yy,mm,dd]=dateStr.split('-').map(Number);
+      const li=calLunarInfoFor(yy,mm,dd);
+      let html=`<div style="font-size:12px;color:var(--ink3);margin-bottom:10px;">${dateStr}${li.festival?` · <span style="color:#e0645a;font-weight:600;">${esc(li.festival)}</span>`:` · 农历${esc(li.label)}`}</div>`;
+      html+=evs.length?evs.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--g-border);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+            <div style="font-weight:600;font-size:14px;flex:1;">${esc(e.title)}</div>
+            <div style="display:flex;gap:4px;flex-shrink:0;">
+              <button class="tree-action-btn" data-editev="${e.id}">✏️</button>
+              <button class="tree-action-btn danger" data-delev="${e.id}">🗑️</button>
+            </div>
+          </div>
+          ${e.detail?`<div style="font-size:12px;color:var(--ink2);margin-top:4px;white-space:pre-wrap;">${esc(e.detail)}</div>`:''}
+        </div>`).join(''):'<div class="empty" data-icon="🗓">这天还没有安排</div>';
+      html+='<button class="addbtn" style="margin-top:12px;" id="calAddEvBtn">➕ 添加事件</button>';
+      container.innerHTML=html;
+      container.querySelectorAll('[data-editev]').forEach(btn=>{btn.onclick=()=>{openCalEventForm(dateStr,btn.dataset.editev);};});
+      container.querySelectorAll('[data-delev]').forEach(btn=>{btn.onclick=()=>{confirmDel(()=>{
+        S.calendarEvents=(S.calendarEvents||[]).filter(x=>x.id!==btn.dataset.delev);
+        save();render();renderCalendar();
+      });};});
+      container.querySelector('#calAddEvBtn').onclick=()=>{openCalEventForm(dateStr,null);};
+    };
+    render();
+  };
+  showModal(`🗓 ${dateStr}`,body,null,null,{hideConfirm:true,showCancel:true,cancelText:'关闭'});
+}
+function openCalEventForm(dateStr,eventId){
+  const existing=eventId?(S.calendarEvents||[]).find(e=>e.id===eventId):null;
+  const body=`
+    <div class="note-field-group"><div class="note-field-label">事件概括（几个字，不点开也能看到）</div><input id="calEvTitle" maxlength="20" placeholder="比如：申论批改" value="${existing?esc(existing.title):''}"></div>
+    <div class="note-field-group"><div class="note-field-label">具体说明（选填，点开才看得到）</div><textarea id="calEvDetail" rows="4" placeholder="可以不写，需要的话再展开写细节…">${existing?esc(existing.detail||''):''}</textarea></div>`;
+  showModal(existing?'✏️ 编辑事件':'➕ 添加事件',body,()=>{
+    const title=document.getElementById('calEvTitle').value.trim();
+    if(!title){toast('请填写事件概括');return;}
+    const detail=document.getElementById('calEvDetail').value.trim();
+    if(existing){existing.title=title;existing.detail=detail;}
+    else{if(!S.calendarEvents)S.calendarEvents=[];S.calendarEvents.push({id:uid(),date:dateStr,title,detail});}
+    save();renderCalendar();
+    closeModal(); // 弹窗是栈式的：这一步只会关掉"添加/编辑"这一层，自动回到下面的当天详情弹窗，且会用最新数据重新渲染——不会再叠一层，不用多点一次关闭
+  },null,{showCancel:true});
 }
 
 // ==================== 阶段日程系统 ====================
@@ -2623,6 +2823,8 @@ function renderTodayHabitsSection(){
   }).join('');
 }
 // ---- 习惯列表主渲染 ----
+let habitOpenActions=new Set();
+function toggleHabitActions(id){if(habitOpenActions.has(id))habitOpenActions.delete(id);else habitOpenActions.add(id);renderHabits();}
 function renderHabits(){
   const el=document.getElementById('growHabit');if(!el)return;
   const phase=getActivePhase();
@@ -2673,6 +2875,9 @@ function renderHabits(){
       ${todayNote?`<div style="font-size:12px;color:var(--g-dark);background:var(--g-xlight);border-radius:8px;padding:6px 10px;margin-top:8px;">📖 ${esc(todayNote)}</div>`:''}
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center;">
         ${doneToday?`<button class="sbtn" onclick="undoHabitCheckinToday('${h.id}')">↩️ 撤销今天</button>`:(restToday?`<span style="font-size:12px;color:var(--ink3);padding:6px;">🌤 今天请假中</span>`:`<button class="sbtn" onclick="checkInHabitToday('${h.id}')">✅ 今天打卡</button>`)}
+        <button class="tree-action-btn" onclick="toggleHabitActions('${h.id}')" style="margin-left:auto;">⋯</button>
+      </div>
+      ${habitOpenActions.has(h.id)?`<div class="nb-item-actions" style="margin:4px 0 0;flex-wrap:wrap;height:auto;display:flex;gap:6px;">
         <button class="tree-action-btn" onclick="openHabitCheckinDetailPopup('${h.id}','${td()}')" title="设置今天具体要做什么">📝 ${todayNote?'改今天备注':'今天做什么'}</button>
         ${(!doneToday&&!restToday)?`<button class="tree-action-btn" onclick="takeRestToday('${h.id}')">🌤 今天请假</button>`:''}
         <button class="tree-action-btn" onclick="openRestRangeModal('${h.id}')">🗓 请假一段</button>
@@ -2680,7 +2885,7 @@ function renderHabits(){
         <button class="tree-action-btn" onclick="moveHabitDown(${idx})" ${idx===S.goodH.length-1?'style="opacity:.3;pointer-events:none;"':''}>↓</button>
         <button class="tree-action-btn" onclick="editHabit('${h.id}')">✏️ 编辑</button>
         <button class="tree-action-btn danger" onclick="delHabitConfirm('${h.id}')">🗑️</button>
-      </div>
+      </div>`:''}
     </div>`;
   }).join('');
 }
@@ -4129,9 +4334,27 @@ function kgGenerateReport(period){
   const periodLogs=S.kg.logs.filter(l=>l.date>=start&&l.date<=end);
   const perNode={};
   periodLogs.forEach(l=>{
-    if(!perNode[l.nodeId])perNode[l.nodeId]={name:l.name,count:0,correct:0,hasAcc:l.correct!==null};
-    perNode[l.nodeId].count+=l.count;
-    if(l.correct!==null)perNode[l.nodeId].correct+=l.correct;
+    if(!perNode[l.nodeId])perNode[l.nodeId]={name:l.name,count:0,correct:0,hasAcc:false,times:0};
+    const p=perNode[l.nodeId];
+    p.times+=1;
+    p.count+=l.count;
+    if(l.correct!==null){p.correct+=l.correct;p.hasAcc=true;}
+  });
+  // 具体行为明细：这一项打卡了几次、做了多少题/套，要总结成一句话，而不是笼统的数字
+  const detailLines=Object.keys(perNode).map(id=>{
+    const n=kgFindNode(id);
+    const p=perNode[id];
+    const unit=n?(n.unit||'次'):'次';
+    if(n&&n.trackScore){
+      const periodScores=(n.scores||[]).filter(s=>s.date>=start&&s.date<=end);
+      const avgScoreRate=periodScores.length?Math.round(periodScores.reduce((s,x)=>s+(x.total>0?x.score/x.total:0),0)/periodScores.length*100):null;
+      return `<li>【${esc(p.name)}】打卡 <b>${p.times}</b> 次，即 <b>${p.times}</b> ${esc(unit)}，共刷了 <b>${p.count}</b> 道题${avgScoreRate!==null?`，平均得分率 <b>${avgScoreRate}%</b>`:''}</li>`;
+    }
+    if(p.hasAcc&&p.count>0){
+      const acc=Math.round(p.correct/p.count*100);
+      return `<li>【${esc(p.name)}】打卡 <b>${p.times}</b> 次，共做 <b>${p.count}</b> 道题，做对 <b>${p.correct}</b> 道（正确率 <b>${acc}%</b>）</li>`;
+    }
+    return `<li>【${esc(p.name)}】打卡 <b>${p.times}</b> 次，累计 <b>${p.count}</b> ${esc(unit)}</li>`;
   });
   const progressLines=[],regressLines=[];
   Object.keys(perNode).forEach(id=>{
@@ -4155,8 +4378,9 @@ function kgGenerateReport(period){
   const touchedNames=[...new Set(Object.values(perNode).map(p=>p.name))];
   const html=`
     <h4 style="font-size:15px;border-bottom:1px solid var(--g-border);padding-bottom:6px;margin-bottom:10px;">📋 考公备考【${label}】（${start} ~ ${end}）</h4>
-    ${periodTotalQ>0?`<p><b>📈 本期战况：</b> 共打卡 <b>${periodTotalQ}</b> 次，覆盖了 <span style="color:var(--g);">${touchedNames.map(esc).join('、')}</span>。</p>`
+    ${periodTotalQ>0?`<p><b>📈 本期战况：</b> 共打卡 <b>${periodLogs.length}</b> 次，做了 <b>${periodTotalQ}</b> 道题，覆盖了 <span style="color:var(--g);">${touchedNames.map(esc).join('、')}</span>。</p>`
       :`<p style="color:var(--ink3);">这段时间还没有打卡记录</p>`}
+    ${detailLines.length?`<p style="margin-top:8px;"><b>📝 具体做了什么：</b></p><ul style="padding-left:18px;color:var(--ink2);">${detailLines.join('')}</ul>`:''}
     ${progressLines.length?`<p style="margin-top:8px;"><b>🚀 进步：</b></p><ul style="padding-left:18px;color:var(--ink2);">${progressLines.map(l=>`<li>${l}</li>`).join('')}</ul>`:''}
     ${regressLines.length?`<p style="margin-top:8px;"><b>📉 需要留意：</b></p><ul style="padding-left:18px;color:#c62828;">${regressLines.map(l=>`<li>${l}</li>`).join('')}</ul>`:''}
     <p style="margin-top:8px;"><b>🏆 目前的优势项：</b> <span style="color:var(--g);font-weight:700;">${greenCats.slice(0,6).map(esc).join('、')||'暂无（继续加油）'}${greenCats.length>6?' 等':''}</span></p>
@@ -4174,8 +4398,8 @@ function renderKg(){
   el.innerHTML=`
     <div class="top-tabs" id="kgTabs">
       <button class="tab-main on" onclick="kgSwitchTab(this,'kgGrowTab')">📈 进度</button>
-      <button class="tab-main" onclick="kgSwitchTab(this,'kgAchTab')">🏆 成就墙</button>
       <button class="tab-main" onclick="kgSwitchTab(this,'kgReportTab')">📊 日/周/月报</button>
+      <button class="tab-main" onclick="kgSwitchTab(this,'kgAchTab')">🏆 成就墙</button>
     </div>
     <div id="kgGrowTab">
       <div class="top-tabs" id="kgRootTabs"></div>
@@ -4185,10 +4409,10 @@ function renderKg(){
         <button class="tree-action-btn danger" onclick="kgResetAllConfirm()">🔄 清空重来</button>
       </div>
     </div>
-    <div id="kgAchTab" style="display:none;"></div>
     <div id="kgReportTab" style="display:none;">
+      <div id="countdownSection"></div>
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-        <button class="pbtn period-btn" style="flex:1;min-width:90px;" onclick="kgSetReportPeriod(this,'day')">今日日报</button>
+        <button class="pbtn period-btn on" style="flex:1;min-width:90px;" onclick="kgSetReportPeriod(this,'day')">今日日报</button>
         <button class="pbtn period-btn" style="flex:1;min-width:90px;" onclick="kgSetReportPeriod(this,'week')">本周周报</button>
         <button class="pbtn period-btn" style="flex:1;min-width:90px;" onclick="kgSetReportPeriod(this,'month')">本月月报</button>
       </div>
@@ -4199,9 +4423,13 @@ function renderKg(){
         <label style="font-size:12px;color:var(--ink3);">📝 薄弱点 / 复盘笔记（自己记，方便下次针对性攻克）</label>
         <textarea id="kgWeaknessNotes" rows="6" placeholder="比如：资料分析里的比重计算总是错，下次专门练这个…" style="width:100%;margin-top:6px;">${esc(S.kg.weaknessNotes||'')}</textarea>
       </div>
-    </div>`;
+    </div>
+    <div id="kgAchTab" style="display:none;"></div>`;
   kgRenderTree();kgRenderWall();
+  renderCountdownSection();
+  kgGenerateReport('day');
   bindDraftAutosave(document.getElementById('kgWeaknessNotes'),(val)=>{S.kg.weaknessNotes=val;save();});
+  setTimeout(()=>{showInstallBanner();checkBackupReminder();checkPhaseEndingReminder();},300);
 }
 function kgResetAllConfirm(){
   showModal('清空重来','<p style="color:var(--ink2);font-size:14px;line-height:1.6;">会把"考公"这个板块下所有的分类、打卡记录、进度全部删掉，换成一套全新的默认结构（每次打卡=1套/次，套内题量和正确数分开记）。这个操作不能撤销，确定要清空吗？</p>',()=>{
@@ -4221,11 +4449,9 @@ loadFontSize();
 loadTheme();
 if(!S.fortuneMessages.length){S.fortuneMessages=['给明天的自己写一封信','整理手机里最近拍的照片','学一道新菜','给朋友发消息','读10页书','做15分钟运动','整理一个抽屉'];}
 save();
-_pageInited['kg']=true;
-renderKg();
 const now=new Date();
 document.getElementById('hdrDate').innerHTML=`${now.getMonth()+1}月${now.getDate()}日 · 星期${'日一二三四五六'[now.getDay()]}`;
-switchPage('kg');
+switchPage('plan');
 if(getSyncCode())startSyncListener(getSyncCode());
 </script>
 </body>
