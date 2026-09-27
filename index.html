@@ -3773,10 +3773,11 @@ function kgFindParentArray(id,list){
   }
   return null;
 }
-// 单个节点自己进度数字：不打勾类型直接用存的 count；记正确率/套题类型一律从"每次打卡记录"数出来，不会跟存的数字对不上
+// 单个节点自己进度数字：不打勾类型直接用存的 count；套题类型（trackScore）按"打了几套"算；
+// 记正确率类型（trackAcc）按"一共做了多少题"算——不然一次打卡填10题，目标那里也只会+1，跟实际做的量对不上
 function kgOwnCount(n){
   if(n.trackScore)return(n.scores||[]).length;
-  if(n.trackAcc)return(n.entries||[]).length;
+  if(n.trackAcc)return kgQTotal(n);
   return n.count||0;
 }
 function kgQTotal(n){
@@ -3947,10 +3948,11 @@ function kgRowHtml(n,depth,catIndex){
     <div class="progress-bar" style="margin:5px 0 0;${isRoot?'background:rgba(255,255,255,.3);':''}"><div class="progress-fill" style="width:${percent}%;${isRoot?'background:#fff;':''}"></div></div>`;
   // 有子项的节点（大类）现在也能直接打卡：自己有过直接打卡记录时，照样显示自己的数据；
   // 子项汇总的正确率另起一行显示，两者不冲突。行测/申论这种最顶层大卡片不显示正确率，只看进度。
+  let statsHtml='';
   if(!hasChildren||ownCount>0){
-    html+=`<div style="font-size:11px;color:${dimColor};display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+    statsHtml+=`<div style="font-size:11px;color:${dimColor};display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
       <span>${ownCount}${n.target>0?'/'+n.target:''} ${esc(n.unit)}</span>
-      ${(n.trackAcc||n.trackScore)&&qTotal>0?`<span>共${qTotal}题</span>`:''}
+      ${n.trackScore&&qTotal>0?`<span>共${qTotal}题</span>`:''}
       ${(acc!==null&&!isRoot)?`<span>正确率 ${acc}%（最近${KG_RECENT_WINDOW}次）${trendArrow}</span>`:''}
       ${speed?`<span>⏱ ${kgFmtSec(speed.latest)}/题${speed.prevAvg!==null?`（近${KG_RECENT_WINDOW}次均${kgFmtSec(speed.prevAvg)}/题 ${speed.latest<=speed.prevAvg?'<span class="kg-trend-up">更快</span>':'<span class="kg-trend-down">更慢</span>'}）`:''}</span>`:''}
       ${(!n.trackAcc&&!n.trackScore&&n.timeMinutes>0)?`<span>⏱ 累计${Math.round(n.timeMinutes*100)/100}分钟</span>`:''}
@@ -3958,19 +3960,22 @@ function kgRowHtml(n,depth,catIndex){
     </div>`;
   }
   if(hasChildren&&acc!==null&&ownCount<=0&&!isRoot){
-    html+=`<div style="font-size:11px;color:${dimColor};margin-top:4px;">正确率 ${acc}%（子类最近${KG_RECENT_WINDOW}次汇总）</div>`;
+    statsHtml+=`<div style="font-size:11px;color:${dimColor};margin-top:4px;">正确率 ${acc}%（子类最近${KG_RECENT_WINDOW}次汇总）</div>`;
   }
   html+=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center;">
     <button class="tree-action-btn accent" onclick="kgOpenCheckInModal('${n.id}')" style="${isRoot?'background:rgba(255,255,255,.85);color:var(--g-dark);border-color:transparent;':''}">✅ 打卡</button>
-    ${n.notes.length>0?`<button class="tree-action-btn" onclick="kgUndoCheckIn('${n.id}')">↩️ 撤销</button>`:''}
     <button class="tree-action-btn" onclick="kgToggleActions('${n.id}')" style="margin-left:auto;${isRoot?'background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4);':''}">⋯</button>
   </div>`;
   if(kgOpenActions.has(n.id)){
-    html+=`<div class="nb-item-actions" style="margin:4px 0 0;flex-wrap:wrap;height:auto;">
-      ${n.notes.length>0?`<button class="tree-action-btn" onclick="kgViewHistory('${n.id}')">📜 记录</button>`:''}
-      <button class="tree-action-btn" onclick="kgOpenAddChildModal('${n.id}')">➕ 子项</button>
-      <button class="tree-action-btn" onclick="kgOpenEditModal('${n.id}')">✏️ 编辑</button>
-      <button class="tree-action-btn danger" onclick="kgDeleteNode('${n.id}')">🗑️ 删除</button>
+    html+=`<div class="nb-item-actions" style="margin:4px 0 0;flex-wrap:wrap;height:auto;flex-direction:column;align-items:stretch;gap:6px;">
+      ${statsHtml?`<div style="padding:2px 0 4px;">${statsHtml}</div>`:''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${n.notes.length>0?`<button class="tree-action-btn" onclick="kgUndoCheckIn('${n.id}')">↩️ 撤销</button>`:''}
+        ${n.notes.length>0?`<button class="tree-action-btn" onclick="kgViewHistory('${n.id}')">📜 记录</button>`:''}
+        <button class="tree-action-btn" onclick="kgOpenAddChildModal('${n.id}')">➕ 子项</button>
+        <button class="tree-action-btn" onclick="kgOpenEditModal('${n.id}')">✏️ 编辑</button>
+        <button class="tree-action-btn danger" onclick="kgDeleteNode('${n.id}')">🗑️ 删除</button>
+      </div>
     </div>`;
   }
   html+=`</div>`;
@@ -4171,9 +4176,9 @@ function kgOpenCheckInModal(id){
     <label style="font-size:12px;color:var(--ink3);">打卡日期（补录以前的就改成对应日期，之后正常按当天记录）</label>
     <input type="date" id="kgCiDate" value="${td()}" max="${td()}">
     ${n.trackAcc?`
-    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">这次（1${esc(n.unit)}）一共多少道题</label>
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">这次一共做了多少${esc(n.unit)}（比如一口气做了10题，就填10，进度会直接+10，不会只算1次）</label>
     <input type="number" id="kgCiQCount" value="" min="1" placeholder="如：10">
-    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">其中做对了几道</label>
+    <label style="font-size:12px;color:var(--ink3);margin-top:8px;">其中做对了几${esc(n.unit)}</label>
     <input type="number" id="kgCiCorrect" min="0" placeholder="如：9">
     `:`
     <label style="font-size:12px;color:var(--ink3);margin-top:8px;">本次数量（${esc(n.unit)}）</label>
@@ -4193,7 +4198,7 @@ function kgOpenCheckInModal(id){
     const dateVal=document.getElementById('kgCiDate').value||td();
     if(n.trackAcc){
       const qcount=parseInt(document.getElementById('kgCiQCount').value)||0;
-      if(qcount<=0){toast('请填写这次的题量');return;}
+      if(qcount<=0){toast('请填写这次的数量');return;}
       const correct=Math.min(qcount,parseInt(document.getElementById('kgCiCorrect').value)||0);
       const difficulty=kgReadDiff();
       const oldAcc=kgRecentAcc(n);
@@ -4201,9 +4206,9 @@ function kgOpenCheckInModal(id){
       const newAcc=kgRecentAcc(n);
       n.trendUp=oldAcc===null?null:(newAcc>=oldAcc);
       n.lastDelta={mins};
-      n.notes.push({id:uid(),date:dateVal,note:note||`第${n.entries.length}${n.unit}，${correct}/${qcount}题`});
+      n.notes.push({id:uid(),date:dateVal,note:note||`本次${qcount}${esc(n.unit)}，做对${correct}${esc(n.unit)}`});
       S.kg.logs.push({date:dateVal,nodeId:id,name:kgPathLabel(id),count:qcount,correct});
-      save();closeModal();kgRenderTree();kgRenderWall();toast(`+1${n.unit}（${correct}/${qcount}题）✓`);
+      save();closeModal();kgRenderTree();kgRenderWall();toast(`+${qcount}${esc(n.unit)}（对${correct}）✓`);
       return;
     }
     const count=parseInt(document.getElementById('kgCiCount').value)||0;
